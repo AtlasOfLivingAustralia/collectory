@@ -1098,7 +1098,12 @@ class DataController {
      */
     def contactsForEntity = {
         check(params)
-        def contactList = params.pg.getContacts().collect { buildContactForModel(it, params.pg.urlForm()) }
+        def contactList = params.pg.getContacts().collect {
+            // public contacts only
+            if (it.contact.publish) {
+                buildContactForModel(it, params.pg.urlForm())
+            }
+        }
         addContentLocation "/ws/${params.entity}/${params.pg.uid}/contacts"
         addVaryAcceptHeader()
         withFormat {
@@ -1130,7 +1135,8 @@ class DataController {
             Contact contact = Contact.get(params.id)
             ContactFor contactFor = ContactFor.findByContact(contact)
 
-            if (contact && contactFor) {
+            // public contacts only
+            if (contact?.publish && contactFor) {
                 def cm = buildContactForModel(contactFor, params.pg.urlForm())
                 addContentLocation "/ws/${params.entity}/${params.pg.uid}/contacts/${params.id}"
                 addVaryAcceptHeader()
