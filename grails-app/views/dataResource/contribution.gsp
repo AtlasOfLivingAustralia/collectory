@@ -92,7 +92,7 @@
                 <cl:connectionParameters bean="command" connectionParameters="${command.connectionParameters}"/>
             </div>
 
-            <g:if test="${command.resourceType == 'records'}">
+            <g:if test="${command.resourceType == 'records'} || ${command.resourceType == 'events'}">
                 <!-- darwin core defaults -->
                 <div><h3><g:message code="dataresource.contribution.table0201" /></h3></div>
                 <div><g:message code="dataresource.contribution.table0301" />.</div>

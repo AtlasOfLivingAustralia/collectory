@@ -148,14 +148,14 @@ function appendResource(value) {
     $rowB.append('<span><strong class="resultsLabelFirst">'+ jQuery.i18n.prop('datasets.js.appendresource06') +': </strong>' + jQuery.i18n.prop('dataset.result.'+ value.resourceType) + '</span>');  // resource type
     $rowB.append('<span><strong class="resultsLabel">'+ jQuery.i18n.prop('datasets.js.appendresource07') +': </strong>' + (value.licenseType == null ? '' : value.licenseType) + '</span>'); // license type
 
-    if (COLLECTORY_CONF.showExtraInfoInDataSetsView && value.resourceType == 'records') {
+    if (COLLECTORY_CONF.showExtraInfoInDataSetsView && (value.resourceType == 'records' || value.resourceType == 'events')) {
         $rowB.append('<span><strong class="lastUpdatedDrView">'+ jQuery.i18n.prop('datasets.js.lastUpdated') +': </strong>' + formatLastUpdated() + '</span>'); // last updated
         var numRecords = drCount(value.uid);
         if (numRecords >= 0) {
             $rowB.append('<span><strong class="drNumRecordsDrView">' + jQuery.i18n.prop('datasets.js.numRecords') + ': </strong><a title="' + jQuery.i18n.prop('datasets.js.appendresource03') + '" href="' + biocacheUrl + '/occurrences/search?q=data_resource_uid:' + value.uid + '">' + numRecords + '</a></span>'); // recors link with numbers
         }
     }
-    if (!COLLECTORY_CONF.showExtraInfoInDataSetsView && value.resourceType == 'records') {
+    if (!COLLECTORY_CONF.showExtraInfoInDataSetsView && (value.resourceType == 'records' || value.resourceType == 'events')) {
         $rowB.append('<span class="viewRecords"><a title="' + jQuery.i18n.prop('datasets.js.appendresource03') + '" href="' + biocacheUrl + '/occurrences/search?q=data_resource_uid:' + value.uid + '">'+ jQuery.i18n.prop('datasets.js.appendresource10') +'</a></span>'); // records link
 
     }
