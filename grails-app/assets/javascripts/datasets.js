@@ -763,8 +763,9 @@ function reset() {
     offset = 0;
     $('select#per-page').val(20);
     $('select#sort').val('name');
-    $('select#dir').val('asc');
+    $('select#dir').val('ascending');
     $.bbq.removeState();
+    resources.sort(comparator);
     updateTotal();
     calculateFacets();
     showFilters();
