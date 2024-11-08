@@ -72,7 +72,7 @@
                             </div><!-- /input-group -->
 
                             <div class="pull-right">
-                                <button href="javascript:reset()" title="${message(code:"datasets.remove.all.filters")}" class=" form-control btn btn-default">
+                                <button href="#" id="resetLink" title="${message(code:"datasets.remove.all.filters")}" class=" form-control btn btn-default">
                                     <g:message code="public.datasets.drsearch.resetlist" />
                                 </button>
                                 <button href="#" id="downloadLink" class="btn btn-default"
@@ -122,6 +122,7 @@
           $('select#per-page').change(onPageSizeChange);
           $('select#sort').change(onSortChange);
           $('select#dir').change(onDirChange);
+          $('#resetLink').click(reset);
       });
   </asset:script>
   </body>
