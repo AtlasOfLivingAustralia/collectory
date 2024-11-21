@@ -1,4 +1,4 @@
-$(document).ready(function() {
+$(document).ready(function () {
     function instrument() {
         var availableTags = [
             "institutionCode",
@@ -8,42 +8,42 @@ $(document).ready(function() {
             "recordNumber"
         ];
 
-        function split( val ) {
-            return val.split( /,\s*/ );
+        function split(val) {
+            return val.split(/,\s*/);
         }
 
-        function extractLast( term ) {
-            return split( term ).pop();
+        function extractLast(term) {
+            return split(term).pop();
         }
 
-        $( "input#termsForUniqueKey:enabled" )
+        $("input#termsForUniqueKey:enabled")
             // don't navigate away from the field on tab when selecting an item
-            .bind( "keydown", function( event ) {
-                if ( event.keyCode === $.ui.keyCode.TAB &&
-                    $( this ).data( "autocomplete" ).menu.active ) {
+            .bind("keydown", function (event) {
+                if (event.keyCode === $.ui.keyCode.TAB &&
+                    $(this).data("autocomplete").menu.active) {
                     event.preventDefault();
                 }
             })
             .autocomplete({
                 minLength: 0,
-                source: function( request, response ) {
+                source: function (request, response) {
                     // delegate back to autocomplete, but extract the last term
-                    response( $.ui.autocomplete.filter(
-                        availableTags, extractLast( request.term ) ) );
+                    response($.ui.autocomplete.filter(
+                        availableTags, extractLast(request.term)));
                 },
-                focus: function() {
+                focus: function () {
                     // prevent value inserted on focus
                     return false;
                 },
-                select: function( event, ui ) {
-                    var terms = split( this.value );
+                select: function (event, ui) {
+                    var terms = split(this.value);
                     // remove the current input
                     terms.pop();
                     // add the selected item
-                    terms.push( ui.item.value );
+                    terms.push(ui.item.value);
                     // add placeholder to get the comma-and-space at the end
-                    terms.push( "" );
-                    this.value = terms.join( ", " );
+                    terms.push("");
+                    this.value = terms.join(", ");
                     return false;
                 }
             });
@@ -55,15 +55,15 @@ $(document).ready(function() {
         // $('input#termsForUniqueKey:enabled').autocomplete('destroy');
         // $('input#termsForUniqueKey:enabled').unbind('keydown');
         // clear all
-        $('div.labile').css('display','none');
-        $('div.labile input,textArea').attr('disabled','true');
+        $('div.labile').css('display', 'none');
+        $('div.labile input,textArea').attr('disabled', 'true');
 
         // show the selected
         console.log("Displaying protocol : " + protocol);
-        $.each(connectionParameters, function(key, obj) {
-            $.each(obj, function(j, p) {
+        $.each(connectionParameters, function (key, obj) {
+            $.each(obj, function (j, p) {
                 if (p == protocol) {
-                    $('div#connection_' + key).css('display','block');
+                    $('div#connection_' + key).css('display', 'block');
                     $('div#connection_' + key).removeAttr('style');
                     $('div#connection_' + key + ' input,textArea').removeAttr('disabled');
                 }
@@ -79,27 +79,26 @@ $(document).ready(function() {
     /* this expands lists of urls into an array of text inputs */
 // create a delete element that removes the element before it and itself
     var $deleteLink = $('<span class="delete btn btn-mini btn-danger"><i class="glyphicon glyphicon-remove glyphicon-white"></i> </span>')
-        .click(function() {
+        .click(function () {
             $(this).prev().remove();
             $(this).remove();
         });
 // handle all urls (including hidden ones)
     var urlInputs = $('input[name="url"]');
     $('input[name="url"]').addClass('input-xxlarge');
-    $.each(urlInputs, function(i, obj) {
+    $.each(urlInputs, function (i, obj) {
         var urls = $(obj).val().split(',');
         if (urls.length > 1) {
             // more than one url so create an input for each extra one
-            $.each(urls,function(i,url) {
+            $.each(urls, function (i, url) {
                 if (i == 0) {
                     // existing input gets the first url
                     $(obj).val(url);
-                }
-                else {
+                } else {
                     // clone the existing field and inject the next value - adding a delete link
                     $(obj).clone()
                         .val(url.trim())
-                        .css('width','93%')
+                        .css('width', '93%')
                         .addClass('form-control')
                         .insertAfter($(obj).parent().children('input,span').last())
                         .after($deleteLink.clone(true));
@@ -108,10 +107,10 @@ $(document).ready(function() {
         }
     });
     /* this injects 'add another' functionality to urls */
-    $.each(urlInputs, function(i, obj) {
+    $.each(urlInputs, function (i, obj) {
         $('<span class="pull-right btn btn-default">Add another</span>')
             .insertAfter($(obj).parent().children('input,span').last())
-            .click(function() {
+            .click(function () {
                 // clone the original input
                 var $clone = $(obj).clone();
                 $clone.val('');
@@ -120,14 +119,13 @@ $(document).ready(function() {
             });
     });
     /* this binds the code to add a new term to the list */
-    $('#more-terms').click(function() {
+    $('#more-terms').click(function () {
         var term = $('#otherKey').val();
         // check that term doesn't already exist
-        if ($('#'+term).length > 0) {
+        if ($('#' + term).length > 0) {
             alert(term + " is already present");
-        }
-        else {
-            var newField = "<div class=\"form-group\"><label for='" + term +"'>" + term + "</label>" +
+        } else {
+            var newField = "<div class=\"form-group\"><label for='" + term + "'>" + term + "</label>" +
                 "<input type='text' class='form-control' id='" + term + "' name='" + term + "'/></div>";
             $('#add-another').parent().append(newField);
         }
