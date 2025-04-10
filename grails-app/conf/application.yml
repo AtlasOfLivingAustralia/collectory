@@ -407,8 +407,8 @@ environments:
         dataSource:
             dbCreate: none
             url: jdbc:mysql://localhost:3306/collectory?autoReconnect=true&connectTimeout=0&useUnicode=true&characterEncoding=UTF-8&serverTimezone=Australia/Sydney
-            username: specieslist
-            password: "specieslist"
+            username: collectory_user
+            password: "password"
             logSql: false
         gbifDefaultEntityCountry: AUS
     test:

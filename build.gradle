@@ -1,5 +1,5 @@
 buildscript {
-    version "5.2.0-SNAPSHOT"
+    version "5.2.1-SNAPSHOT"
     group "au.org.ala"
 }
 
@@ -13,9 +13,7 @@ plugins {
     id "com.bertramlabs.asset-pipeline"
     id "application"
     id "eclipse"
-
     id "com.gorylenko.gradle-git-properties" version "2.4.1"
-
     id "maven-publish"
 }
 
@@ -33,23 +31,31 @@ publishing {
     }
     publications {
         mavenJar(MavenPublication) {
-            artifact bootWar
+            artifact bootJar
         }
     }
 }
 
 bootWar {
-    launchScript()
-    dependsOn(compileGroovyPages)
+    enabled = false
 }
 
 war {
+    enabled = false
+}
+
+bootJar {
+    enabled = true
+    launchScript() // Optional: For Linux service startup script
     dependsOn(compileGroovyPages)
 }
 
+
 java {
-    sourceCompatibility = JavaVersion.toVersion("11")
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
 }
+
 
 repositories {
     mavenLocal()
