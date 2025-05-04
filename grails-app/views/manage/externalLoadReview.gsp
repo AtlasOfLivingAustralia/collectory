@@ -82,7 +82,7 @@
                     </tbody>
                 </table>
                 <div>
-                <span class="button"><g:actionSubmit class="save btn btn-warning" controller="manage" action="updateFromExternalSources" value="${message(code: 'default.button.load.label', default: 'Load')}" onclick="return confirm('${message(code: 'default.button.load.confirm.message', default: 'Are you sure?')}');" /></span>
+                <span class="button"><g:actionSubmit class="save btn btn-warning" controller="manage" action="updateFromExternalSources" value="${message(code: 'default.button.load.label', default: 'Load')}" onclick="${'$'}('#resource-table').DataTable().search('').draw(); return confirm('${message(code: 'default.button.load.confirm.message', default: 'Are you sure?')}');" /></span>
                 </div>
          </div>
     </g:form>
@@ -128,7 +128,8 @@
                 {"orderable": false},
                 {"orderable": false},
                 {"orderable": false}
-            ]
+            ],
+            paging: false
         });
     } );
 

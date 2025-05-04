@@ -49,7 +49,7 @@ class LicenceController {
     @Produces("application/json")
     def index() {
         response.setContentType("application/json")
-        render (Licence.findAll().collect { [name:it.name, url:it.url] } as JSON)
+        render (Licence.findAll().collect { [name: it.name, url: it.url, imageUrl: it.imageUrl, acronym: it.acronym, version: it.licenceVersion] } as JSON)
     }
 
     @JsonIgnoreProperties('metaClass')

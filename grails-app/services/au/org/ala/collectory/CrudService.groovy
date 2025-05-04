@@ -40,7 +40,7 @@ class CrudService {
                 'filed','publicArchiveAvailable','contentTypes','defaultDarwinCoreValues', 'imageMetadata',
                 'geographicDescription','northBoundingCoordinate','southBoundingCoordinate','eastBoundingCoordinate',
                 'westBoundingCoordinate','beginDate','endDate','qualityControlDescription','methodStepDescription',
-                'gbifDoi','repatriationCountry','isPrivate'
+                'gbifDoi','repatriationCountry','isPrivate','createdByID'
     ]
     static dataResourceNumberProperties = ['harvestFrequency','downloadLimit']
     static dataResourceTimestampProperties = ['lastChecked','dataCurrency']
@@ -392,6 +392,8 @@ class CrudService {
                     externalIdentifiers = p.externalIdentifiers.formatExternalIdentifiers()
                 }
                 doi = p.gbifDoi
+                repatriationCountry = p.repatriationCountry
+                createdByID = p.createdByID
             }
         }
         return result

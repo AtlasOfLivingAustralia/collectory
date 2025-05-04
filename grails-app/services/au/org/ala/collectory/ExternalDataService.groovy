@@ -162,7 +162,7 @@ class ExternalDataService {
                 if (dr.hasErrors()) {
                     throw new ExternalResourceException("Created resource has errors", "manage.note.note02", resource.name, dr.errors)
                 }
-                dr.addExternalIdentifier(resource.guid, adaptor.source, resource.source)
+                externalIdentifierService.addExternalIdentifier(dr.uid, resource.guid, adaptor.source, resource.source)
                 resource.uid = dr.uid
                 resource.addNote("manage.note.note03", resource.uid)
             }

@@ -88,7 +88,7 @@
         </table>
         <div>
             <g:if test="${configuration.resources}">
-                <span class="button"><g:actionSubmit class="save btn btn-warning" controller="manage" action="updateFromExternalSources" value="${message(code: 'default.button.load.label', default: 'Load')}" onclick="return confirm('${message(code: 'default.button.load.confirm.message', default: 'Are you sure?')}');" /></span>
+                <span class="button"><g:actionSubmit class="save btn btn-warning" controller="manage" action="updateFromExternalSources" value="${message(code: 'default.button.load.label', default: 'Load')}" onclick="${'$'}('#resource-table').DataTable().search('').draw(); return confirm('${message(code: 'default.button.load.confirm.message', default: 'Are you sure?')}');" /></span>
             </g:if>
         </div>
     </g:form>
@@ -140,7 +140,8 @@
                 {"orderable": false},
                 {"orderable": false},
                 {"orderable": false}
-            ]
+            ],
+            paging: false
         });
     } );
 

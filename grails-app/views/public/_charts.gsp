@@ -7,7 +7,7 @@
   };
 
   // records
-  if (${!instance.hasProperty('resourceType') || instance.resourceType == 'records'}) {
+  if (${!instance.hasProperty('resourceType') || instance.resourceType == 'records'  || instance.resourceType == 'events'}) {
       // summary biocache data
       var queryUrl = CHARTS_CONFIG.biocacheServicesUrl + "/occurrences/search?pageSize=0&q=${facet}:${instance.uid}";
 
@@ -35,6 +35,37 @@
                     $('#dataAccessWrapper').css({display:'block'});
                     $('#totalRecordCountLink').html(data.totalRecords.toLocaleString() + " ${g.message(code: 'public.show.rt.des03')}");
                 }
+            }
+        }
+      });
+  }
+
+  if (${instance.hasProperty('resourceType') && instance.resourceType == 'events' && org.apache.commons.lang.StringUtils.isNotEmpty(grailsApplication.config.eventsURL ?: '')}) {
+      // summary events data
+      var queryUrl = '${grailsApplication.config.eventsURL}';
+      var body = {
+          query: 'query list($datasetKey: JSON){' +
+            'eventSearch(predicate: {type: equals, key: \"datasetKey\", value: $datasetKey}) {' +
+              'documents(size: 1) {total}' +
+            '}' +
+          '}',
+          variables: '{"datasetKey":"${instance.uid}"}'
+      }
+
+      $.ajax({
+        url: queryUrl,
+        dataType: 'json',
+        data: body,
+        timeout: 30000,
+        complete: function(jqXHR, textStatus) {
+            if (textStatus == 'timeout' || textStatus == 'error') {
+                // noData();
+            }
+        },
+        success: function(data) {
+            if (data.data.eventSearch.documents.total > 0){
+                $('#eventRecordsWrapper').css({display:'block'});
+                $('#totalEventCount').html(data.data.eventSearch.documents.total.toLocaleString() + " ${g.message(code: 'public.show.rt.des08')}");
             }
         }
       });

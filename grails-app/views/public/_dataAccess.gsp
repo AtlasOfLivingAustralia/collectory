@@ -5,6 +5,10 @@
         <a id="totalRecordCountLink" href="${grailsApplication.config.biocacheUiURL}/occurrences/search?q=${facet}:${instance.uid}">
         </a>
     </h3>
+    <h3 id="eventRecordsWrapper" style="display:none">
+        <a id="totalEventCount" href="${grailsApplication.config.eventsUiURL}${instance.uid}">
+        </a>
+    </h3>
 
     <h4><g:message code="dataAccess.title"/></h4>
     <div class="dataAccess btn-group-vertical">

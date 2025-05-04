@@ -449,5 +449,15 @@ liquibase.command.referencePassword: XXXXX
         <sqlFile path="5.1.0.3.sql" relativeToChangelogFile="true" encoding="ISO-8859-1" stripComments="1" />
     </changeSet>
 
+    <changeSet author="djtfmartin" id="20231025-01">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="data_resource" columnName="created_byid" />
+            </not>
+        </preConditions>
+        <addColumn tableName="data_resource">
+            <column name="created_byid" type="VARCHAR(255 BYTE)"/>
+        </addColumn>
+    </changeSet>
 
 </databaseChangeLog>

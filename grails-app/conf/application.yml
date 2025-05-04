@@ -214,6 +214,8 @@ disableAlertLinks: false
 disableLoggerLinks: false
 biocacheServicesUrl: https://biocache.ala.org.au/ws
 biocacheUiURL: https://biocache.ala.org.au
+#eventsUiURL: https://events.ala.org.au/?datasetKey=
+#eventsURL: https://api.ala.org.au/event/graphql
 isPipelinesCompatible: true
 showExtraInfoInDataSetsView.enabled: false
 showExtraInfoInDataSetsView.relativeTime: false
@@ -405,8 +407,8 @@ environments:
         dataSource:
             dbCreate: none
             url: jdbc:mysql://localhost:3306/collectory?autoReconnect=true&connectTimeout=0&useUnicode=true&characterEncoding=UTF-8&serverTimezone=Australia/Sydney
-            username: specieslist
-            password: "specieslist"
+            username: collectory_user
+            password: "password"
             logSql: false
         gbifDefaultEntityCountry: AUS
     test:
