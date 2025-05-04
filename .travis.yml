@@ -1,10 +1,16 @@
 language: groovy
+dist: focal
 jdk:
-  - openjdk11
+  - openjdk17
+
+before_install:
+  - java -version
+  - javac -version
 branches:
   only:
     - master
     - develop
+    - execjar
 before_cache:
   - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
   - rm -fr $HOME/.gradle/caches/*/plugin-resolution/
