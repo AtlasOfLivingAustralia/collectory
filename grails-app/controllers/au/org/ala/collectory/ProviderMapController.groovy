@@ -1,8 +1,10 @@
 package au.org.ala.collectory
 
-
+import au.ala.org.ws.security.RequireApiKey
+import au.org.ala.web.AlaSecured
 import grails.gorm.transactions.Transactional
 
+@RequireApiKey(roles = ['ROLE_EDITOR'])
 class ProviderMapController {
 
     static allowedMethods = [save: "POST", update: "POST", delete: "POST"]

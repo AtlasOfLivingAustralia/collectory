@@ -1,11 +1,13 @@
 package au.org.ala.collectory
 
+import au.ala.org.ws.security.RequireApiKey
 import grails.converters.JSON
 
 import java.text.SimpleDateFormat
 import au.org.ala.collectory.resources.PP
 import au.org.ala.collectory.resources.DarwinCoreFields
 
+@RequireApiKey(roles = ['ROLE_EDITOR'])
 class DataResourceController extends ProviderGroupController {
 
     def metadataService, dataImportService, gbifRegistryService, authService

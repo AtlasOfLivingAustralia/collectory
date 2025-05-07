@@ -1,27 +1,29 @@
 package au.org.ala.collectory
 
-import au.org.ala.ws.security.ApiKeyClient
 import au.org.ala.ws.security.CheckApiKeyResult
 import au.org.ala.ws.security.JwtProperties
 import au.org.ala.ws.security.client.AlaAuthClient
 import au.org.ala.ws.service.WebService
 import grails.web.servlet.mvc.GrailsParameterMap
 import org.pac4j.core.config.Config
-import org.pac4j.core.context.WebContext
+import org.pac4j.core.context.CallContext
 import org.pac4j.core.context.session.SessionStore
-import org.pac4j.core.context.session.SessionStoreFactory
+
 import org.pac4j.core.credentials.Credentials
 import org.pac4j.core.profile.ProfileManager
 import org.pac4j.core.profile.UserProfile
-import org.pac4j.jee.context.JEEContextFactory
+import org.pac4j.jee.context.JEEFrameworkParameters
+import org.pac4j.jee.context.session.JEESessionStoreFactory
 import org.pac4j.oidc.credentials.OidcCredentials
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.web.context.request.RequestContextHolder
 import retrofit2.Call
 import retrofit2.Response
+import org.pac4j.jee.context.JEEContextFactory
+import org.pac4j.core.context.WebContext
 
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
+
 
 class CollectoryAuthService{
     static transactional = false
@@ -155,16 +157,17 @@ class CollectoryAuthService{
 
 
 
+    @Deprecated
     def checkJWT(HttpServletRequest request, HttpServletResponse response, String requiredRole, String requiredScope) {
         def result = false
 
         if (jwtProperties.enabled) {
-            def context = context(request, response)
+            CallContext context = context(request, response)
             def sessionStore = sessionStore()
-            ProfileManager profileManager = new ProfileManager(context, sessionStore)
+            ProfileManager profileManager = new ProfileManager(context.webContext(), sessionStore)
             profileManager.setConfig(config)
 
-            result = alaAuthClient.getCredentials(context, sessionStore)
+            result = alaAuthClient.getCredentials(context)
                     .map { credentials -> checkCredentials(requiredScope, credentials, requiredRole, context, profileManager) }
         }
         return result
@@ -240,16 +243,21 @@ class CollectoryAuthService{
         return userProfileContainsRole
     }
 
-    private WebContext context(request, response) {
-        final WebContext context = FindBest.webContextFactory(null, config, JEEContextFactory.INSTANCE).newContext(request, response)
-        return context
+    @Deprecated
+    private CallContext c (request, response) {
+        def parameters = new JEEFrameworkParameters(request, response)
+        def webContext = JEEContextFactory.INSTANCE.newContext(parameters)
+        SessionStore sessionStore = new JEESessionStoreFactory().newSessionStore()
+
+        return new CallContext(webContext, sessionStore)
     }
 
+    @Deprecated
     private SessionStore sessionStore() {
-        final SessionStore sessionStore = FindBest.sessionStoreFactory(null, config, JEEContextFactory.INSTANCE as SessionStoreFactory).newSessionStore()
-        return sessionStore
+        return new JEESessionStoreFactory().newSessionStore()
     }
 
+    @Deprecated
     def isAuthorisedWsRequest(GrailsParameterMap params, HttpServletRequest request, HttpServletResponse response, String requiredRole, String requiredScope){
         Boolean authorised = false
         if(grailsApplication.config.security.apikey.checkEnabled.toBoolean() || grailsApplication.config.security.apikey.enabled.toBoolean()){
