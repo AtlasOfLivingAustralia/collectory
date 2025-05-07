@@ -1,6 +1,7 @@
 package au.org.ala.collectory
 
 import au.org.ala.collectory.resources.PP
+import au.org.ala.web.AlaSecured
 import grails.converters.JSON
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.web.context.request.RequestContextHolder
@@ -13,6 +14,7 @@ import org.springframework.web.context.request.ServletRequestAttributes
  *
  * It provides common code for shared attributes like contacts.
  */
+@AlaSecured(value = ['ROLE_ADMIN','ROLE_EDITOR'], anyRole = true)
 abstract class ProviderGroupController {
 
     String entityName = "ProviderGroup"

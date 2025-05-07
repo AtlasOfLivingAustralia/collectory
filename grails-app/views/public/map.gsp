@@ -20,15 +20,17 @@
       <div id="header">
         <div class="section full-width">
           <g:if test="${flash.message}">
-            <div class="message">${flash.message}</div>
+            <div class="alert alert-danger ">${flash.message}</div>
           </g:if>
+            <g:if test="${flash.errorMessage}">
+                <div class="alert alert-danger">${flash.errorMessage}</div>
+            </g:if>
           <div class="hrgroup">
             <h1><g:message code="public.map3.header.title" args="[raw(grailsApplication.config.regionName)]"/></h1>
             <p><g:message code="public.map3.header.des01" /> ${grailsApplication.config.projectNameShort} <g:message code="public.map3.header.des02" args="[raw(grailsApplication.config.regionName)]"/>.</p>
           </div><!--close hrgroup-->
         </div><!--close section-->
       </div><!--close header-->
-
       <div class="row"><!-- wrap map and list-->
         <div class="col-md-4">
           <div class="section">

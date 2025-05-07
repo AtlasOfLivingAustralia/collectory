@@ -1,9 +1,11 @@
 package au.org.ala.collectory
 
+import au.org.ala.web.AlaSecured
 import grails.converters.JSON
 import grails.converters.XML
 import grails.web.http.HttpHeaders
 
+@AlaSecured(value = ['ROLE_ADMIN', 'ROLE_EDITOR'], anyRole = true)
 class DataProviderController extends ProviderGroupController {
 
     def gbifRegistryService

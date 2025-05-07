@@ -721,6 +721,7 @@ class PublicController {
         render( locations as JSON )
     }
 
+
     String contructHTML(entity, childEntities, baseUrl){
         def writer = new StringWriter()  // html is written here by markup builder
         def markup = new groovy.xml.MarkupBuilder(writer)  // the builder

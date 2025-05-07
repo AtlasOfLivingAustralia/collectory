@@ -1,5 +1,6 @@
 package au.org.ala.collectory
 
+import au.ala.org.ws.security.RequireApiKey
 import au.org.ala.plugins.openapi.Path
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import grails.converters.JSON
@@ -12,7 +13,6 @@ import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.headers.Header
 import io.swagger.v3.oas.annotations.media.ArraySchema
 import io.swagger.v3.oas.annotations.media.Content
-import io.swagger.v3.oas.annotations.media.ExampleObject
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.parameters.RequestBody
 import io.swagger.v3.oas.annotations.responses.ApiResponse
@@ -28,8 +28,6 @@ import java.text.SimpleDateFormat
 
 import static io.swagger.v3.oas.annotations.enums.ParameterIn.HEADER
 import static io.swagger.v3.oas.annotations.enums.ParameterIn.PATH
-import static io.swagger.v3.oas.annotations.enums.ParameterIn.QUERY
-import static io.swagger.v3.oas.annotations.enums.ParameterIn.QUERY
 import static io.swagger.v3.oas.annotations.enums.ParameterIn.QUERY
 
 class DataController {
@@ -278,8 +276,11 @@ class DataController {
             ],
             security = [@SecurityRequirement(name = 'openIdConnect')]
     )
+
+
     @Path("/ws/{entity}/{uid}")
     @Produces("application/json")
+    @RequireApiKey(roles = ["ROLE_EDITOR"])
     def saveEntity() {
 
         def ok = check(params)
@@ -503,15 +504,8 @@ class DataController {
                 // return specified entity
                 addContentLocation "/ws/${urlForm}/${params.pg.uid}"
                 def eTag = (params.pg.uid + ":" + params.pg.lastUpdated).encodeAsMD5()
-                def entityInJson
-                if (clazz == 'DataResource') {
-                    // this auth check (JWT or API key) is a special case handling to support backwards compatibility(which used to check for API key).
-                    String requiredRoles = grailsApplication.config.ROLE_ADMIN
-                    def authCheck = collectoryAuthService.isAuthorisedWsRequest(getParams(), request, response, requiredRoles, null)
-                    entityInJson = crudService."read${clazz}"(params.pg, authCheck)
-                } else {
-                    entityInJson = crudService."read${clazz}"(params.pg)
-                }
+                def entityInJson = crudService."read${clazz}"(params.pg)
+
                 entityInJson = metadataService.convertAnyLocalPaths(entityInJson)
                 response.setContentType("application/json")
                 response.setCharacterEncoding("UTF-8")
@@ -592,12 +586,6 @@ class DataController {
         def result = []
 
         def authCheck = false
-        if (params.entity == 'dataResource') {
-            // this auth check (JWT or API key) is a special case handling to support backwards compatibility(which used to check for API key).
-            String requiredRoles = grailsApplication.config.ROLE_ADMIN
-            authCheck = collectoryAuthService.isAuthorisedWsRequest(getParams(), request, response, requiredRoles, null)
-        }
-
         def clazz = capitalise(params.entity)
 
         request.JSON.each {
@@ -744,6 +732,7 @@ class DataController {
     )
     @Path("/ws/syncGBIF")
     @Produces("application/json")
+    @RequireApiKey(roles = ['ROLE_ADMIN'])
     def syncGBIF() {
         asyncGbifRegistryService.updateAllResources()
                 .onComplete {
@@ -1090,8 +1079,10 @@ class DataController {
             ],
             security = [@SecurityRequirement(name = 'openIdConnect')]
     )
+
     @Path("/ws/contacts/{id}")
     @Produces("application/json")
+    @RequireApiKey(roles = ["ROLE_ADMIN"])
     def contacts() {
         if (params.id) {
             def c = Contact.get(params.id)
@@ -1203,6 +1194,7 @@ class DataController {
     )
     @Path("/ws/contacts/{id}")
     @Produces("application/json")
+    @RequireApiKey(roles = ["ROLE_EDITOR"])
     def updateContact() {
         def ok = check(params)
         if (!ok) {
@@ -1536,6 +1528,7 @@ class DataController {
     )
     @Path("/ws/{entity}/{uid}/contacts/{id}")
     @Produces("application/json")
+    @RequireApiKey(roles = ["ROLE_EDITOR"])
     def updateContactFor() {
         def ok = check(params)
         if (!ok) {

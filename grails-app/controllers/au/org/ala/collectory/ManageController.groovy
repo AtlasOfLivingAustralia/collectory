@@ -1,9 +1,12 @@
 package au.org.ala.collectory
 
+import au.ala.org.ws.security.RequireApiKey
 import au.org.ala.collectory.resources.DataSourceLoad
 import au.org.ala.collectory.resources.gbif.GbifDataSourceAdapter
 import au.org.ala.collectory.resources.gbif.GbifRepatDataSourceAdapter
+import au.org.ala.web.AlaSecured
 
+@AlaSecured(value = ['ROLE_ADMIN'], anyRole = true)
 class ManageController {
 
     def collectoryAuthService

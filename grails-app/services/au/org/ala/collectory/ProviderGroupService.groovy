@@ -3,9 +3,7 @@ package au.org.ala.collectory
 import grails.converters.JSON
 import grails.gorm.transactions.Transactional
 import grails.util.Holders
-import org.grails.web.json.JSONArray
-import org.grails.web.json.JSONElement
-import org.springframework.web.context.request.RequestContextHolder
+
 
 @Transactional
 class ProviderGroupService {
@@ -164,6 +162,7 @@ class ProviderGroupService {
             params.remove('networkMembership')
 
             pg.properties = params
+            authService.setUserLastModified(pg, collectoryAuthService?.username())
             pg.userLastModified = collectoryAuthService?.username()
             if (!pg.hasErrors() && pg.save(flush: true)) {
                 [success:true, pg:pg]

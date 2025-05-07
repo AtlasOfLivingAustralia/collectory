@@ -1,7 +1,10 @@
 package au.org.ala.collectory
 
+import au.ala.org.ws.security.RequireApiKey
+import au.org.ala.web.AlaSecured
 import grails.converters.JSON
 
+@RequireApiKey(roles = ['ROLE_ADMIN'])
 class ReportsController {
 
     def collectoryAuthService, activityLogService, collectionService, institutionService

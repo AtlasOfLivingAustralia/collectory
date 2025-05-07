@@ -12,6 +12,10 @@ grails:
             - file:/data/collectory/config/collectory-config.groovy
     cors:
         enabled: true
+        mappings:
+            '/**':
+                allowedOrigins: [ '*' ]
+                allowedHeaders: [ 'Authorization', 'Content-Type' ]
     gorm:
         reactor:
             # Whether to translate GORM events into Reactor events
@@ -42,6 +46,10 @@ spring:
 management:
     endpoints:
         enabled-by-default: false
+# enable log any external services which still use the legacy apikey call
+legacy:
+    apikey:
+        log: false
 
 ---
 grails:
@@ -150,6 +158,7 @@ headerAndFooter:
     version: 2
 
 security:
+    #deprecated after 6.1.0
     apikey:
         checkEnabled: true
         enabled: true
@@ -405,7 +414,7 @@ environments:
                 sentry:
                     active: false
         dataSource:
-            dbCreate: none
+            dbCreate: update
             url: jdbc:mysql://localhost:3306/collectory?autoReconnect=true&connectTimeout=0&useUnicode=true&characterEncoding=UTF-8&serverTimezone=Australia/Sydney
             username: collectory_user
             password: "password"

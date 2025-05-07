@@ -1,8 +1,10 @@
 package au.org.ala.collectory
 
+import au.ala.org.ws.security.RequireApiKey
 import grails.gorm.transactions.Transactional
 import org.springframework.dao.DataIntegrityViolationException
 
+@RequireApiKey(roles = ['ROLE_EDITOR'])
 class ProviderCodeController {
 
     static allowedMethods = [save: "POST", update: "POST", delete: "POST"]

@@ -1,5 +1,8 @@
 package au.org.ala.collectory
 
+import au.org.ala.web.AlaSecured
+
+@AlaSecured(value = ['ROLE_ADMIN', 'ROLE_EDITOR'], anyRole = true)
 class DataHubController extends ProviderGroupController {
 
     def grailsCacheAdminService
