@@ -623,6 +623,10 @@ class PublicController {
         render(view: 'map', model: [collections: partnerCollections])
     }
 
+    def warning() {
+        render view: '/warning'
+    }
+
     /**
      * Returns GEOJson for populating the map based on the selected filters.
      */
