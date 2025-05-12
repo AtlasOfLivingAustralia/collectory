@@ -162,7 +162,6 @@ class ProviderGroupService {
             params.remove('networkMembership')
 
             pg.properties = params
-            authService.setUserLastModified(pg, collectoryAuthService?.username())
             pg.userLastModified = collectoryAuthService?.username()
             if (!pg.hasErrors() && pg.save(flush: true)) {
                 [success:true, pg:pg]
