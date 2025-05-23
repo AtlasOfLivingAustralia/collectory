@@ -1,5 +1,6 @@
 <%@ page import="au.org.ala.collectory.CollectoryTagLib; java.text.DecimalFormat; java.text.SimpleDateFormat" %>
 <g:set var="orgNameLong" value="${grailsApplication.config.skin.orgNameLong}"/>
+<g:set var="showBelowH3" value="${grailsApplication.config.showDataResourceWebsiteBelowH3.toBoolean()?: false}" />
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
@@ -229,6 +230,10 @@
                 </section>
             </g:if>
 
+            <g:if test="${showBelowH3}">
+                <g:render template="showDataResourceWebsite" model="[instance: instance, showHeaders: false]" />
+            </g:if>
+
             <g:if test="${instance.gbifDoi}">
                 <section class="public-metadata">
                     <h4><g:message code="public.citations" default="Citations" /></h4>
@@ -301,34 +306,10 @@
             </g:else>
             <g:render template="contacts" bean="${contacts}"/>
 
-           <!-- web site -->
-            <g:if test="${instance.resourceType == 'species-list'}">
-                <section class="'public-metadata">
-                    <h4><g:message code="public.sdr.content.label12" /></h4>
-                    <div class="webSite">
-                        <a class='external_icon' target="_blank"
-                           href="${grailsApplication.config.speciesListToolUrl}${instance.uid}"><g:message code="public.sdr.content.link03" /></a>
-                    </div>
-                </section>
+            <!-- web site -->
+            <g:if test="${!showBelowH3}">
+                <g:render template="showDataResourceWebsite" model="[instance: instance, showHeaders: true]" />
             </g:if>
-            <g:elseif test="${instance.resourceType == 'publications'}">
-                <section class="public-metadata">
-                    <h4><g:message code="public.website" /></h4>
-                    <div class="webSite">
-                        <a class='external_icon' target="_blank"
-                           href="${instance.websiteUrl}"><g:message code="public.sdr.content.link05" /></a>
-                    </div>
-                </section>
-            </g:elseif>
-            <g:elseif test="${instance.websiteUrl}">
-                <section class="public-metadata">
-                    <h4><g:message code="public.website" /></h4>
-                    <div class="webSite">
-                        <a class='external_icon' target="_blank"
-                           href="${instance.websiteUrl}"><g:message code="public.sdr.content.link04" /></a>
-                    </div>
-                </section>
-            </g:elseif>
 
             <!-- network membership -->
             <g:if test="${instance.networkMembership}">
