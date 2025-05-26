@@ -1,6 +1,5 @@
 package au.org.ala.collectory
 
-import au.ala.org.ws.security.RequireApiKey
 import au.org.ala.web.AlaSecured
 import grails.converters.JSON
 
