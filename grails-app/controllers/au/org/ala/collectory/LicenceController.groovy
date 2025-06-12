@@ -21,6 +21,8 @@ import javax.ws.rs.Produces
  */
 class LicenceController {
 
+    def collectoryAuthService
+
     @Operation(
             method = "GET",
             tags = "licence",
@@ -149,7 +151,7 @@ class LicenceController {
         redirect(action: "show", id: licenceInstance.id)
     }
 
-    @AlaSecured(value = ['ROLE_ADMIN','ROLE_EDITOR'], anyRole = true)
+    @AlaSecured(value = ['ROLE_ADMIN'], anyRole = true)
     def delete(Long id) {
         if (collectoryAuthService?.userInRole(grailsApplication.config.ROLE_ADMIN)) {
             def licenceInstance = Licence.get(id)
