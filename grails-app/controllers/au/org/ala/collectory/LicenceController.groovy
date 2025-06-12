@@ -69,7 +69,7 @@ class LicenceController {
         [instanceList: Licence.list(params), entityType: 'Licence', instanceTotal: Licence.count()]
     }
 
-    @AlaSecured(value = ['ROLE_ADMIN'], anyRole = true)
+    @AlaSecured(value = ['ROLE_ADMIN', 'ROLE_EDITOR'], anyRole = true)
     def create() {
         [licenceInstance: new Licence(params)]
     }
