@@ -2,36 +2,29 @@ package au.org.ala.collectory
 
 import au.org.ala.collectory.resources.gbif.GbifRepatDataSourceAdapter
 import au.org.ala.plugins.openapi.Path
+import au.org.ala.web.AlaSecured
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import grails.converters.JSON
 import groovy.json.JsonSlurper
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.headers.Header
-import io.swagger.v3.oas.annotations.media.ArraySchema
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
-
 import javax.ws.rs.Produces
-
-import static io.swagger.v3.oas.annotations.enums.ParameterIn.HEADER
 import static io.swagger.v3.oas.annotations.enums.ParameterIn.PATH
-import static io.swagger.v3.oas.annotations.enums.ParameterIn.PATH
-import static io.swagger.v3.oas.annotations.enums.ParameterIn.QUERY
-import static io.swagger.v3.oas.annotations.enums.ParameterIn.QUERY
 
+@AlaSecured(value = ['ROLE_ADMIN'], anyRole = true)
 class GbifController {
     static final API_KEY_COOKIE = "ALA-API-Key"
 
-    def collectoryAuthService
     def gbifRegistryService
     def asyncGbifRegistryService
     def gbifService
     def authService
     def externalDataService
-    def dataLinkService
 
     def healthCheck() {
         gbifRegistryService.generateSyncBreakdown()

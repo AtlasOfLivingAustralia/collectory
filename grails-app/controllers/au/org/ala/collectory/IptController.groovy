@@ -26,6 +26,7 @@ import static io.swagger.v3.oas.annotations.enums.ParameterIn.QUERY
 /**
  * Request a scan and an update of a data provider that links to a GBIF IPT instance.
  */
+@RequireApiKey(roles = ['ROLE_ADMIN'])
 class IptController {
     static final API_KEY_COOKIE = "ALA-API-Key"
 

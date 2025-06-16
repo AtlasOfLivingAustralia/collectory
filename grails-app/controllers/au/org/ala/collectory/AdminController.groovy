@@ -1,11 +1,12 @@
 package au.org.ala.collectory
 
-
+import au.org.ala.web.AlaSecured
 import com.opencsv.CSVReader
 import grails.converters.JSON
 import grails.web.JSONBuilder
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver
 
+@AlaSecured(value = ['ROLE_ADMIN'], anyRole = true)
 class AdminController {
 
     def dataLoaderService, idGeneratorService, metadataService, sitemapService

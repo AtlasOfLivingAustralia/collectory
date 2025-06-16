@@ -1,6 +1,7 @@
 package au.org.ala.collectory
 
 import au.org.ala.collectory.resources.PP
+import au.org.ala.web.AlaSecured
 import grails.converters.JSON
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.web.context.request.RequestContextHolder
@@ -13,6 +14,7 @@ import org.springframework.web.context.request.ServletRequestAttributes
  *
  * It provides common code for shared attributes like contacts.
  */
+@AlaSecured(value = ['ROLE_ADMIN','ROLE_EDITOR'], anyRole = true)
 abstract class ProviderGroupController {
 
     String entityName = "ProviderGroup"
@@ -706,7 +708,8 @@ abstract class ProviderGroupController {
             if (file?.size) {  // will only have size if a file was selected
                 // save the chosen file
                 if (file.size < 200000) {   // limit file to 200Kb
-                    def filename = file.getOriginalFilename()
+                    //sanitize filename
+                    def filename = file.getOriginalFilename().replaceAll('[^\\u0020-\\u00FF]', '_')
                     log.debug "filename=${filename}"
 
                     // update filename
@@ -718,7 +721,7 @@ abstract class ProviderGroupController {
                     File f = new File(colDir, filename)
                     log.debug "saving ${filename} to ${f.absoluteFile}"
                     file.transferTo(f)
-                    activityLogService.log collectoryAuthService?.username(), collectoryAuthService?.userInRole(grailsApplication.config.ROLE_ADMIN), Action.UPLOAD_IMAGE, filename
+                    activityLogService.log(collectoryAuthService?.username(), collectoryAuthService?.userInRole(grailsApplication.config.ROLE_ADMIN), Action.UPLOAD_IMAGE, filename)
                 } else {
                     pg.errors.rejectValue('imageRef', 'image.too.big', message(code: "provider.group.controller.13", default: "The image you selected is too large. Images are limited to 200KB."))
                     render(view: "/shared/images", model: [command: pg, target: target])

@@ -1,7 +1,8 @@
 package au.org.ala.collectory
 
+import au.ala.org.ws.security.RequireApiKey
 import au.org.ala.plugins.openapi.Path
-
+import au.org.ala.web.AlaSecured
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import grails.converters.JSON
 import io.swagger.v3.oas.annotations.Operation
@@ -21,6 +22,7 @@ import javax.ws.rs.Produces
 class LicenceController {
 
     def collectoryAuthService
+
     @Operation(
             method = "GET",
             tags = "licence",
@@ -47,6 +49,7 @@ class LicenceController {
     )
     @Path("/ws/licence")
     @Produces("application/json")
+
     def index() {
         response.setContentType("application/json")
         render (Licence.findAll().collect { [name: it.name, url: it.url, imageUrl: it.imageUrl, acronym: it.acronym, version: it.licenceVersion] } as JSON)
@@ -59,7 +62,7 @@ class LicenceController {
     }
 
 
-
+    @AlaSecured(value = ['ROLE_ADMIN','ROLE_EDITOR'], anyRole = true)
     def list() {
         if (params.message)
             flash.message = params.message
@@ -68,6 +71,7 @@ class LicenceController {
         [instanceList: Licence.list(params), entityType: 'Licence', instanceTotal: Licence.count()]
     }
 
+    @AlaSecured(value = ['ROLE_ADMIN', 'ROLE_EDITOR'], anyRole = true)
     def create() {
         [licenceInstance: new Licence(params)]
     }
@@ -88,6 +92,7 @@ class LicenceController {
         redirect(action: "show", id: licenceInstance.id)
     }
 
+    @AlaSecured(value = ['ROLE_ADMIN','ROLE_EDITOR'], anyRole = true)
     def show(Long id) {
         def licenceInstance = Licence.get(id)
         if (!licenceInstance) {
@@ -99,6 +104,7 @@ class LicenceController {
         [licenceInstance: licenceInstance]
     }
 
+    @AlaSecured(value = ['ROLE_ADMIN','ROLE_EDITOR'], anyRole = true)
     def edit(Long id) {
         def licenceInstance = Licence.get(id)
         if (!licenceInstance) {
@@ -110,6 +116,7 @@ class LicenceController {
         [licenceInstance: licenceInstance]
     }
 
+    @AlaSecured(value = ['ROLE_ADMIN','ROLE_EDITOR'], anyRole = true)
     def update(Long id, Long version) {
         def licenceInstance = Licence.get(id)
         if (!licenceInstance) {
@@ -144,6 +151,7 @@ class LicenceController {
         redirect(action: "show", id: licenceInstance.id)
     }
 
+    @AlaSecured(value = ['ROLE_ADMIN'], anyRole = true)
     def delete(Long id) {
         if (collectoryAuthService?.userInRole(grailsApplication.config.ROLE_ADMIN)) {
             def licenceInstance = Licence.get(id)

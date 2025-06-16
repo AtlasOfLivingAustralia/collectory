@@ -1,7 +1,9 @@
 package au.org.ala.collectory
 
+import au.org.ala.web.AlaSecured
 
 
+@AlaSecured(value = ['ROLE_ADMIN','ROLE_EDITOR'], anyRole = true)
 class ContactController {
 
     static allowedMethods = [save: "POST", update: "POST", delete: "POST"]

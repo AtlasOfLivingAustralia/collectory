@@ -1,8 +1,9 @@
 package au.org.ala.collectory
 
+import au.org.ala.web.AlaSecured
 import grails.gorm.transactions.Transactional
 
-
+@AlaSecured(value = ['ROLE_ADMIN','ROLE_EDITOR'], anyRole = true)
 class InstitutionController extends ProviderGroupController {
 
     def authService

@@ -209,10 +209,11 @@ class UrlMappings {
         "/public/resources(.$format)"(controller: 'public', action: 'resources')
         "/public/condensed(.$format)"(controller: 'public', action: 'condensed')
 
+        "/stat/apikey"(controller: "apiKeyLog", action: "index")
+
         "/sitemap($idx)?.xml"(controller: "sitemap", action: "index")
 
         "/"(controller: 'public', action: 'map')
-
         "/error"(view: '/error')
         "401"(view: '/error')
         "403"(view: '/error')
