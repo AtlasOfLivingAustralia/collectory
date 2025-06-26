@@ -1,5 +1,6 @@
 package au.org.ala.collectory
 
+import au.ala.org.ws.security.RequireApiKey
 import au.org.ala.collectory.resources.PP
 import au.org.ala.web.AlaSecured
 import grails.converters.JSON
@@ -9,12 +10,12 @@ import org.springframework.web.multipart.MultipartFile
 import java.text.NumberFormat
 import java.text.ParseException
 import org.springframework.web.context.request.ServletRequestAttributes
+
 /**
  * This is a base class for all provider group entities types.
  *
  * It provides common code for shared attributes like contacts.
  */
-@AlaSecured(value = ['ROLE_ADMIN','ROLE_EDITOR'], anyRole = true)
 abstract class ProviderGroupController {
 
     String entityName = "ProviderGroup"
@@ -37,6 +38,7 @@ abstract class ProviderGroupController {
     }
 
     protected isAdmin () {
+        //It requires AlaServices annotation to inject info to user profile
         collectoryAuthService?.userInRole(grailsApplication.config.ROLE_ADMIN) ?: false
     }
     /*
@@ -97,6 +99,7 @@ abstract class ProviderGroupController {
      * Edit base attributes.
      * @param id
      */
+    @AlaSecured(value = ['ROLE_ADMIN','ROLE_EDITOR'], anyRole = true)
     def edit = {
         def pg = get(params.id)
         if (!pg) {
@@ -115,6 +118,7 @@ abstract class ProviderGroupController {
         }
     }
 
+    @AlaSecured(value = ['ROLE_ADMIN','ROLE_EDITOR'], anyRole = true)
     def editAttributions = {
         def pg = get(params.id)
         if (!pg) {
@@ -136,6 +140,7 @@ abstract class ProviderGroupController {
      * Create a new entity instance.
      *
      */
+    @AlaSecured(value = ['ROLE_ADMIN','ROLE_EDITOR'], anyRole = true)
     def create = {
         def name = params.name ?: message(code: "provider.group.controller.05", default: "enter name")
         //def name = message(code: 'provider.group.controller.05', default: 'enter name')
@@ -189,6 +194,7 @@ abstract class ProviderGroupController {
      * @param pg the entity
      * @param params values for contact fields if the contact does not already exist
      */
+    @AlaSecured(value = ['ROLE_ADMIN','ROLE_EDITOR'], anyRole = true)
     void addUserAsContact(ProviderGroup pg, params) {
         def user = collectoryAuthService?.username()
         // find contact
@@ -224,6 +230,7 @@ abstract class ProviderGroupController {
     /**
      * This does generic updating from a form. Works for all properties that can be bound by default.
      */
+    @AlaSecured(value = ['ROLE_ADMIN','ROLE_EDITOR'], anyRole = true)
     def genericUpdate = { pg, view ->
         if (pg) {
             if (checkLocking(pg,view)) { return }
@@ -252,6 +259,7 @@ abstract class ProviderGroupController {
     /**
      * Update base attributes
      */
+    @AlaSecured(value = ['ROLE_ADMIN','ROLE_EDITOR'], anyRole = true)
     def updateBase = { //BaseCommand cmd ->
 
         BaseCommand cmd = new BaseCommand()
@@ -272,8 +280,8 @@ abstract class ProviderGroupController {
     /**
      * Update descriptive attributes
      */
+    @AlaSecured(value = ['ROLE_ADMIN','ROLE_EDITOR'], anyRole = true)
     def updateDescription = {
-
         def result = providerGroupService.updateDescription(params)
         def pg = result.pg
         if (pg) {
@@ -299,6 +307,7 @@ abstract class ProviderGroupController {
     /**
      * Update location attributes
      */
+    @AlaSecured(value = ['ROLE_ADMIN','ROLE_EDITOR'], anyRole = true)
     def updateLocation = {
 
         def pg = get(params.id)
@@ -347,6 +356,7 @@ abstract class ProviderGroupController {
         }
     }
 
+    @AlaSecured(value = ['ROLE_ADMIN','ROLE_EDITOR'], anyRole = true)
     def updateTaxonomyHints = {
         def pg = get(params.id)
         if (pg) {
@@ -384,6 +394,7 @@ abstract class ProviderGroupController {
         }
     }
 
+    @AlaSecured(value = ['ROLE_ADMIN','ROLE_EDITOR'], anyRole = true)
     def updateTaxonomicRange = {
         def pg = get(params.id)
         if (pg) {
@@ -415,6 +426,7 @@ abstract class ProviderGroupController {
         }
     }
 
+    @AlaSecured(value = ['ROLE_ADMIN','ROLE_EDITOR'], anyRole = true)
     def updateExternalIdentifiers = {
         def pg = get(params.id)
         if (pg) {
@@ -468,6 +480,7 @@ abstract class ProviderGroupController {
 
     }
 
+    @AlaSecured(value = ['ROLE_ADMIN','ROLE_EDITOR'], anyRole = true)
     def updateContactRole = {
         def contactFor = ContactFor.get(params.contactForId)
         if (contactFor) {
@@ -489,6 +502,7 @@ abstract class ProviderGroupController {
         }
     }
 
+    @AlaSecured(value = ['ROLE_ADMIN','ROLE_EDITOR'], anyRole = true)
     def addContact = {
         def pg = get(params.id)
         if (!pg) {
@@ -508,6 +522,7 @@ abstract class ProviderGroupController {
         }
     }
 
+    @AlaSecured(value = ['ROLE_ADMIN','ROLE_EDITOR'], anyRole = true)
     def addNewContact = {
         def pg = get(params.id)
         def contact = Contact.get(params.contactId)
@@ -532,6 +547,7 @@ abstract class ProviderGroupController {
         }
     }
 
+    @AlaSecured(value = ['ROLE_ADMIN','ROLE_EDITOR'], anyRole = true)
     def removeContact = {
         def pg = get(params.id)
         if (!pg) {
@@ -554,6 +570,7 @@ abstract class ProviderGroupController {
         }
     }
 
+    @AlaSecured(value = ['ROLE_ADMIN','ROLE_EDITOR'], anyRole = true)
     def editRole = {
         def contactFor = ContactFor.get(params.id)
         if (!contactFor) {
@@ -585,6 +602,7 @@ abstract class ProviderGroupController {
     /**
      * Uploads the supplied GBIF file creating a new data resource based on the supplied EML details
      */
+
     def downloadGBIFFile = {
 
         log.info("Downloading file: " + params.url)
@@ -604,6 +622,7 @@ abstract class ProviderGroupController {
         }
     }
 
+    @AlaSecured(value = ['ROLE_ADMIN'], anyRole = true)
     def upload = {
         def pg = get(params.id)
         if (!pg) {
@@ -660,6 +679,7 @@ abstract class ProviderGroupController {
         }
     }
 
+    @AlaSecured(value = ['ROLE_ADMIN'], anyRole = true)
     def uploadDataFile = {
 
         //get the UID
@@ -689,6 +709,7 @@ abstract class ProviderGroupController {
     /**
      * Update images
      */
+    @AlaSecured(value = ['ROLE_ADMIN','ROLE_EDITOR'], anyRole = true)
     def updateImages = {
         def pg = get(params.id)
         def target = params.target ?: "imageRef"
@@ -745,6 +766,7 @@ abstract class ProviderGroupController {
         }
     }
 
+    @AlaSecured(value = ['ROLE_ADMIN'], anyRole = true)
     def removeImage = {
         def pg = get(params.id)
         if (pg) {
@@ -776,6 +798,7 @@ abstract class ProviderGroupController {
         }
     }
 
+    @AlaSecured(value = ['ROLE_ADMIN','ROLE_EDITOR'], anyRole = true)
     def updateAttributions = {
         def pg = get(params.id)
         if (pg) {
@@ -821,6 +844,7 @@ abstract class ProviderGroupController {
         }
     }
 
+    @AlaSecured(value = ['ROLE_ADMIN'], anyRole = true)
     def delete = {
         def pg = get(params.id)
         if (pg) {
@@ -854,6 +878,7 @@ abstract class ProviderGroupController {
         }
     }
 
+    @AlaSecured(value = ['ROLE_ADMIN','ROLE_EDITOR'], anyRole = true)
     def showChanges = {
         def instance = get(params.id)
         if (instance) {

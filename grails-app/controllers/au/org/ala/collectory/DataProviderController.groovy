@@ -5,7 +5,6 @@ import grails.converters.JSON
 import grails.converters.XML
 import grails.web.http.HttpHeaders
 
-@AlaSecured(value = ['ROLE_ADMIN', 'ROLE_EDITOR'], anyRole = true)
 class DataProviderController extends ProviderGroupController {
 
     def gbifRegistryService
@@ -192,6 +191,7 @@ class DataProviderController extends ProviderGroupController {
         redirect(action: "searchForOrganizations", params: [country: params.country])
     }
 
+    @AlaSecured(value = ['ROLE_ADMIN'])
     def editConsumers = {
         def pg = get(params.id)
         if (!pg) {

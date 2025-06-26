@@ -1,5 +1,6 @@
 package au.org.ala.collectory
 
+import au.ala.org.ws.security.RequireApiKey
 import au.org.ala.web.AlaSecured
 import grails.converters.JSON
 
@@ -7,10 +8,10 @@ import java.text.SimpleDateFormat
 import au.org.ala.collectory.resources.PP
 import au.org.ala.collectory.resources.DarwinCoreFields
 
-@AlaSecured(value = ['ROLE_ADMIN','ROLE_EDITOR'], anyRole = true)
+
 class DataResourceController extends ProviderGroupController {
 
-    def metadataService, dataImportService, gbifRegistryService, authService
+    def metadataService, dataImportService, gbifRegistryService, authService, crudService
 
     DataResourceController() {
         entityName = "DataResource"
@@ -20,6 +21,7 @@ class DataResourceController extends ProviderGroupController {
     def index = {
         redirect(action:"list")
     }
+
 
     def markAsVerified = {
         def instance = DataResource.findByUid(params.uid)
@@ -31,6 +33,7 @@ class DataResourceController extends ProviderGroupController {
         redirect(action: 'show', params: [id:params.uid])
     }
 
+
     def markAsUnverified = {
         def instance =  DataResource.findByUid(params.uid)
         if (instance){
@@ -39,6 +42,16 @@ class DataResourceController extends ProviderGroupController {
             }
         }
         redirect(action: 'show', params: [id:params.uid])
+    }
+
+
+    @RequireApiKey(
+            roles = ['ROLE_ADMIN','ROLE_EDITOR'],
+            scopes = ['ala/internal'])
+    def securedGet(){
+        def uid = params.uid
+        def pg = providerGroupService._getEager(uid)
+        render crudService.readDataResource(pg, true)
     }
 
     // list all entities
@@ -73,6 +86,7 @@ class DataResourceController extends ProviderGroupController {
         }
     }
 
+    @AlaSecured(value = ['ROLE_ADMIN'])
     def editConsumers = {
         def pg = get(params.id)
         if (!pg) {
@@ -92,6 +106,7 @@ class DataResourceController extends ProviderGroupController {
         [Collection, Object[]].any { it.isAssignableFrom(object.getClass()) }
     }
 
+    @AlaSecured(value = ['ROLE_ADMIN','ROLE_EDITOR'], anyRole = true)
     def updateImageMetadata = {
 
         def ignores = ["action", "version", "id", "format", "controller"]
@@ -110,6 +125,7 @@ class DataResourceController extends ProviderGroupController {
         }
         redirect(action: 'show', params: [id:params.id])
     }
+
 
     def updateContribution = {
         def pg = get(params.id)
@@ -240,6 +256,7 @@ class DataResourceController extends ProviderGroupController {
         }
     }
 
+    @AlaSecured(value = ['ROLE_ADMIN','ROLE_EDITOR'], anyRole = true)
     def updateConsumers = {
         def pg = get(params.id)
         def newConsumers = params.consumers.tokenize(',')
@@ -286,6 +303,7 @@ class DataResourceController extends ProviderGroupController {
         redirect(action: "show", id: pg.uid)
     }
 
+    @AlaSecured(value = ['ROLE_ADMIN','ROLE_EDITOR'], anyRole = true)
     def importDirOfDwcA(){
         def dir = new File(params.dir)
         if(dir.exists()){

@@ -1,38 +1,64 @@
 package au.org.ala.collectory
 
+import au.org.ala.web.AuthService
 import au.org.ala.ws.security.client.AlaAuthClient
+import org.grails.web.servlet.mvc.GrailsWebRequest
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.web.context.request.RequestContextHolder
 
-
+import javax.servlet.http.HttpServletRequest
 
 class CollectoryAuthService{
     static transactional = false
     def grailsApplication
-    def authService
     def providerGroupService
+    AuthService authService
 
     @Autowired(required = false)
     AlaAuthClient alaAuthClient
 
-
-    def username() {
-        def username = authService.getDisplayName()
-
+    /**
+     * todo check if it complies with the new security plugin
+     * @return
+     */
+    String username() {
+        //both work
+        //def usernamea = authService.getDisplayName()
+        def request = getRequest()
+        def profiles = request?.profileManager?.context?.request?.profiles
+        def username = (profiles && !profiles.isEmpty()) ? profiles[0]?.attributes?.get('username')?.toString() : null
         return (username) ? username : 'not available'
     }
 
+    String userEmail() {
+        String email = authService.getEmail()
+        return email
+    }
+
+    /**
+     * todo check if it complies with the new security plugin
+     * @return
+     */
     def isAdmin() {
-        return !grailsApplication.config.security.oidc.enabled.toBoolean() || authService.userInRole(grailsApplication.config.ROLE_ADMIN as String)
+         def request = getRequest()
+        return request?.isUserInRole(grailsApplication.config.ROLE_ADMIN as String)
+    }
+
+    /**
+     * Checks if the user has the specified role and/or scope if it is a M2M request.
+     * @param request
+     * @param role
+     * @param scope
+     */
+    def checkPermissions(String role, String scope) {
+        def request = getRequest()
+        return request?.isUserInRole(role) || request.isUserInRole(scope)
     }
 
     protected boolean userInRole(role) {
         def roleFlag = false
-        if(!grailsApplication.config.security.oidc.enabled.toBoolean())
+        if(!grailsApplication.config.security.oidc.enabled.toBoolean()) {
             roleFlag = true
-        else {
-            if (authService) {
-                roleFlag = authService.userInRole(role)
-            }
         }
 
         return roleFlag || isAdmin()
@@ -95,5 +121,10 @@ class CollectoryAuthService{
             }
         }
         return [sorted: entities.values().sort { it.name }, keys:entities.keySet().sort(), latestMod: latestMod]
+    }
+
+    private HttpServletRequest getRequest() {
+        def webRequest = RequestContextHolder.currentRequestAttributes() as GrailsWebRequest
+        return webRequest.getCurrentRequest()
     }
 }

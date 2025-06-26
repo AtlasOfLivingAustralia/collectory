@@ -122,6 +122,7 @@ class GbifController {
         gbifRegistryService.writeCSVReportForGBIF(response.outputStream)
     }
 
+    @AlaSecured(value = ['ROLE_ADMIN'])
     def syncAllResources(){
         log.info("Starting all sync resources...checking user has role ${grailsApplication.config.gbifRegistrationRole}")
         def errorMessage = ""

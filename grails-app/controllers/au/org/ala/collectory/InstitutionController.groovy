@@ -44,6 +44,7 @@ class InstitutionController extends ProviderGroupController {
 
     /** end V2 editing ************************************************************************************************/
     @Transactional
+    @AlaSecured(value = ['ROLE_ADMIN'])
     def delete () {
         def providerGroupInstance = get(params.id)
         if (providerGroupInstance) {
@@ -94,6 +95,7 @@ class InstitutionController extends ProviderGroupController {
     /**
      * This will update the GBIF Registry with the metadata and contacts for the data provider.
      */
+    @AlaSecured(value = ['ROLE_ADMIN'])
     def updateGBIF = {
         def instance = get(params.id)
         if (instance) {
@@ -118,6 +120,7 @@ class InstitutionController extends ProviderGroupController {
     /**
      * Register this institution with GBIF.
      */
+    @AlaSecured(value = ['ROLE_ADMIN'])
     def registerGBIF = {
         log.info("REGISTERING data partner ${collectoryAuthService.username()}")
 

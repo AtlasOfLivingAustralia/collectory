@@ -219,7 +219,7 @@ class ManageController {
      */
     def list = {
         // find the entities the user is allowed to edit
-        def entities = collectoryAuthService.authorisedForUser(collectoryAuthService.username()).sorted
+        def entities = collectoryAuthService.authorisedForUser(collectoryAuthService.userEmail()).sorted
 
         log.debug("user ${collectoryAuthService.username()} has ${request.getUserPrincipal()?.attributes}")
 

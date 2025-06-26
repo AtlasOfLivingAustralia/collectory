@@ -46,10 +46,6 @@ spring:
 management:
     endpoints:
         enabled-by-default: false
-# enable log any external services which still use the legacy apikey call
-legacy:
-    apikey:
-        log: false
 
 ---
 grails:

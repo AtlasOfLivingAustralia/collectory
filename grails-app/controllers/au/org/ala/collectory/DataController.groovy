@@ -1,7 +1,9 @@
 package au.org.ala.collectory
 
 import au.ala.org.ws.security.RequireApiKey
+import au.ala.org.ws.security.SkipApiKeyCheck
 import au.org.ala.plugins.openapi.Path
+import au.org.ala.ws.security.authenticator.AlaApiKeyAuthenticator
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import grails.converters.JSON
 import grails.gorm.transactions.Transactional
@@ -17,12 +19,16 @@ import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.parameters.RequestBody
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
+import org.pac4j.core.context.WebContext
+import org.pac4j.jee.context.JEEContext
 import org.xml.sax.SAXException
 
+import javax.servlet.http.HttpServletRequest
 import javax.ws.rs.Produces
 import javax.xml.XMLConstants
 import javax.xml.transform.stream.StreamSource
 import javax.xml.validation.SchemaFactory
+import java.net.http.HttpRequest
 import java.text.DateFormat
 import java.text.SimpleDateFormat
 
@@ -51,7 +57,6 @@ class DataController {
                     return false
                 }
             } else {
-
                 if (params.entity) {
                     params.pg = providerGroupService._get(params.uid, params.entity)
                 }
@@ -486,13 +491,14 @@ class DataController {
             ],
             security = []
     )
+
+
     @Path("/ws/{entity}/{uid}")
     @Produces("application/json")
     /**
      * THE method is not a protected API method but there is a minor functionality within it which calls crudService and behaves differently based on whether a the request has a API key.
      * The functionality described above has been preserved to maintain backwards compatibility but should be removed in the future once the legacy API key access is deprecated
      */
-
     def getEntity() {
         check(params)
         if (params.entity == 'tempDataResource') {
@@ -504,7 +510,17 @@ class DataController {
                 // return specified entity
                 addContentLocation "/ws/${urlForm}/${params.pg.uid}"
                 def eTag = (params.pg.uid + ":" + params.pg.lastUpdated).encodeAsMD5()
-                def entityInJson = crudService."read${clazz}"(params.pg)
+                def entityInJson
+                if (clazz == 'DataResource') {
+                    // this auth check (JWT or API key) is a special case handling to support backwards compatibility(which used to check for API key).
+                    String requiredRoles = grailsApplication.config.ROLE_ADMIN
+                    String requiredScope = 'ala/internal'
+
+                    boolean isAuthed = collectoryAuthService.checkPermissions(requiredRoles, requiredScope)
+                    entityInJson = crudService.readDataResource(params.pg, isAuthed)
+                } else {
+                    entityInJson = crudService."read${clazz}"(params.pg)
+                }
 
                 entityInJson = metadataService.convertAnyLocalPaths(entityInJson)
                 response.setContentType("application/json")
@@ -530,6 +546,7 @@ class DataController {
             }
         }
     }
+
 
     @Operation(
             method = "POST",

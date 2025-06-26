@@ -1,9 +1,9 @@
 package au.org.ala.collectory
 
+import au.ala.org.ws.security.RequireApiKey
 import au.org.ala.web.AlaSecured
 
 
-@AlaSecured(value = ['ROLE_ADMIN','ROLE_EDITOR'], anyRole = true)
 class ContactController {
 
     static allowedMethods = [save: "POST", update: "POST", delete: "POST"]
@@ -42,6 +42,9 @@ class ContactController {
         }
     }
 
+    @RequireApiKey(
+        roles = ['ROLE_ADMIN','ROLE_EDITOR'],
+        scopes = ['ala/internal'])
     def create() {
         def contactInstance = new Contact()
         contactInstance.properties = params
@@ -49,6 +52,7 @@ class ContactController {
         return [contactInstance: contactInstance, returnTo: params.returnTo]
     }
 
+    @AlaSecured(value = ['ROLE_ADMIN', 'ROLE_EDITOR'], anyRole = true)
     def save() {
         def contactInstance = new Contact(params)
         contactInstance.userLastModified = collectoryAuthService?.username()?:'not available'
@@ -83,6 +87,7 @@ class ContactController {
         }
     }
 
+    @AlaSecured(value = ['ROLE_ADMIN', 'ROLE_EDITOR'], anyRole = true)
     def edit() {
         def contactInstance = Contact.get(params.id)
         if (!contactInstance) {
@@ -94,6 +99,7 @@ class ContactController {
         }
     }
 
+    @AlaSecured(value = ['ROLE_ADMIN', 'ROLE_EDITOR'], anyRole = true)
     def update() {
         def contactInstance = Contact.get(params.id)
         if (contactInstance) {
@@ -131,6 +137,7 @@ class ContactController {
     /**
      * MEW - modified to cascade delete all ContactFor links for the contact
      */
+    @AlaSecured(['ROLE_ADMIN'])
     def delete() {
         if (collectoryAuthService?.userInRole(grailsApplication.config.ROLE_ADMIN)) {
             def contactInstance = Contact.get(params.id)
