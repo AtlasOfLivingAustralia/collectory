@@ -5,9 +5,11 @@ import au.org.ala.ws.security.client.AlaAuthClient
 import org.grails.web.servlet.mvc.GrailsWebRequest
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.context.request.RequestContextHolder
-
 import javax.servlet.http.HttpServletRequest
 
+/**
+ * Require TokenInterceptor to authenticate token and inject authorisation profile into the request for M2M call
+ */
 class CollectoryAuthService{
     static transactional = false
     def grailsApplication
@@ -18,16 +20,18 @@ class CollectoryAuthService{
     AlaAuthClient alaAuthClient
 
     /**
-     * todo check if it complies with the new security plugin
+     * todo check if it complies with the new security plugin in future
+     * check what it should return, id, full name, email etc
      * @return
      */
     String username() {
         //both work
-        //def usernamea = authService.getDisplayName()
-        def request = getRequest()
-        def profiles = request?.profileManager?.context?.request?.profiles
-        def username = (profiles && !profiles.isEmpty()) ? profiles[0]?.attributes?.get('username')?.toString() : null
-        return (username) ? username : 'not available'
+        def username = authService.getDisplayName()
+//        def request = getRequest()
+//        def profiles = request?.profileManager?.context?.request?.profiles
+//        def username = (profiles && !profiles.isEmpty()) ? profiles[0]?.attributes?.get('username')?.toString() : null
+        //short the statement
+        return username ?: 'not available'
     }
 
     String userEmail() {
@@ -44,24 +48,28 @@ class CollectoryAuthService{
         return request?.isUserInRole(grailsApplication.config.ROLE_ADMIN as String)
     }
 
-    /**
-     * Checks if the user has the specified role and/or scope if it is a M2M request.
-     * @param request
-     * @param role
-     * @param scope
-     */
-    def checkPermissions(String role, String scope) {
+    def isAuthenticated() {
         def request = getRequest()
-        return request?.isUserInRole(role) || request.isUserInRole(scope)
+        return request?.getUserPrincipal() != null
     }
 
-    protected boolean userInRole(role) {
+    protected boolean userInRole(String role) {
         def roleFlag = false
         if(!grailsApplication.config.security.oidc.enabled.toBoolean()) {
             roleFlag = true
         }
 
-        return roleFlag || isAdmin()
+        return roleFlag || request?.isUserInRole(role)
+    }
+
+    /**
+     * Checks if the user has the specified role and/or scope if it is a M2M request.
+     * @param [role or scope] rolesOrScopes
+     */
+    def isAuthorised(String[] rolesOrScopes) {
+        def request = getRequest()
+        return rolesOrScopes.any { roleOrScope ->
+            request?.isUserInRole(roleOrScope) }
     }
 
     /**

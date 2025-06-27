@@ -1,6 +1,5 @@
 package au.org.ala.collectory
 
-import grails.gorm.transactions.Transactional
 
 class ActivityLogService {
 
@@ -79,7 +78,9 @@ class ActivityLogService {
      * @param action the action taken
      */
     def log(String user, boolean isAdmin, long id, Action action) {
-        new ActivityLog(timestamp: new Date(), user: user, admin: isAdmin,
-                entityUid: id as String, action: action.toString()).save(flush:true)
+        ActivityLog.withTransaction {
+            new ActivityLog(timestamp: new Date(), user: user, admin: isAdmin,
+                    entityUid: id as String, action: action.toString()).save(flush: true)
+        }
     }
 }
