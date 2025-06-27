@@ -49,7 +49,6 @@ class LicenceController {
     )
     @Path("/ws/licence")
     @Produces("application/json")
-
     def index() {
         response.setContentType("application/json")
         render (Licence.findAll().collect { [name: it.name, url: it.url, imageUrl: it.imageUrl, acronym: it.acronym, version: it.licenceVersion] } as JSON)
@@ -62,7 +61,7 @@ class LicenceController {
     }
 
 
-    @AlaSecured(value = ['ROLE_ADMIN','ROLE_EDITOR'], anyRole = true)
+    @AlaSecured(value = ['ROLE_EDITOR'], anyRole = true)
     def list() {
         if (params.message)
             flash.message = params.message
@@ -71,11 +70,12 @@ class LicenceController {
         [instanceList: Licence.list(params), entityType: 'Licence', instanceTotal: Licence.count()]
     }
 
-    @AlaSecured(value = ['ROLE_ADMIN', 'ROLE_EDITOR'], anyRole = true)
+    @AlaSecured(value = ['ROLE_EDITOR'], anyRole = true)
     def create() {
         [licenceInstance: new Licence(params)]
     }
 
+    @AlaSecured(value = ['ROLE_EDITOR'])
     def save() {
         def licenceInstance = new Licence(params)
         def savedInstance = null
@@ -92,7 +92,7 @@ class LicenceController {
         redirect(action: "show", id: licenceInstance.id)
     }
 
-    @AlaSecured(value = ['ROLE_ADMIN','ROLE_EDITOR'], anyRole = true)
+    @AlaSecured(value = ['ROLE_EDITOR'], anyRole = true)
     def show(Long id) {
         def licenceInstance = Licence.get(id)
         if (!licenceInstance) {
@@ -104,7 +104,7 @@ class LicenceController {
         [licenceInstance: licenceInstance]
     }
 
-    @AlaSecured(value = ['ROLE_ADMIN','ROLE_EDITOR'], anyRole = true)
+    @AlaSecured(value = ['ROLE_EDITOR'], anyRole = true)
     def edit(Long id) {
         def licenceInstance = Licence.get(id)
         if (!licenceInstance) {
@@ -116,7 +116,7 @@ class LicenceController {
         [licenceInstance: licenceInstance]
     }
 
-    @AlaSecured(value = ['ROLE_ADMIN','ROLE_EDITOR'], anyRole = true)
+    @AlaSecured(value = ['ROLE_EDITOR'], anyRole = true)
     def update(Long id, Long version) {
         def licenceInstance = Licence.get(id)
         if (!licenceInstance) {
@@ -151,7 +151,7 @@ class LicenceController {
         redirect(action: "show", id: licenceInstance.id)
     }
 
-    @AlaSecured(value = ['ROLE_ADMIN'], anyRole = true)
+    @AlaSecured(value = ['ROLE_ADMIN', 'ROLE_EDIOR'], anyRole = true)
     def delete(Long id) {
         if (collectoryAuthService?.userInRole(grailsApplication.config.ROLE_ADMIN)) {
             def licenceInstance = Licence.get(id)

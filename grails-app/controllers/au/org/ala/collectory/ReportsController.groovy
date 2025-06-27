@@ -1,10 +1,9 @@
 package au.org.ala.collectory
 
-import au.ala.org.ws.security.RequireApiKey
 import au.org.ala.web.AlaSecured
 import grails.converters.JSON
 
-@AlaSecured(value = ['ROLE_ADMIN','ROLE_EDITOR'], anyRole = true)
+@AlaSecured(value = ['ROLE_EDITOR'], anyRole = true)
 class ReportsController {
 
     def collectoryAuthService, activityLogService, collectionService, institutionService

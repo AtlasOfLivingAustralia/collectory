@@ -1,11 +1,13 @@
 package au.org.ala.collectory
 
+import au.org.ala.web.AlaSecured
 import grails.converters.JSON
 import org.springframework.validation.annotation.Validated
 
 import java.text.NumberFormat
 import java.text.ParseException
 
+@AlaSecured(value = ['ROLE_EDITOR'])
 class CollectionController extends ProviderGroupController {
 
     CollectionController() {

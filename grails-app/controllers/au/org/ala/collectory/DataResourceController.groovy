@@ -1,14 +1,12 @@
 package au.org.ala.collectory
 
-import au.ala.org.ws.security.RequireApiKey
 import au.org.ala.web.AlaSecured
 import grails.converters.JSON
-
 import java.text.SimpleDateFormat
 import au.org.ala.collectory.resources.PP
 import au.org.ala.collectory.resources.DarwinCoreFields
 
-
+@AlaSecured(value = ['ROLE_EDITOR'])
 class DataResourceController extends ProviderGroupController {
 
     def metadataService, dataImportService, gbifRegistryService, authService, crudService
@@ -44,15 +42,6 @@ class DataResourceController extends ProviderGroupController {
         redirect(action: 'show', params: [id:params.uid])
     }
 
-
-    @RequireApiKey(
-            roles = ['ROLE_ADMIN','ROLE_EDITOR'],
-            scopes = ['ala/internal'])
-    def securedGet(){
-        def uid = params.uid
-        def pg = providerGroupService._getEager(uid)
-        render crudService.readDataResource(pg, true)
-    }
 
     // list all entities
     def list = {

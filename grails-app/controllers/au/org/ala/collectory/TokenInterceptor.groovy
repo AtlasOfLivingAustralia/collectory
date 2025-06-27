@@ -24,6 +24,7 @@ import javax.annotation.PostConstruct
 @Slf4j
 @EnableConfigurationProperties(JwtProperties)
 class TokenInterceptor {
+    int order = 0
 
     @Autowired(required = false)
     @Qualifier('alaClient')
@@ -35,9 +36,8 @@ class TokenInterceptor {
     @Autowired(required = false)
     JwtProperties jwtProperties
 
-
     TokenInterceptor() {
-        matchAll()
+        match(controller: 'data')
     }
 
     @PostConstruct
@@ -73,12 +73,9 @@ class TokenInterceptor {
                     }
 
                     if (optProfile.isPresent()) {
-
                         UserProfile userProfile = optProfile.get()
-
                         ProfileManager profileManager = config.profileManagerFactory.apply(context, sessionStore)
                         profileManager.setConfig(config)
-
                         profileManager.save(
                                 client.getSaveProfileInSession(context, userProfile),
                                 userProfile,

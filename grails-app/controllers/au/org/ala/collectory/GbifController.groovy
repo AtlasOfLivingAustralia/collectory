@@ -16,14 +16,11 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import javax.ws.rs.Produces
 import static io.swagger.v3.oas.annotations.enums.ParameterIn.PATH
 
-@AlaSecured(value = ['ROLE_ADMIN'], anyRole = true)
 class GbifController {
-    static final API_KEY_COOKIE = "ALA-API-Key"
-
     def gbifRegistryService
     def asyncGbifRegistryService
     def gbifService
-    def authService
+    def collectoryAuthService
     def externalDataService
 
     def healthCheck() {
@@ -122,13 +119,12 @@ class GbifController {
         gbifRegistryService.writeCSVReportForGBIF(response.outputStream)
     }
 
-    @AlaSecured(value = ['ROLE_ADMIN'])
     def syncAllResources(){
         log.info("Starting all sync resources...checking user has role ${grailsApplication.config.gbifRegistrationRole}")
         def errorMessage = ""
 
         try {
-            if (authService.userInRole(grailsApplication.config.gbifRegistrationRole)){
+            if (collectoryAuthService.userInRole(grailsApplication.config.gbifRegistrationRol)){
                 asyncGbifRegistryService.updateAllResources()
                         .onComplete {
                             log.info "Sync complete"
@@ -185,6 +181,7 @@ class GbifController {
     )
     @Path("/ws/gbif/scan/{uid}")
     @Produces("application/json")
+    @AlaSecured(["ROLE_EDITOR"])
     def scan(){
         if (!params.uid || !params.uid.startsWith('dp')){
             response.sendError(400, "No valid UID supplied")

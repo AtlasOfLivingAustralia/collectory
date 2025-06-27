@@ -1,9 +1,8 @@
 package au.org.ala.collectory
 
-import au.ala.org.ws.security.RequireApiKey
-import au.ala.org.ws.security.SkipApiKeyCheck
+
 import au.org.ala.plugins.openapi.Path
-import au.org.ala.ws.security.authenticator.AlaApiKeyAuthenticator
+import au.org.ala.web.AlaSecured
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import grails.converters.JSON
 import grails.gorm.transactions.Transactional
@@ -19,16 +18,12 @@ import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.parameters.RequestBody
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
-import org.pac4j.core.context.WebContext
-import org.pac4j.jee.context.JEEContext
 import org.xml.sax.SAXException
 
-import javax.servlet.http.HttpServletRequest
 import javax.ws.rs.Produces
 import javax.xml.XMLConstants
 import javax.xml.transform.stream.StreamSource
 import javax.xml.validation.SchemaFactory
-import java.net.http.HttpRequest
 import java.text.DateFormat
 import java.text.SimpleDateFormat
 
@@ -285,7 +280,7 @@ class DataController {
 
     @Path("/ws/{entity}/{uid}")
     @Produces("application/json")
-    @RequireApiKey(roles = ["ROLE_EDITOR"])
+    @AlaSecured(value = ['ROLE_EDITOR'], anyRole = true)
     def saveEntity() {
 
         def ok = check(params)
@@ -514,14 +509,12 @@ class DataController {
                 if (clazz == 'DataResource') {
                     // this auth check (JWT or API key) is a special case handling to support backwards compatibility(which used to check for API key).
                     String requiredRoles = grailsApplication.config.ROLE_ADMIN
-                    String requiredScope = 'ala/internal'
-
-                    boolean isAuthed = collectoryAuthService.checkPermissions(requiredRoles, requiredScope)
+                    String requiredScope = grailsApplication.config.dataResource?.scope ?: 'ala/internal'
+                    boolean isAuthed = collectoryAuthService.isAuthorised([requiredRoles, requiredScope] as String[] )
                     entityInJson = crudService.readDataResource(params.pg, isAuthed)
                 } else {
                     entityInJson = crudService."read${clazz}"(params.pg)
                 }
-
                 entityInJson = metadataService.convertAnyLocalPaths(entityInJson)
                 response.setContentType("application/json")
                 response.setCharacterEncoding("UTF-8")
@@ -546,7 +539,6 @@ class DataController {
             }
         }
     }
-
 
     @Operation(
             method = "POST",
@@ -603,6 +595,11 @@ class DataController {
         def result = []
 
         def authCheck = false
+        if (params.entity == 'dataResource') {
+            // this auth check (JWT or user roles).
+            authCheck =  collectoryAuthService.isAuthorised([grailsApplication.config.ROLE_ADMIN, grailsApplication.config.dataResource?.scope ?: 'ala/internal'] as String[] )
+        }
+
         def clazz = capitalise(params.entity)
 
         request.JSON.each {
@@ -749,7 +746,6 @@ class DataController {
     )
     @Path("/ws/syncGBIF")
     @Produces("application/json")
-    @RequireApiKey(roles = ['ROLE_ADMIN'])
     def syncGBIF() {
         asyncGbifRegistryService.updateAllResources()
                 .onComplete {
@@ -1099,7 +1095,7 @@ class DataController {
 
     @Path("/ws/contacts/{id}")
     @Produces("application/json")
-    @RequireApiKey(roles = ["ROLE_ADMIN"])
+    @AlaSecured(value = ['ROLE_EDITOR'], anyRole = true)
     def contacts() {
         if (params.id) {
             def c = Contact.get(params.id)
@@ -1211,7 +1207,7 @@ class DataController {
     )
     @Path("/ws/contacts/{id}")
     @Produces("application/json")
-    @RequireApiKey(roles = ["ROLE_EDITOR"])
+    @AlaSecured(value = ['ROLE_EDITOR'], anyRole = true)
     def updateContact() {
         def ok = check(params)
         if (!ok) {
@@ -1545,7 +1541,7 @@ class DataController {
     )
     @Path("/ws/{entity}/{uid}/contacts/{id}")
     @Produces("application/json")
-    @RequireApiKey(roles = ["ROLE_EDITOR"])
+    @AlaSecured(value = ['ROLE_EDITOR'], anyRole = true)
     def updateContactFor() {
         def ok = check(params)
         if (!ok) {

@@ -6,7 +6,7 @@ import au.org.ala.collectory.resources.gbif.GbifDataSourceAdapter
 import au.org.ala.collectory.resources.gbif.GbifRepatDataSourceAdapter
 import au.org.ala.web.AlaSecured
 
-@AlaSecured(value = ['ROLE_ADMIN'], anyRole = true)
+
 class ManageController {
 
     def collectoryAuthService
@@ -32,6 +32,7 @@ class ManageController {
     /**
      * Renders the view that allows a user to load all the gbif resources for a country
      */
+    @AlaSecured(value = ['ROLE_ADMIN'], anyRole = true)
     def repatriate = {
         DataSourceConfiguration configuration = new DataSourceConfiguration(
                 guid: UUID.randomUUID().toString(),
@@ -64,6 +65,7 @@ class ManageController {
     /**
      * Renders the view that allows a user to load all the gbif resources for a country
      */
+    @AlaSecured(value = ['ROLE_ADMIN'], anyRole = true)
     def loadExternalResources = {
         DataSourceConfiguration configuration = new DataSourceConfiguration(
                 guid: UUID.randomUUID().toString(),
@@ -94,6 +96,7 @@ class ManageController {
     /**
      * Search for resources that may be loaded from an external source
      */
+    @AlaSecured(value = ['ROLE_ADMIN'], anyRole = true)
     def searchForResources() {
         log.debug "Searching for resources from external source: ${params}"
         DataSourceConfiguration configuration = new DataSourceConfiguration(params)
@@ -117,6 +120,7 @@ class ManageController {
     /**
      * Search for resources that may be loaded from an external source
      */
+    @AlaSecured(value = ['ROLE_ADMIN'], anyRole = true)
     def searchForRepatResources() {
         log.debug "Searching for resources from external source: ${params}"
 
@@ -147,6 +151,7 @@ class ManageController {
      * <p>
      * The web pade
      */
+    @AlaSecured(value = ['ROLE_ADMIN'], anyRole = true)
     def updateFromExternalSources() {
         log.debug "Update resources from external source: ${params}"
         DataSourceConfiguration configuration = new DataSourceConfiguration(params)
@@ -158,6 +163,7 @@ class ManageController {
      *
      * @return
      */
+    @AlaSecured(value = ['ROLE_ADMIN'], anyRole = true)
     def loadDataset() {
 
         log.debug("Loading resources from GBIF: " + params)
@@ -175,6 +181,7 @@ class ManageController {
      * country - the country to supply the status for
      * @return
      */
+    @AlaSecured(value = ['ROLE_ADMIN'], anyRole = true)
     def gbifDatasetLoadStatus(){
         log.debug('key->' + params.datasetKey)
         def gbifSummary = gbifService.getDatasetKeyStatusInfoFor(params.datasetKey)
@@ -186,6 +193,7 @@ class ManageController {
      *
      * @return
      */
+    @AlaSecured(value = ['ROLE_ADMIN'], anyRole = true)
     def gbifDatasetDownload() {
         log.debug('Dataset id ' + params.id)
         def dr = DataResource.findByUid(params.id)
@@ -198,6 +206,7 @@ class ManageController {
      * country - the country to supply the status for
      * @return
      */
+    @AlaSecured(value = ['ROLE_ADMIN'], anyRole = true)
     def gbifCountryLoadStatus(){
         def gbifSummary = gbifService.getStatusInfoFor(params.country)
         [country: params.country, gbifSummary:gbifSummary]
@@ -207,6 +216,7 @@ class ManageController {
      *
      * Display the load status for the supplied load
      */
+    @AlaSecured(value = ['ROLE_ADMIN'], anyRole = true)
     def externalLoadStatus(){
         DataSourceLoad load = externalDataService.getStatusInfoFor(params.loadGuid)
         [load :load, refreshInterval: externalDataService.POLL_INTERVAL]
@@ -224,7 +234,7 @@ class ManageController {
         log.debug("user ${collectoryAuthService.username()} has ${request.getUserPrincipal()?.attributes}")
 
         // get their contact details in case needed
-        def contact = Contact.findByEmail(collectoryAuthService.username())
+        def contact = Contact.findByEmail(collectoryAuthService.userEmail())
 
         [entities: entities, user: contact, show: params.show]
     }
@@ -240,6 +250,7 @@ class ManageController {
         }
     }
 
+    @AlaSecured(value = ['ROLE_ADMIN'], anyRole = true)
     def getChanges(uid) {
         // get audit records
         return AuditLogEvent.findAllByUri(uid,[sort:'lastUpdated',order:'desc',max:20])
