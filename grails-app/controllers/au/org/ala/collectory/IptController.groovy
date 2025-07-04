@@ -1,7 +1,9 @@
 package au.org.ala.collectory
 
 import au.ala.org.ws.security.RequireApiKey
+import au.org.ala.PermissionRequired
 import au.org.ala.plugins.openapi.Path
+import au.org.ala.web.AlaSecured
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.opencsv.CSVWriter
 import grails.converters.JSON
@@ -26,10 +28,7 @@ import static io.swagger.v3.oas.annotations.enums.ParameterIn.QUERY
 /**
  * Request a scan and an update of a data provider that links to a GBIF IPT instance.
  */
-@RequireApiKey(roles = ['ROLE_ADMIN'])
 class IptController {
-    static final API_KEY_COOKIE = "ALA-API-Key"
-
     def collectoryAuthService
     def iptService
     def providerGroupService
@@ -127,8 +126,10 @@ class IptController {
             ],
             security = [@SecurityRequirement(name = 'openIdConnect')]
     )
+
     @Path("/ws/ipt/scan/{uid}")
     @Produces("text/plain")
+    @PermissionRequired(roles = ['ROLE_ADMIN', 'ROLE_EDITOR'], scopes = ['*'])
     def scan() {
         def create = params.create != null && params.create.equalsIgnoreCase("true")
         def check = params.check == null || !params.check.equalsIgnoreCase("false")
@@ -137,9 +138,8 @@ class IptController {
         def provider = providerGroupService._get(params.uid)
 
         def username = collectoryAuthService.username()
-        def admin =  collectoryAuthService.userInRole(grailsApplication.config.ROLE_ADMIN)
+        log.debug "Access by user ${username}"
 
-        log.debug "Access by user ${username}, admin ${admin}"
         if (create && !admin) {
             render (status: 403, text: "Unable to create resources for " + params.uid)
             return

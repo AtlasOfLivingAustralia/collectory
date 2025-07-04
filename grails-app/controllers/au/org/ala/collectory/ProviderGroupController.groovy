@@ -1,7 +1,7 @@
 package au.org.ala.collectory
 
+import au.org.ala.PermissionRequired
 import au.org.ala.collectory.resources.PP
-import au.org.ala.web.AlaSecured
 import grails.converters.JSON
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.web.context.request.RequestContextHolder
@@ -9,12 +9,13 @@ import org.springframework.web.multipart.MultipartFile
 import java.text.NumberFormat
 import java.text.ParseException
 import org.springframework.web.context.request.ServletRequestAttributes
+
 /**
  * This is a base class for all provider group entities types.
  *
  * It provides common code for shared attributes like contacts.
  */
-@AlaSecured(value = ['ROLE_ADMIN','ROLE_EDITOR'], anyRole = true)
+@PermissionRequired(roles=['ROLE_EDITOR', 'ROLE_ADMIN'])
 abstract class ProviderGroupController {
 
     String entityName = "ProviderGroup"
@@ -37,6 +38,7 @@ abstract class ProviderGroupController {
     }
 
     protected isAdmin () {
+        //It requires AlaServices annotation to inject info to user profile
         collectoryAuthService?.userInRole(grailsApplication.config.ROLE_ADMIN) ?: false
     }
     /*
@@ -273,7 +275,6 @@ abstract class ProviderGroupController {
      * Update descriptive attributes
      */
     def updateDescription = {
-
         def result = providerGroupService.updateDescription(params)
         def pg = result.pg
         if (pg) {
@@ -554,6 +555,7 @@ abstract class ProviderGroupController {
         }
     }
 
+
     def editRole = {
         def contactFor = ContactFor.get(params.id)
         if (!contactFor) {
@@ -585,6 +587,7 @@ abstract class ProviderGroupController {
     /**
      * Uploads the supplied GBIF file creating a new data resource based on the supplied EML details
      */
+
     def downloadGBIFFile = {
 
         log.info("Downloading file: " + params.url)
@@ -659,6 +662,7 @@ abstract class ProviderGroupController {
             }
         }
     }
+
 
     def uploadDataFile = {
 
@@ -745,6 +749,7 @@ abstract class ProviderGroupController {
         }
     }
 
+
     def removeImage = {
         def pg = get(params.id)
         if (pg) {
@@ -775,6 +780,7 @@ abstract class ProviderGroupController {
             redirect(action: "show", id: params.id)
         }
     }
+
 
     def updateAttributions = {
         def pg = get(params.id)
@@ -821,6 +827,7 @@ abstract class ProviderGroupController {
         }
     }
 
+
     def delete = {
         def pg = get(params.id)
         if (pg) {
@@ -853,6 +860,7 @@ abstract class ProviderGroupController {
             redirect(action: "list")
         }
     }
+
 
     def showChanges = {
         def instance = get(params.id)
