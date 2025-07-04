@@ -137,8 +137,8 @@ gbifExportUrlBase:
 gbifRegistrationDryRun: true
 gbifLicenceMappingUrl: file:///data/collectory/config/default-gbif-licence-mapping.json
 gbifOrphansPublisherID: XXXXXXXXXXXXXXXX
-gbifRegistrationRole: ROLE_ADMIN
 useGbifDoi: true
+gbifRegistrationRole: ROLE_ADMIN
 
 skin:
     layout: ala-main
@@ -227,6 +227,7 @@ showExtraInfoInDataSetsView.relativeTime: false
 
 ROLE_ADMIN: 'ROLE_ADMIN'
 ROLE_EDITOR: 'ROLE_EDITOR'
+REQUIRED_SCOPES: 'ala/internal'
 
 rifcs:
     excludeBounds: true

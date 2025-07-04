@@ -1,11 +1,9 @@
 package au.org.ala.collectory
 
-import au.ala.org.ws.security.RequireApiKey
-import au.org.ala.web.AlaSecured
+import au.org.ala.PermissionRequired
 
-@AlaSecured(value = ['ROLE_EDITOR'], anyRole = true)
+@PermissionRequired(roles=['ROLE_EDITOR', 'ROLE_ADMIN'])
 class ContactController {
-
     static allowedMethods = [save: "POST", update: "POST", delete: "POST"]
 
     /**

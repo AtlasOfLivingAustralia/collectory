@@ -1,8 +1,7 @@
 package au.org.ala.collectory
 
-
+import au.org.ala.PermissionRequired
 import au.org.ala.plugins.openapi.Path
-import au.org.ala.web.AlaSecured
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import grails.converters.JSON
 import grails.gorm.transactions.Transactional
@@ -280,7 +279,7 @@ class DataController {
 
     @Path("/ws/{entity}/{uid}")
     @Produces("application/json")
-    @AlaSecured(value = ['ROLE_EDITOR'], anyRole = true)
+    @PermissionRequired(roles = ['ROLE_EDITOR', 'ROLE_ADMIN'], scopes = ['*'])
     def saveEntity() {
 
         def ok = check(params)
@@ -508,9 +507,9 @@ class DataController {
                 def entityInJson
                 if (clazz == 'DataResource') {
                     // this auth check (JWT or API key) is a special case handling to support backwards compatibility(which used to check for API key).
-                    String requiredRoles = grailsApplication.config.ROLE_ADMIN
-                    String requiredScope = grailsApplication.config.dataResource?.scope ?: 'ala/internal'
-                    boolean isAuthed = collectoryAuthService.isAuthorised([requiredRoles, requiredScope] as String[] )
+                    String[] requiredRoles = [grailsApplication.config.ROLE_ADMIN]
+                    String[] requiredScopes = grailsApplication.config.REQUIRED_SCOPES ? [grailsApplication.config.REQUIRED_SCOPES] : ['*']
+                    boolean isAuthed = collectoryAuthService.isAuthorised(requiredRoles,requiredScopes)
                     entityInJson = crudService.readDataResource(params.pg, isAuthed)
                 } else {
                     entityInJson = crudService."read${clazz}"(params.pg)
@@ -597,7 +596,9 @@ class DataController {
         def authCheck = false
         if (params.entity == 'dataResource') {
             // this auth check (JWT or user roles).
-            authCheck =  collectoryAuthService.isAuthorised([grailsApplication.config.ROLE_ADMIN, grailsApplication.config.dataResource?.scope ?: 'ala/internal'] as String[] )
+            String[] requiredRoles = [grailsApplication.config.ROLE_ADMIN]
+            String[] requiredScopes = grailsApplication.config.REQUIRED_SCOPES ? [grailsApplication.config.REQUIRED_SCOPES] : ['*']
+            authCheck =  collectoryAuthService.isAuthorised(requiredRoles,requiredScopes)
         }
 
         def clazz = capitalise(params.entity)
@@ -746,6 +747,7 @@ class DataController {
     )
     @Path("/ws/syncGBIF")
     @Produces("application/json")
+    @PermissionRequired(roles = ['gbifRegistrationRole','ROLE_ADMIN'], scopes = ['*'])
     def syncGBIF() {
         asyncGbifRegistryService.updateAllResources()
                 .onComplete {
@@ -1095,7 +1097,7 @@ class DataController {
 
     @Path("/ws/contacts/{id}")
     @Produces("application/json")
-    @AlaSecured(value = ['ROLE_EDITOR'], anyRole = true)
+    @PermissionRequired(roles = ['ROLE_EDITOR', 'ROLE_ADMIN'], scopes = ['*'])
     def contacts() {
         if (params.id) {
             def c = Contact.get(params.id)
@@ -1207,7 +1209,7 @@ class DataController {
     )
     @Path("/ws/contacts/{id}")
     @Produces("application/json")
-    @AlaSecured(value = ['ROLE_EDITOR'], anyRole = true)
+    @PermissionRequired(roles = ['ROLE_EDITOR','ROLE_ADMIN'], scopes = ['*'])
     def updateContact() {
         def ok = check(params)
         if (!ok) {
@@ -1541,7 +1543,7 @@ class DataController {
     )
     @Path("/ws/{entity}/{uid}/contacts/{id}")
     @Produces("application/json")
-    @AlaSecured(value = ['ROLE_EDITOR'], anyRole = true)
+    @PermissionRequired(roles = ['ROLE_EDITOR','ROLE_ADMIN'], scopes = ['*'])
     def updateContactFor() {
         def ok = check(params)
         if (!ok) {

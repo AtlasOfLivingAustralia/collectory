@@ -1,8 +1,8 @@
 package au.org.ala.collectory
 
+import au.org.ala.PermissionRequired
 import au.org.ala.collectory.resources.gbif.GbifRepatDataSourceAdapter
 import au.org.ala.plugins.openapi.Path
-import au.org.ala.web.AlaSecured
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import grails.converters.JSON
 import groovy.json.JsonSlurper
@@ -23,10 +23,12 @@ class GbifController {
     def collectoryAuthService
     def externalDataService
 
+    @PermissionRequired(roles = ['gbifRegistrationRole','ROLE_ADMIN'])
     def healthCheck() {
         gbifRegistryService.generateSyncBreakdown()
     }
 
+    @PermissionRequired(roles = ['gbifRegistrationRole','ROLE_ADMIN'])
     def healthCheckLinked() {
 
         log.info("Starting report.....")
@@ -113,6 +115,7 @@ class GbifController {
      *
      * @return
      */
+    @PermissionRequired(roles = ['gbifRegistrationRole','ROLE_ADMIN'])
     def downloadCSV() {
         response.setContentType("text/csv")
         response.setHeader("Content-disposition", "attachment;filename=gbif-healthcheck.csv")
@@ -124,7 +127,7 @@ class GbifController {
         def errorMessage = ""
 
         try {
-            if (collectoryAuthService.userInRole(grailsApplication.config.gbifRegistrationRol)){
+            if (collectoryAuthService.isAuthorised([grailsApplication.config.gbifRegistrationRol] as String[])) {
                 asyncGbifRegistryService.updateAllResources()
                         .onComplete {
                             log.info "Sync complete"
@@ -181,7 +184,7 @@ class GbifController {
     )
     @Path("/ws/gbif/scan/{uid}")
     @Produces("application/json")
-    @AlaSecured(["ROLE_EDITOR"])
+    @PermissionRequired(roles = ['gbifRegistrationRole','ROLE_ADMIN'], scopes = ['*'])
     def scan(){
         if (!params.uid || !params.uid.startsWith('dp')){
             response.sendError(400, "No valid UID supplied")

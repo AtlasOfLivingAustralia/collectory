@@ -23,7 +23,12 @@ import javax.annotation.PostConstruct
 @CompileStatic
 @Slf4j
 @EnableConfigurationProperties(JwtProperties)
+/**
+ * This interceptor ALWAYS VALIDATE JWT token and fill scopes to the user profile in request.
+ * It can be removed when the new security plugin >7.0.1 is used, as it will handle the token validation and profile management.
+ */
 class TokenInterceptor {
+    // Run before other interceptors since other interceptors may ask Token info
     int order = 0
 
     @Autowired(required = false)
@@ -37,7 +42,7 @@ class TokenInterceptor {
     JwtProperties jwtProperties
 
     TokenInterceptor() {
-        match(controller: 'data')
+        matchAll()
     }
 
     @PostConstruct

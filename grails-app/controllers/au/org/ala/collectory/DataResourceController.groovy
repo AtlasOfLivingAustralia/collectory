@@ -1,12 +1,12 @@
 package au.org.ala.collectory
 
-import au.org.ala.web.AlaSecured
+import au.org.ala.PermissionRequired
 import grails.converters.JSON
 import java.text.SimpleDateFormat
 import au.org.ala.collectory.resources.PP
 import au.org.ala.collectory.resources.DarwinCoreFields
 
-@AlaSecured(value = ['ROLE_EDITOR'])
+@PermissionRequired(roles=['ROLE_EDITOR', 'ROLE_ADMIN'])
 class DataResourceController extends ProviderGroupController {
 
     def metadataService, dataImportService, gbifRegistryService, authService, crudService
@@ -75,8 +75,8 @@ class DataResourceController extends ProviderGroupController {
         }
     }
 
-    @AlaSecured(value = ['ROLE_ADMIN'])
-    def editConsumers = {
+    @PermissionRequired(roles=['ROLE_EDITOR','ROLE_ADMIN'])
+    def editConsumers(){
         def pg = get(params.id)
         if (!pg) {
             flash.message = "${message(code: 'default.not.found.message', args: [message(code: "${entityNameLower}.label", default: entityNameLower), params.id])}"
@@ -95,8 +95,8 @@ class DataResourceController extends ProviderGroupController {
         [Collection, Object[]].any { it.isAssignableFrom(object.getClass()) }
     }
 
-    @AlaSecured(value = ['ROLE_ADMIN','ROLE_EDITOR'], anyRole = true)
-    def updateImageMetadata = {
+    @PermissionRequired(roles=['ROLE_EDITOR', 'ROLE_ADMIN'])
+    def updateImageMetadata(){
 
         def ignores = ["action", "version", "id", "format", "controller"]
 
@@ -245,8 +245,8 @@ class DataResourceController extends ProviderGroupController {
         }
     }
 
-    @AlaSecured(value = ['ROLE_ADMIN','ROLE_EDITOR'], anyRole = true)
-    def updateConsumers = {
+    @PermissionRequired(roles=['ROLE_EDITOR', 'ROLE_ADMIN'])
+    def updateConsumers(){
         def pg = get(params.id)
         def newConsumers = params.consumers.tokenize(',')
         def oldConsumers = (pg.consumerCollections + pg.consumerInstitutions).collect { it.uid }
@@ -292,7 +292,7 @@ class DataResourceController extends ProviderGroupController {
         redirect(action: "show", id: pg.uid)
     }
 
-    @AlaSecured(value = ['ROLE_ADMIN','ROLE_EDITOR'], anyRole = true)
+    @PermissionRequired(roles=['ROLE_EDITOR', 'ROLE_ADMIN'])
     def importDirOfDwcA(){
         def dir = new File(params.dir)
         if(dir.exists()){
