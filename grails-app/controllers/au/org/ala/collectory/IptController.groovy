@@ -129,7 +129,7 @@ class IptController {
 
     @Path("/ws/ipt/scan/{uid}")
     @Produces("text/plain")
-    @PermissionRequired(roles = ['ROLE_ADMIN', 'ROLE_EDITOR'], scopes = ['*'])
+    @PermissionRequired(roles = ['ROLE_ADMIN'], scopes = ['REQURIED_SCOPES'])
     def scan() {
         def create = params.create != null && params.create.equalsIgnoreCase("true")
         def check = params.check == null || !params.check.equalsIgnoreCase("false")

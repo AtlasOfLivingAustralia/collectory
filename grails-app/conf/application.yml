@@ -249,7 +249,6 @@ networkTypes:
     - CHACM
 
 dataResource:
-    scope: 'ala/internal'
     statusList:
         - "identified"
         - "inProgress"

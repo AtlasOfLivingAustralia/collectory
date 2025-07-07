@@ -3,6 +3,7 @@ package au.org.ala.collectory
 import au.org.ala.web.AuthService
 import au.org.ala.ws.security.client.AlaAuthClient
 import org.grails.web.servlet.mvc.GrailsWebRequest
+import org.pac4j.core.credentials.AnonymousCredentials
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.context.request.RequestContextHolder
 import javax.servlet.http.HttpServletRequest
@@ -20,9 +21,7 @@ class CollectoryAuthService{
     AlaAuthClient alaAuthClient
 
     /**
-     * todo check if it complies with the new security plugin in future
-     * check what it should return, id, full name, email etc
-     * @return
+     * @return full name of the user, or 'not available' if not authenticated
      */
     String username() {
         //both work
@@ -39,10 +38,7 @@ class CollectoryAuthService{
         return email
     }
 
-    /**
-     * todo check if it complies with the new security plugin
-     * @return
-     */
+
     def isAdmin() {
         def request = getRequest()
         return request?.isUserInRole(grailsApplication.config.ROLE_ADMIN as String)
@@ -74,7 +70,6 @@ class CollectoryAuthService{
      * If scopes contain "*", it returns true if the token is valid.
      * If no scopes are provided, the request will be denied.
      *
-     * INTERNAL use only,since it does not cover some Tokens which do no have Scopes
      * @param [scope] scopes
      */
     private isTokenAuthorised(String[] scopes) {

@@ -75,7 +75,6 @@ class DataResourceController extends ProviderGroupController {
         }
     }
 
-    @PermissionRequired(roles=['ROLE_EDITOR','ROLE_ADMIN'])
     def editConsumers(){
         def pg = get(params.id)
         if (!pg) {
@@ -95,7 +94,7 @@ class DataResourceController extends ProviderGroupController {
         [Collection, Object[]].any { it.isAssignableFrom(object.getClass()) }
     }
 
-    @PermissionRequired(roles=['ROLE_EDITOR', 'ROLE_ADMIN'])
+
     def updateImageMetadata(){
 
         def ignores = ["action", "version", "id", "format", "controller"]
@@ -245,7 +244,6 @@ class DataResourceController extends ProviderGroupController {
         }
     }
 
-    @PermissionRequired(roles=['ROLE_EDITOR', 'ROLE_ADMIN'])
     def updateConsumers(){
         def pg = get(params.id)
         def newConsumers = params.consumers.tokenize(',')
@@ -292,7 +290,6 @@ class DataResourceController extends ProviderGroupController {
         redirect(action: "show", id: pg.uid)
     }
 
-    @PermissionRequired(roles=['ROLE_EDITOR', 'ROLE_ADMIN'])
     def importDirOfDwcA(){
         def dir = new File(params.dir)
         if(dir.exists()){

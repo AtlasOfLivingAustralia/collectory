@@ -184,7 +184,7 @@ class GbifController {
     )
     @Path("/ws/gbif/scan/{uid}")
     @Produces("application/json")
-    @PermissionRequired(roles = ['gbifRegistrationRole','ROLE_ADMIN'], scopes = ['*'])
+    @PermissionRequired(roles = ['gbifRegistrationRole','ROLE_ADMIN'], scopes = ['REQUIRED_SCOPES'])
     def scan(){
         if (!params.uid || !params.uid.startsWith('dp')){
             response.sendError(400, "No valid UID supplied")

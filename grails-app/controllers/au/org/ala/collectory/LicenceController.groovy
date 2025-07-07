@@ -148,7 +148,7 @@ class LicenceController {
         redirect(action: "show", id: licenceInstance.id)
     }
 
-    @PermissionRequired(roles=['ROLE_EDITOR', 'ROLE_ADMIN'])
+    @PermissionRequired(roles=['ROLE_ADMIN'])
     def delete(Long id) {
         def licenceInstance = Licence.get(id)
         if (!licenceInstance) {

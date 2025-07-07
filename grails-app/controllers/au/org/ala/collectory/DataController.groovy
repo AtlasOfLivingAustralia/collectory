@@ -279,7 +279,7 @@ class DataController {
 
     @Path("/ws/{entity}/{uid}")
     @Produces("application/json")
-    @PermissionRequired(roles = ['ROLE_EDITOR', 'ROLE_ADMIN'], scopes = ['*'])
+    @PermissionRequired(roles = ['ROLE_EDITOR', 'ROLE_ADMIN'], scopes = ['REQURIED_SCOPES'])
     def saveEntity() {
 
         def ok = check(params)
@@ -508,7 +508,7 @@ class DataController {
                 if (clazz == 'DataResource') {
                     // this auth check (JWT or API key) is a special case handling to support backwards compatibility(which used to check for API key).
                     String[] requiredRoles = [grailsApplication.config.ROLE_ADMIN]
-                    String[] requiredScopes = grailsApplication.config.REQUIRED_SCOPES ? [grailsApplication.config.REQUIRED_SCOPES] : ['*']
+                    String[] requiredScopes = grailsApplication.config.REQUIRED_SCOPES ? [grailsApplication.config.REQUIRED_SCOPES] : ['REQUIRED_SCOPES']
                     boolean isAuthed = collectoryAuthService.isAuthorised(requiredRoles,requiredScopes)
                     entityInJson = crudService.readDataResource(params.pg, isAuthed)
                 } else {
@@ -597,7 +597,7 @@ class DataController {
         if (params.entity == 'dataResource') {
             // this auth check (JWT or user roles).
             String[] requiredRoles = [grailsApplication.config.ROLE_ADMIN]
-            String[] requiredScopes = grailsApplication.config.REQUIRED_SCOPES ? [grailsApplication.config.REQUIRED_SCOPES] : ['*']
+            String[] requiredScopes = grailsApplication.config.REQUIRED_SCOPES ? [grailsApplication.config.REQUIRED_SCOPES] : ['REQUIRED_SCOPES']
             authCheck =  collectoryAuthService.isAuthorised(requiredRoles,requiredScopes)
         }
 
@@ -747,7 +747,7 @@ class DataController {
     )
     @Path("/ws/syncGBIF")
     @Produces("application/json")
-    @PermissionRequired(roles = ['gbifRegistrationRole','ROLE_ADMIN'], scopes = ['*'])
+    @PermissionRequired(roles = ['gbifRegistrationRole','ROLE_ADMIN'], scopes = ['REQUIRED_SCOPES'])
     def syncGBIF() {
         asyncGbifRegistryService.updateAllResources()
                 .onComplete {
@@ -1097,7 +1097,7 @@ class DataController {
 
     @Path("/ws/contacts/{id}")
     @Produces("application/json")
-    @PermissionRequired(roles = ['ROLE_EDITOR', 'ROLE_ADMIN'], scopes = ['*'])
+    @PermissionRequired(roles = ['ROLE_EDITOR', 'ROLE_ADMIN'], scopes = ['REQUIRED_SCOPES'])
     def contacts() {
         if (params.id) {
             def c = Contact.get(params.id)
@@ -1209,7 +1209,7 @@ class DataController {
     )
     @Path("/ws/contacts/{id}")
     @Produces("application/json")
-    @PermissionRequired(roles = ['ROLE_EDITOR','ROLE_ADMIN'], scopes = ['*'])
+    @PermissionRequired(roles = ['ROLE_EDITOR','ROLE_ADMIN'], scopes = ['REQUIRED_SCOPES'])
     def updateContact() {
         def ok = check(params)
         if (!ok) {
@@ -1543,7 +1543,7 @@ class DataController {
     )
     @Path("/ws/{entity}/{uid}/contacts/{id}")
     @Produces("application/json")
-    @PermissionRequired(roles = ['ROLE_EDITOR','ROLE_ADMIN'], scopes = ['*'])
+    @PermissionRequired(roles = ['ROLE_EDITOR','ROLE_ADMIN'], scopes = ['REQURIED_SCOPES'])
     def updateContactFor() {
         def ok = check(params)
         if (!ok) {
