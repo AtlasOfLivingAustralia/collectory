@@ -180,7 +180,7 @@ class GbifController {
                             ]
                     )
             ],
-            security = [@SecurityRequirement(name = 'openIdConnect')]
+            security = [@SecurityRequirement(name = 'openIdConnect'), @SecurityRequirement(name = "JWT")]
     )
     @Path("/ws/gbif/scan/{uid}")
     @Produces("application/json")

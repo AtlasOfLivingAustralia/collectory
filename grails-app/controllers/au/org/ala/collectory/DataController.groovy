@@ -182,10 +182,6 @@ class DataController {
         render(status: 403, text: 'You are not authorised to use this service')
     }
 
-    def noApiKey = {
-        // using the 'forbidden' response code here as 401 causes the client to ask for a log in
-        render(status: 400, text: 'This service requires API key')
-    }
 
     /**
      * Should be added for any uri that returns multiple formats based on content negotiation.
@@ -273,13 +269,13 @@ class DataController {
                             ]
                     )
             ],
-            security = [@SecurityRequirement(name = 'openIdConnect')]
+            security = [@SecurityRequirement(name = 'openIdConnect'), @SecurityRequirement(name = "JWT")]
     )
 
 
     @Path("/ws/{entity}/{uid}")
     @Produces("application/json")
-    @PermissionRequired(roles = ['ROLE_EDITOR', 'ROLE_ADMIN'], scopes = ['REQURIED_SCOPES'])
+    @PermissionRequired(roles = ['ROLE_EDITOR', 'ROLE_ADMIN'], scopes = ['REQUIRED_SCOPES'])
     def saveEntity() {
 
         def ok = check(params)
@@ -358,7 +354,7 @@ class DataController {
                             ]
                     )
             ],
-            security = [@SecurityRequirement(name = 'openIdConnect')]
+            security = [@SecurityRequirement(name = 'openIdConnect'), @SecurityRequirement(name = "JWT")]
     )
     @Path("/ws/{entity}")
     @Produces("application/json")
@@ -430,7 +426,6 @@ class DataController {
      * @param uid - optional uid of an instance of entity
      * @param pg - optional instance specified by uid (added in beforeInterceptor)
      * @param summary - any non-null value will cause a richer summary to be returned for entity lists
-     * @param api_key - optional param for displaying any sensitive data
      */
 
     // since  this method provides response for all entity types and optionally specific instance of an entity type with the optional {uid} path param,  the specs for api gateway will are to be specified with a special proxy character e.g. /ws/{entity+} to support the optional {uid} param.
@@ -457,13 +452,6 @@ class DataController {
                             schema = @Schema(implementation = String),
                             example = "co43",
                             required = true
-                    ),
-                    @Parameter(
-                            name = "apikey",
-                            in = HEADER,
-                            description = "authorisation for dataResource connection details",
-                            schema = @Schema(implementation = String),
-                            required = false
                     )
             ],
             responses = [
@@ -483,7 +471,9 @@ class DataController {
                             ]
                     )
             ],
-            security = []
+            security = [
+                    @SecurityRequirement(name = "bearerAuth")
+            ]
     )
 
 
@@ -553,13 +543,6 @@ class DataController {
                             schema = @Schema(implementation = String),
                             example = "collection",
                             required = true
-                    ),
-                    @Parameter(
-                            name = "apikey",
-                            in = HEADER,
-                            description = "authorisation for dataResource connection details",
-                            schema = @Schema(implementation = String),
-                            required = false
                     )
             ],
             requestBody = @RequestBody(
@@ -743,7 +726,7 @@ class DataController {
                             ]
                     )
             ],
-            security = [@SecurityRequirement(name = 'openIdConnect')]
+            security = [@SecurityRequirement(name = 'openIdConnect'), @SecurityRequirement(name = "JWT")]
     )
     @Path("/ws/syncGBIF")
     @Produces("application/json")
@@ -1092,7 +1075,7 @@ class DataController {
                             ]
                     )
             ],
-            security = [@SecurityRequirement(name = 'openIdConnect')]
+            security = [@SecurityRequirement(name = 'openIdConnect'), @SecurityRequirement(name = "JWT")]
     )
 
     @Path("/ws/contacts/{id}")
@@ -1205,7 +1188,7 @@ class DataController {
                             ]
                     )
             ],
-            security = [@SecurityRequirement(name = 'openIdConnect')]
+            security = [@SecurityRequirement(name = 'openIdConnect'), @SecurityRequirement(name = "JWT")]
     )
     @Path("/ws/contacts/{id}")
     @Produces("application/json")
@@ -1539,11 +1522,11 @@ class DataController {
                             ]
                     )
             ],
-            security = [@SecurityRequirement(name = 'openIdConnect')]
+            security = [@SecurityRequirement(name = 'openIdConnect'), @SecurityRequirement(name = "JWT")]
     )
     @Path("/ws/{entity}/{uid}/contacts/{id}")
     @Produces("application/json")
-    @PermissionRequired(roles = ['ROLE_EDITOR','ROLE_ADMIN'], scopes = ['REQURIED_SCOPES'])
+    @PermissionRequired(roles = ['ROLE_EDITOR','ROLE_ADMIN'], scopes = ['REQUIRED_SCOPES'])
     def updateContactFor() {
         def ok = check(params)
         if (!ok) {

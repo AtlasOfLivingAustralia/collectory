@@ -45,11 +45,6 @@ class TokenInterceptor {
         matchAll()
     }
 
-    @PostConstruct
-    def init() {
-
-    }
-
     /**
      * Inject user profile and credentials into the request before the action executes if a JWT token is present.
      *

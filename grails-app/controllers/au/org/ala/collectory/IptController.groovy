@@ -1,10 +1,7 @@
 package au.org.ala.collectory
 
-import au.ala.org.ws.security.RequireApiKey
 import au.org.ala.PermissionRequired
 import au.org.ala.plugins.openapi.Path
-import au.org.ala.web.AlaSecured
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.opencsv.CSVWriter
 import grails.converters.JSON
 import grails.converters.XML
@@ -20,8 +17,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 
 import javax.ws.rs.Produces
-
-import static io.swagger.v3.oas.annotations.enums.ParameterIn.HEADER
 import static io.swagger.v3.oas.annotations.enums.ParameterIn.PATH
 import static io.swagger.v3.oas.annotations.enums.ParameterIn.QUERY
 
@@ -51,6 +46,8 @@ class IptController {
      * Output formats are JSON, XML or plain text (the default). Plain text is a list of updatable data resource ids
      * suitable for feeding into a shell script.
      */
+
+    @SecurityRequirement(name="JWT")
     @Operation(
             method = "GET",
             tags = "ipt",
@@ -124,12 +121,11 @@ class IptController {
                             ]
                     )
             ],
-            security = [@SecurityRequirement(name = 'openIdConnect')]
+            security = [@SecurityRequirement(name="openIdConnect")]
     )
-
     @Path("/ws/ipt/scan/{uid}")
     @Produces("text/plain")
-    @PermissionRequired(roles = ['ROLE_ADMIN'], scopes = ['REQURIED_SCOPES'])
+    @PermissionRequired(roles = ['ROLE_ADMIN'], scopes = ['REQUIRED_SCOPES'])
     def scan() {
         def create = params.create != null && params.create.equalsIgnoreCase("true")
         def check = params.check == null || !params.check.equalsIgnoreCase("false")
@@ -140,7 +136,7 @@ class IptController {
         def username = collectoryAuthService.username()
         log.debug "Access by user ${username}"
 
-        if (create && !admin) {
+        if (create) {
             render (status: 403, text: "Unable to create resources for " + params.uid)
             return
         }
@@ -149,7 +145,7 @@ class IptController {
             return
         }
         try {
-            def updates = provider == null ? null : iptService.scan(provider, create, check, keyName, username, admin, isShareableWithGBIF)
+            def updates = provider == null ? null : iptService.scan(provider, create, check, keyName, username, true, isShareableWithGBIF)
             log.info "${updates.size()} data resources to update for ${params.uid}"
             response.addHeader HttpHeaders.VARY, HttpHeaders.ACCEPT
             withFormat {

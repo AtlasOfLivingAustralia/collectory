@@ -17,9 +17,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 
-import javax.annotation.PostConstruct
-
-
 /**
  * Checks if the user has the specified roles.
  * or M2M token is authorised with the specified scopes.
@@ -54,11 +51,6 @@ class PermissionInterceptor {
 
     PermissionInterceptor() {
         matchAll()
-    }
-
-    @PostConstruct
-    def init() {
-
     }
 
     /**

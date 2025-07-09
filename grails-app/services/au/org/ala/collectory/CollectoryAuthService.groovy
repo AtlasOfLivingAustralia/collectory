@@ -24,12 +24,7 @@ class CollectoryAuthService{
      * @return full name of the user, or 'not available' if not authenticated
      */
     String username() {
-        //both work
         def username = authService.getDisplayName()
-//        def request = getRequest()
-//        def profiles = request?.profileManager?.context?.request?.profiles
-//        def username = (profiles && !profiles.isEmpty()) ? profiles[0]?.attributes?.get('username')?.toString() : null
-        //short the statement
         return username ?: 'not available'
     }
 
