@@ -314,7 +314,7 @@
           <table class="clean no-left-pad">
             <colgroup><col width="55%"><col width="45%"></colgroup>
             <tr>
-              <td colspan="2"><span class="code"><span class='entity'>GET</span> https://collections.ala.org.au/ipt/scan?create=true&isShareableWithGBIF=false&uid=<strong>{uid}</strong>&apiKey=XXXXXX</span></td>
+              <td colspan="2"><span class="code"><span class='entity'>GET</span> https://collections.ala.org.au/ipt/scan?create=true&isShareableWithGBIF=false&uid=<strong>{uid}</strong></span></td>
             </tr>
           </table>
           <h4>GBIF</h4>
@@ -322,7 +322,7 @@
           <table class="clean no-left-pad">
             <colgroup><col width="55%"><col width="45%"></colgroup>
             <tr>
-              <td colspan="2"><span class="code"><span class='entity'>GET</span> https://collections.ala.org.au/gbif/scan?uid=<strong>{uid}</strong>&apiKey=XXXXXX</span></td>
+              <td colspan="2"><span class="code"><span class='entity'>GET</span> https://collections.ala.org.au/gbif/scan?uid=<strong>{uid}</strong></span></td>
             </tr>
           </table>
 

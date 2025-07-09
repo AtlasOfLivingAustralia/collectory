@@ -1,12 +1,12 @@
 package au.org.ala.collectory
 
-import au.ala.org.ws.security.RequireApiKey
+import au.org.ala.PermissionRequired
+import au.org.ala.SkipPermissionCheck
 import au.org.ala.collectory.resources.DataSourceLoad
 import au.org.ala.collectory.resources.gbif.GbifDataSourceAdapter
 import au.org.ala.collectory.resources.gbif.GbifRepatDataSourceAdapter
-import au.org.ala.web.AlaSecured
 
-@AlaSecured(value = ['ROLE_ADMIN'], anyRole = true)
+@PermissionRequired(roles = ['ROLE_ADMIN'])
 class ManageController {
 
     def collectoryAuthService
@@ -22,7 +22,8 @@ class ManageController {
      *
      * @param noRedirect if present will override the redirect (for testing purposes only)
      */
-    def index = {
+    @SkipPermissionCheck
+    def index() {
         // forward if logged in
         if ((!grailsApplication.config.security.oidc.enabled.toBoolean()  || request?.getUserPrincipal()) && !params.noRedirect) {
             redirect(action: 'list')
@@ -217,19 +218,19 @@ class ManageController {
      *
      * @param show = user will display user login/cookie/roles details
      */
-    def list = {
+    def list() {
         // find the entities the user is allowed to edit
-        def entities = collectoryAuthService.authorisedForUser(collectoryAuthService.username()).sorted
+        def entities = collectoryAuthService.authorisedForUser(collectoryAuthService.userEmail()).sorted
 
         log.debug("user ${collectoryAuthService.username()} has ${request.getUserPrincipal()?.attributes}")
 
         // get their contact details in case needed
-        def contact = Contact.findByEmail(collectoryAuthService.username())
+        def contact = Contact.findByEmail(collectoryAuthService.userEmail())
 
         [entities: entities, user: contact, show: params.show]
     }
 
-    def show = {
+    def show(){
         // assume it's a collection for now
         def instance = providerGroupService._get(params.id)
         if (!instance) {
@@ -239,6 +240,7 @@ class ManageController {
             [instance: instance, changes: getChanges(instance.uid)]
         }
     }
+
 
     def getChanges(uid) {
         // get audit records

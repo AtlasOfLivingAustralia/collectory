@@ -1,9 +1,9 @@
 package au.org.ala.collectory
 
-import au.org.ala.web.AlaSecured
+import au.org.ala.PermissionRequired
 import grails.gorm.transactions.Transactional
 
-@AlaSecured(value = ['ROLE_ADMIN','ROLE_EDITOR'], anyRole = true)
+@PermissionRequired(roles=['ROLE_EDITOR', 'ROLE_ADMIN'])
 class InstitutionController extends ProviderGroupController {
 
     def authService
@@ -94,7 +94,7 @@ class InstitutionController extends ProviderGroupController {
     /**
      * This will update the GBIF Registry with the metadata and contacts for the data provider.
      */
-    def updateGBIF = {
+    def updateGBIF(){
         def instance = get(params.id)
         if (instance) {
             try {

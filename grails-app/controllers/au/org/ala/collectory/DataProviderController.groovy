@@ -1,11 +1,11 @@
 package au.org.ala.collectory
 
-import au.org.ala.web.AlaSecured
+import au.org.ala.PermissionRequired
 import grails.converters.JSON
 import grails.converters.XML
 import grails.web.http.HttpHeaders
 
-@AlaSecured(value = ['ROLE_ADMIN', 'ROLE_EDITOR'], anyRole = true)
+@PermissionRequired(roles=['ROLE_EDITOR', 'ROLE_ADMIN'])
 class DataProviderController extends ProviderGroupController {
 
     def gbifRegistryService
@@ -191,6 +191,7 @@ class DataProviderController extends ProviderGroupController {
         flash.message = "Success: " + successCount + " / Error: " + errorCount
         redirect(action: "searchForOrganizations", params: [country: params.country])
     }
+
 
     def editConsumers = {
         def pg = get(params.id)
