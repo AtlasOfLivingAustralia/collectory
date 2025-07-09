@@ -206,6 +206,9 @@ security:
         enabled: true
         discoveryUri: https://auth-test.ala.org.au/cas/oidc/.well-known
         fallbackToLegacyBehaviour: true
+        rolesFromAccessToken: true
+        userIdClaim: username
+        roleClaims: cognito:groups
 
 repository:
     location:
@@ -391,6 +394,7 @@ eml:
     administrativeArea: ACT
     postalCode: 2601
     country: Australia
+
 
 google:
     apikey: "TO-BE-ADDED"

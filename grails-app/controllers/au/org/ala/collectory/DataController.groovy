@@ -182,10 +182,6 @@ class DataController {
         render(status: 403, text: 'You are not authorised to use this service')
     }
 
-    def noApiKey = {
-        // using the 'forbidden' response code here as 401 causes the client to ask for a log in
-        render(status: 400, text: 'This service requires API key')
-    }
 
     /**
      * Should be added for any uri that returns multiple formats based on content negotiation.
@@ -222,6 +218,7 @@ class DataController {
      * @param pg - optional instance specified by uid (added in beforeInterceptor)
      * @param json - the body of the request
      */
+    @SecurityRequirement(name="JWT")
     @Operation(
             method = "POST",
             tags = "collection, institution, dataProvider, dataResource, tempDataResource, dataHub",
@@ -279,7 +276,7 @@ class DataController {
 
     @Path("/ws/{entity}/{uid}")
     @Produces("application/json")
-    @PermissionRequired(roles = ['ROLE_EDITOR', 'ROLE_ADMIN'], scopes = ['REQURIED_SCOPES'])
+    @PermissionRequired(roles = ['ROLE_EDITOR', 'ROLE_ADMIN'], scopes = ['REQUIRED_SCOPES'])
     def saveEntity() {
 
         def ok = check(params)
@@ -315,6 +312,7 @@ class DataController {
         }
     }
 
+    @SecurityRequirement(name="JWT")
     @Operation(
             method = "POST",
             tags = "collection, institution, dataProvider, dataResource, tempDataResource, dataHub",
@@ -430,7 +428,6 @@ class DataController {
      * @param uid - optional uid of an instance of entity
      * @param pg - optional instance specified by uid (added in beforeInterceptor)
      * @param summary - any non-null value will cause a richer summary to be returned for entity lists
-     * @param api_key - optional param for displaying any sensitive data
      */
 
     // since  this method provides response for all entity types and optionally specific instance of an entity type with the optional {uid} path param,  the specs for api gateway will are to be specified with a special proxy character e.g. /ws/{entity+} to support the optional {uid} param.
@@ -457,13 +454,6 @@ class DataController {
                             schema = @Schema(implementation = String),
                             example = "co43",
                             required = true
-                    ),
-                    @Parameter(
-                            name = "apikey",
-                            in = HEADER,
-                            description = "authorisation for dataResource connection details",
-                            schema = @Schema(implementation = String),
-                            required = false
                     )
             ],
             responses = [
@@ -482,11 +472,8 @@ class DataController {
                                     @Header(name = 'Access-Control-Allow-Origin', description = "CORS header", schema = @Schema(type = "string"))
                             ]
                     )
-            ],
-            security = []
+            ]
     )
-
-
     @Path("/ws/{entity}/{uid}")
     @Produces("application/json")
     /**
@@ -508,7 +495,7 @@ class DataController {
                 if (clazz == 'DataResource') {
                     // this auth check (JWT or API key) is a special case handling to support backwards compatibility(which used to check for API key).
                     String[] requiredRoles = [grailsApplication.config.ROLE_ADMIN]
-                    String[] requiredScopes = grailsApplication.config.REQUIRED_SCOPES ? [grailsApplication.config.REQUIRED_SCOPES] : ['REQUIRED_SCOPES']
+                    String[] requiredScopes = [grailsApplication.config.REQUIRED_SCOPES]
                     boolean isAuthed = collectoryAuthService.isAuthorised(requiredRoles,requiredScopes)
                     entityInJson = crudService.readDataResource(params.pg, isAuthed)
                 } else {
@@ -553,13 +540,6 @@ class DataController {
                             schema = @Schema(implementation = String),
                             example = "collection",
                             required = true
-                    ),
-                    @Parameter(
-                            name = "apikey",
-                            in = HEADER,
-                            description = "authorisation for dataResource connection details",
-                            schema = @Schema(implementation = String),
-                            required = false
                     )
             ],
             requestBody = @RequestBody(
@@ -597,7 +577,7 @@ class DataController {
         if (params.entity == 'dataResource') {
             // this auth check (JWT or user roles).
             String[] requiredRoles = [grailsApplication.config.ROLE_ADMIN]
-            String[] requiredScopes = grailsApplication.config.REQUIRED_SCOPES ? [grailsApplication.config.REQUIRED_SCOPES] : ['REQUIRED_SCOPES']
+            String[] requiredScopes = [grailsApplication.config.REQUIRED_SCOPES]
             authCheck =  collectoryAuthService.isAuthorised(requiredRoles,requiredScopes)
         }
 
@@ -721,6 +701,7 @@ class DataController {
         renderAsJson results, last, ""
     }
 
+    @SecurityRequirement(name="JWT")
     @Operation(
             method = "GET",
             tags = "gbif",
@@ -1051,6 +1032,7 @@ class DataController {
      * URI form: /ws/contacts/{id}
      * @param id the database id of the contact
      */
+    @SecurityRequirement(name="JWT")
     @Operation(
             method = "GET",
             tags = "contacts",
@@ -1162,6 +1144,7 @@ class DataController {
     }
 
     /************* contact update services **********/
+    @SecurityRequirement(name="JWT")
     @Operation(
             method = "POST",
             tags = "contacts",
@@ -1465,6 +1448,7 @@ class DataController {
      * @param uid the entity instance
      * @param id the contact id
      */
+    @SecurityRequirement(name="JWT")
     @Operation(
             method = "POST",
             tags = "contacts",
@@ -1543,7 +1527,7 @@ class DataController {
     )
     @Path("/ws/{entity}/{uid}/contacts/{id}")
     @Produces("application/json")
-    @PermissionRequired(roles = ['ROLE_EDITOR','ROLE_ADMIN'], scopes = ['REQURIED_SCOPES'])
+    @PermissionRequired(roles = ['ROLE_EDITOR','ROLE_ADMIN'], scopes = ['REQUIRED_SCOPES'])
     def updateContactFor() {
         def ok = check(params)
         if (!ok) {

@@ -3,7 +3,6 @@ package au.org.ala.collectory
 import au.org.ala.web.AuthService
 import au.org.ala.ws.security.client.AlaAuthClient
 import org.grails.web.servlet.mvc.GrailsWebRequest
-import org.pac4j.core.credentials.AnonymousCredentials
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.context.request.RequestContextHolder
 import javax.servlet.http.HttpServletRequest
@@ -24,12 +23,7 @@ class CollectoryAuthService{
      * @return full name of the user, or 'not available' if not authenticated
      */
     String username() {
-        //both work
         def username = authService.getDisplayName()
-//        def request = getRequest()
-//        def profiles = request?.profileManager?.context?.request?.profiles
-//        def username = (profiles && !profiles.isEmpty()) ? profiles[0]?.attributes?.get('username')?.toString() : null
-        //short the statement
         return username ?: 'not available'
     }
 
@@ -38,17 +32,11 @@ class CollectoryAuthService{
         return email
     }
 
-
     def isAdmin() {
         def request = getRequest()
         return request?.isUserInRole(grailsApplication.config.ROLE_ADMIN as String)
     }
-
-    def isAuthenticated() {
-        def request = getRequest()
-        return request?.getUserPrincipal() != null
-    }
-
+    
     /**
      * ONLY used for user interface, not for M2M calls.
      * @param role
@@ -195,11 +183,12 @@ class CollectoryAuthService{
      */
     String[] resolveRoles(String[] rolesOrScopes) {
         return rolesOrScopes
-                .findAll() // Remove nulls
+                .findAll() // Remove nulls and empty strings
                 .collectMany { key ->
                     def value = grailsApplication.config.getProperty(key, String, key)
                     value.split(/[;,]/)*.trim()
                 }
+                .findAll() // Remove empty strings from splits
                 .toSet() // Remove duplicates
                 .toArray(new String[0])
     }

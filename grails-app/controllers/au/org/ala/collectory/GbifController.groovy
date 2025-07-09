@@ -147,6 +147,7 @@ class GbifController {
         [errorMessage: errorMessage]
     }
 
+    @SecurityRequirement(name="JWT")
     @Operation(
             method = "GET",
             tags = "gbif",
