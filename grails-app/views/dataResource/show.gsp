@@ -254,7 +254,7 @@
 
                 <cl:showConnectionParameters connectionParameters="${instance.connectionParameters}"/></p>
 
-                <g:if test="${instance.resourceType == 'records'}">
+                <g:if test="${instance.resourceType == 'records'} || ${instance.resourceType == 'events'}">
                     <!-- darwin core defaults -->
                     <g:set var="dwc" value="${instance.defaultDarwinCoreValues ? JSON.parse(instance.defaultDarwinCoreValues) : [:]}"/>
                     <h3>Default values for DwC fields</h3>
@@ -324,7 +324,7 @@
               <g:render template="/shared/location" model="[instance: instance]"/>
 
               <!-- Record consumers -->
-              <g:if test="${instance.resourceType == 'records'}">
+              <g:if test="${instance.resourceType == 'records'} || ${instance.resourceType == 'events'}">
                   <g:render template="/shared/consumers" model="[instance: instance]"/>
               </g:if>
 
