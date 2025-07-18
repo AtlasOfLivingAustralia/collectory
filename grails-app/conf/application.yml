@@ -46,10 +46,6 @@ spring:
 management:
     endpoints:
         enabled-by-default: false
-# enable log any external services which still use the legacy apikey call
-legacy:
-    apikey:
-        log: false
 
 ---
 grails:
@@ -141,8 +137,8 @@ gbifExportUrlBase:
 gbifRegistrationDryRun: true
 gbifLicenceMappingUrl: file:///data/collectory/config/default-gbif-licence-mapping.json
 gbifOrphansPublisherID: XXXXXXXXXXXXXXXX
-gbifRegistrationRole: ROLE_ADMIN
 useGbifDoi: true
+gbifRegistrationRole: ROLE_ADMIN
 
 skin:
     layout: ala-main
@@ -210,6 +206,9 @@ security:
         enabled: true
         discoveryUri: https://auth-test.ala.org.au/cas/oidc/.well-known
         fallbackToLegacyBehaviour: true
+        rolesFromAccessToken: true
+        userIdClaim: username
+        roleClaims: cognito:groups
 
 repository:
     location:
@@ -231,6 +230,7 @@ showExtraInfoInDataSetsView.relativeTime: false
 
 ROLE_ADMIN: 'ROLE_ADMIN'
 ROLE_EDITOR: 'ROLE_EDITOR'
+REQUIRED_SCOPES: 'ala/internal'
 
 rifcs:
     excludeBounds: true
@@ -394,6 +394,7 @@ eml:
     administrativeArea: ACT
     postalCode: 2601
     country: Australia
+
 
 google:
     apikey: "TO-BE-ADDED"

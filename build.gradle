@@ -1,5 +1,5 @@
 buildscript {
-    version "6.1.0-SNAPSHOT"
+    version "6.1.1-SNAPSHOT"
     group "au.org.ala"
 }
 
@@ -121,6 +121,7 @@ dependencies {
     implementation 'mysql:mysql-connector-java:8.0.33'
     implementation "org.grails.plugins:ala-bootstrap3:4.4.0"
     implementation "au.org.ala.plugins.grails:ala-charts-plugin:2.3.0"
+    implementation 'au.org.ala.grails:interceptor-annotation-matcher:1.0.0'
     implementation "org.grails.plugins:ala-auth:$alaSecurityLibsVersion"
     implementation "org.grails.plugins:ala-ws-security-plugin:$alaSecurityLibsVersion"
     implementation "org.grails.plugins:ala-ws-plugin:$alaSecurityLibsVersion"
