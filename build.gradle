@@ -31,7 +31,9 @@ publishing {
     }
     publications {
         mavenJar(MavenPublication) {
-            artifact bootJar
+            artifact bootJar {
+                classifier = 'exec'
+            }
         }
         mavenWar(MavenPublication) {
             artifact bootWar
