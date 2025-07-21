@@ -113,7 +113,7 @@ projectName: Atlas of Living Australia
 regionName: Australia
 uploadFilePath: /data/collectory/upload
 uploadExternalUrlPath: http://localhost/upload
-gbifApiUrl: 'https://api.gbif.org/v1/'
+gbifApiUrl: 'https://api.gbif.org/v1'
 gbifUniqueKeyTerm: "http://rs.gbif.org/terms/1.0/gbifID"
 
 # country 3 digit ISO code. Non-empty value required at startup

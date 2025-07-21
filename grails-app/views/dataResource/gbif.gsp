@@ -52,7 +52,7 @@
                 </div>
 
                 <div class="buttons">
-                    <span class="button"><input type="submit" name="_action_updateGBIFDetails" value="${message(code:"collection.button.update")}" class="save btn btn-success"></span>
+                    <span class="button"><input type="submit" name="_action_updateGBIF" value="${message(code:"collection.button.update")}" class="save btn btn-success"></span>
                     <span class="button"><input type="submit" name="_action_cancel" value="${message(code:"dataresource.gbifupload.btn.cancel")}" class="cancel btn btn-default"></span>
                 </div>
             </g:form>

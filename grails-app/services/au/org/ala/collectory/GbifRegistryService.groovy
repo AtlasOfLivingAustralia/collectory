@@ -42,16 +42,16 @@ class GbifRegistryService {
     def isoCodeService
 
     // URL templates for the GBIF API relative to the base GBIF API url (e.g. https://api.gbif.org)
-    static final String API_ORGANIZATION = "organization"
-    static final String API_ORGANIZATION_COUNTRY_LIMIT = "organization?country={0}&limit={1}"
-    static final String API_ORGANIZATION_DETAIL = "organization/{0}"
-    static final String API_ORGANIZATION_CONTACT = "organization/{0}/contact"
-    static final String API_ORGANIZATION_CONTACT_DETAIL = "organization/{0}/contact/{1}"
+    static final String API_ORGANIZATION = "/organization"
+    static final String API_ORGANIZATION_COUNTRY_LIMIT = "/organization?country={0}&limit={1}"
+    static final String API_ORGANIZATION_DETAIL = "/organization/{0}"
+    static final String API_ORGANIZATION_CONTACT = "/organization/{0}/contact"
+    static final String API_ORGANIZATION_CONTACT_DETAIL = "/organization/{0}/contact/{1}"
 
-    static final String API_DATASET = "dataset"
-    static final String API_DATASET_DETAIL = "dataset/{0}"
-    static final String API_DATASET_ENDPOINT = "dataset/{0}/endpoint"
-    static final String API_DATASET_ENDPOINT_DETAIL = "dataset/{0}/endpoint/{1}"
+    static final String API_DATASET = "/dataset"
+    static final String API_DATASET_DETAIL = "/dataset/{0}"
+    static final String API_DATASET_ENDPOINT = "/dataset/{0}/endpoint"
+    static final String API_DATASET_ENDPOINT_DETAIL = "/dataset/{0}/endpoint/{1}"
 
     static def pool = Executors.newFixedThreadPool(1) // very conservative
 
