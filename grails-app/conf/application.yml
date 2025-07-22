@@ -273,9 +273,12 @@ dataResource:
         - "Web Page"
         - "Other"
     contentTypesList:
+        - "acoustic recording"
         - "authoritative"
         - "behaviour"
+        - "biologging"
         - "citizen science"
+        - "camera trapping"
         - "commercial uses"
         - "common names"
         - "conservation management"
