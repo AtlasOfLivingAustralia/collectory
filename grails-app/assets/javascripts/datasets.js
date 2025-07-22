@@ -308,7 +308,8 @@ function filterBy(filter, uidList) {
             }
         }
         // filter by equality
-        else if (resource[filter.name] == filter.value || (filter.value == 'noValue' && resource[filter.name] == null)) {
+        else if (resource[filter.name] == filter.value ||
+            (filter.value == 'noValue' && (resource[filter.name] == null || resource[filter.name] === ''))) {
             newResourcesList.push(resource);
         }
     });
