@@ -202,7 +202,12 @@ class DataResourceController extends ProviderGroupController {
 
     def updateGBIFDetails = {
         def pg = get(params.id)
-        genericUpdate pg, 'gbif'
+        pg.userLastModified = collectoryAuthService?.username()
+        DataResource.withTransaction {
+            pg.save(flush: true)
+        }
+
+        updateGBIF.call()
     }
 
     def registerGBIF = {

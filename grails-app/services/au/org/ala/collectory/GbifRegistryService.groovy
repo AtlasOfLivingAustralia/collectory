@@ -743,7 +743,7 @@ class GbifRegistryService {
         // Note: GBIF use this for counting "data published by Country X". There are cases where the postal Address
         // indicates the headquarters of an international organisation and the country it is located should not be
         // credited in GBIF as "owning the data". For International `ZZ` is required.
-        organisation.country = null
+        organisation.country = ""
         if (dp.gbifCountryToAttribute) {
             def iso2 = isoCodeService.iso3CountryCodeToIso2CountryCode(dp.gbifCountryToAttribute.toUpperCase())
             if (iso2) {
