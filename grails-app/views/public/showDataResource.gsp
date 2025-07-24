@@ -63,29 +63,29 @@
                     <g:if test="${instance.pubDescription || instance.techDescription || instance.focus}">
                         <h3><g:message code="public.des" /></h3>
                     </g:if>
-                    <cl:formattedText>${fieldValue(bean: instance, field: "pubDescription")}</cl:formattedText>
-                    <cl:formattedText>${fieldValue(bean: instance, field: "techDescription")}</cl:formattedText>
+                    <cl:formattedText body="${instance.pubDescription?:''}"/>
+                    <cl:formattedText body="${instance.techDescription?:''}"/>
                     <cl:formattedText>${fieldValue(bean: instance, field: "focus")}</cl:formattedText>
                     <cl:dataResourceContribution resourceType="${instance.resourceType}" status="${instance.status}" tag="p"/>
 
                     <g:if test="${instance.geographicDescription}">
                         <h3><g:message code="public.geographicDescription" default="Purpose"/></h3>
-                        <cl:formattedText>${fieldValue(bean: instance, field: "geographicDescription")}</cl:formattedText>
+                        <cl:formattedText body="${instance.geographicDescription?:''}" />
                     </g:if>
 
                     <g:if test="${instance.purpose}">
                         <h3><g:message code="public.purpose" default="Purpose"/></h3>
-                        <cl:formattedText>${fieldValue(bean: instance, field: "purpose")}</cl:formattedText>
+                        <cl:formattedText body="${instance.purpose?:''}" />
                     </g:if>
 
                     <g:if test="${instance.qualityControlDescription}">
                         <h3><g:message code="public.qualityControlDescription" /></h3>
-                        <cl:formattedText>${fieldValue(bean: instance, field: "qualityControlDescription")}</cl:formattedText>
+                        <cl:formattedText body="${instance.qualityControlDescription?:''}" />
                     </g:if>
 
                     <g:if test="${instance.methodStepDescription}">
                         <h3><g:message code="public.methodStepDescription" /></h3>
-                        <cl:formattedText>${fieldValue(bean: instance, field: "methodStepDescription")}</cl:formattedText>
+                        <cl:formattedText body="${instance.methodStepDescription?:''}" />
                     </g:if>
 
                     <g:if test="${instance.contentTypes}">
@@ -180,8 +180,6 @@
                         <div id="charts"></div>
                     </div>
                 </g:if>
-
-
             </div>
         </div>
 
