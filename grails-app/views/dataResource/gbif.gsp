@@ -31,7 +31,8 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="repatriationCountry"><g:message code="dataResource.gbif.repatriationCountry.label" default="GBIF repatriation country" /><cl:helpText code="dataResource.repatriationCountry"/></label>
+                    <label for="repatriationCountry"><g:message code="dataResource.gbif.repatriationCountry.label" default="GBIF repatriation country" />
+                        <g:message code="dataResource.repatriationCountry"/></label>
                     <g:textField name="repatriationCountry" class="form-control" value="${command?.repatriationCountry}" />
                 </div>
 
