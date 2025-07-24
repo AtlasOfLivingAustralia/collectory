@@ -201,12 +201,18 @@ class DataResourceController extends ProviderGroupController {
     }
 
     def updateGBIFDetails = {
+        String gbifRegion = params['repatriationCountry']
+        boolean isSharableWithGBIF = params['isShareableWithGBIF'] == 'on'
+        boolean isGBIFData = params['gbifDataset'] == 'on'
+
         def pg = get(params.id)
+        pg.isShareableWithGBIF = isSharableWithGBIF
+        pg.gbifDataset = isGBIFData
+        pg.repatriationCountry = gbifRegion
         pg.userLastModified = collectoryAuthService?.username()
         DataResource.withTransaction {
             pg.save(flush: true)
         }
-
         updateGBIF.call()
     }
 

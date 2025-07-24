@@ -107,29 +107,29 @@ class GbifRegistryService {
     /**
      * Update the registration metadata.
      *
-     * @param dp
+     * @param pg
      * @return boolean indicating success
      */
-    private boolean updateRegistrationMetadata(ProviderGroup dp) {
-        log.info("Updating GBIF organisation ${dp.uid}: ${dp.gbifRegistryKey}")
+    private boolean updateRegistrationMetadata(ProviderGroup pg) {
+        log.info("Updating GBIF organisation ${pg.uid}: ${pg.gbifRegistryKey}")
 
         boolean success = false
 
         // load the current GBIF entry to get the endorsing node key
-        def organisation = loadOrganization(dp.gbifRegistryKey)
+        def organisation = loadOrganization(pg.gbifRegistryKey)
         if (!organisation){
             return false
         }
 
         // apply mutations
-        populateOrganisation(organisation, dp)
+        populateOrganisation(organisation, pg)
 
         if (!isDryRun()) {
             // update mutated version in GBIF
             def httpclient = newHttpInstance()
             HttpPut httpPut = new HttpPut(
                     grailsApplication.config.gbifApiUrl +
-                            MessageFormat.format(API_ORGANIZATION_DETAIL, dp.gbifRegistryKey)
+                            MessageFormat.format(API_ORGANIZATION_DETAIL, pg.gbifRegistryKey)
             )
             httpPut.setHeader("Accept", "application/json")
             httpPut.setHeader("Content-Type", "application/json")
@@ -140,7 +140,7 @@ class GbifRegistryService {
                 success = true
             }
         } else {
-            log.info("[DRY-RUN] Registration request for ${dp.uid} - ${dp.name}")
+            log.info("[DRY-RUN] Registration request for ${pg.uid} - ${pg.name}")
             log.info((organisation as JSON).toString())
         }
         success
@@ -215,12 +215,10 @@ class GbifRegistryService {
         def result = [success:false, message:""]
 
         def publisherGbifRegistryKey = "" //data provider or institution
-
         def institution = dataResource.institution
         def dataProvider = dataResource.dataProvider
 
         if (!institution) {
-
             //get the data provider if available...
             if (dataResource.consumerInstitutions) {
                 institution = dataResource.consumerInstitutions.first()
@@ -229,7 +227,8 @@ class GbifRegistryService {
 
         if (institution) {
             // sync institution
-
+            //gbifCountryToAttribute is used to set the region code in GBIF
+            institution.gbifCountryToAttribute = dataResource.repatriationCountry
             if(institution.gbifRegistryKey){
                 updateRegistrationMetadata(institution)
             } else {
@@ -239,9 +238,9 @@ class GbifRegistryService {
             publisherGbifRegistryKey = institution.gbifRegistryKey
 
         } else if (dataProvider) {
-
             // sync institution
             if (dataProvider.gbifRegistryKey){
+                dataProvider.gbifCountryToAttribute = dataResource.repatriationCountry
                 updateRegistrationMetadata(dataProvider)
             } else {
                 register(dataProvider, true, false)
@@ -743,7 +742,7 @@ class GbifRegistryService {
         // Note: GBIF use this for counting "data published by Country X". There are cases where the postal Address
         // indicates the headquarters of an international organisation and the country it is located should not be
         // credited in GBIF as "owning the data". For International `ZZ` is required.
-        organisation.country = ""
+        organisation.country = grailsApplication.config.gbifDefaultEntityCountry ?: '' // default to international if not set
         if (dp.gbifCountryToAttribute) {
             def iso2 = isoCodeService.iso3CountryCodeToIso2CountryCode(dp.gbifCountryToAttribute.toUpperCase())
             if (iso2) {
