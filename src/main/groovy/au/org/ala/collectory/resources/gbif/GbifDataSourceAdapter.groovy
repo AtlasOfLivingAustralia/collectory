@@ -234,7 +234,6 @@ class GbifDataSourceAdapter extends DataSourceAdapter {
      * @return A JSON response
      */
     def getJSONWS(String path, boolean authRequired = true) throws ExternalResourceException {
-
         def url = new URL(configuration.endpoint, path)
         HttpURLConnection connection = (HttpURLConnection) url.openConnection()
         connection.setRequestMethod("GET")

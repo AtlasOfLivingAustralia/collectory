@@ -744,13 +744,17 @@ class GbifRegistryService {
         // credited in GBIF as "owning the data". For International `ZZ` is required.
         organisation.country = grailsApplication.config.gbifDefaultEntityCountry ?: '' // default to international if not set
         if (dp.gbifCountryToAttribute) {
-            def iso2 = isoCodeService.iso3CountryCodeToIso2CountryCode(dp.gbifCountryToAttribute.toUpperCase())
-            if (iso2) {
-                log.info("Setting GBIF country of attribution to ${iso2}")
-                organisation.country = iso2
-            } else if ("ZZZ".equalsIgnoreCase(dp.gbifCountryToAttribute)) {
-                log.info("Setting GBIF country of attribution to the value for international ${iso2}")
-                organisation.country = 'ZZ'
+            if (isoCodeService.isIso2Code(dp.gbifCountryToAttribute)) {
+                organisation.country = dp.gbifCountryToAttribute
+            } else{
+                def iso2 = isoCodeService.iso3CountryCodeToIso2CountryCode(dp.gbifCountryToAttribute.toUpperCase())
+                if (iso2) {
+                    log.info("Setting GBIF country of attribution to ${iso2}")
+                    organisation.country = iso2
+                } else if ("ZZZ".equalsIgnoreCase(dp.gbifCountryToAttribute)) {
+                    log.info("Setting GBIF country of attribution to the value for international ${iso2}")
+                    organisation.country = 'ZZ'
+                }
             }
         }
 

@@ -411,11 +411,11 @@
                 <g:if test="${instance.gbifRegistryKey}">
                     <p>
                         <span class="category">GBIF Link:</span>
-                        <a href="${grailsApplication.config.gbifWebsite}/dataset/${instance.gbifRegistryKey}">View details on GBIF.org</a>
+                        <a href="${grailsApplication.config.gbifWebsite}dataset/${instance.gbifRegistryKey}">View details on GBIF.org</a>
                     </p>
                     <p>
                         <span class="category">GBIF webservices Link:</span>
-                        <a href="${grailsApplication.config.gbifApiUrl}/dataset/${instance.gbifRegistryKey}">View details on GBIF.org</a>
+                        <a href="${grailsApplication.config.gbifApiUrl}dataset/${instance.gbifRegistryKey}">View details on GBIF.org</a>
                     </p>
                 </g:if>
 
