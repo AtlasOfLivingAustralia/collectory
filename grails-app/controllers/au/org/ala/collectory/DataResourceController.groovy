@@ -201,8 +201,30 @@ class DataResourceController extends ProviderGroupController {
     }
 
     def updateGBIFDetails = {
+        String gbifRegion = params['repatriationCountry']
+        boolean isSharableWithGBIF = params['isShareableWithGBIF'] == 'on'
+        boolean isGBIFData = params['gbifDataset'] == 'on'
+
         def pg = get(params.id)
-        genericUpdate pg, 'gbif'
+        pg.isShareableWithGBIF = isSharableWithGBIF
+        pg.gbifDataset = isGBIFData
+        pg.repatriationCountry = gbifRegion
+        pg.userLastModified = collectoryAuthService?.username()
+
+        /**
+         * GBIF publishing country is set on the institution, not the data resource
+         * @link GbifRegistryService.registerDataResource
+         */
+        if ( pg.institution ) {
+            pg.institution.gbifCountryToAttribute = gbifRegion
+        } else if ( pg.dataProvider ) {
+            pg.dataProvider.gbifCountryToAttribute = gbifRegion
+        }
+
+        DataResource.withTransaction {
+            pg.save(flush: true)
+        }
+        updateGBIF.call()
     }
 
     def registerGBIF = {
