@@ -121,7 +121,7 @@ class GbifRegistryService {
             return false
         }
 
-        // apply mutations
+        // apply mutations from ALA pg to GBIF organisation
         populateOrganisation(organisation, pg)
 
         if (!isDryRun()) {
@@ -226,9 +226,7 @@ class GbifRegistryService {
         }
 
         if (institution) {
-            // sync institution
-            //gbifCountryToAttribute is used to set the region code in GBIF
-            institution.gbifCountryToAttribute = dataResource.repatriationCountry
+            // GBIF takes the institution as the publisher of the data resource
             if(institution.gbifRegistryKey){
                 updateRegistrationMetadata(institution)
             } else {
@@ -240,7 +238,6 @@ class GbifRegistryService {
         } else if (dataProvider) {
             // sync institution
             if (dataProvider.gbifRegistryKey){
-                dataProvider.gbifCountryToAttribute = dataResource.repatriationCountry
                 updateRegistrationMetadata(dataProvider)
             } else {
                 register(dataProvider, true, false)
@@ -445,6 +442,7 @@ class GbifRegistryService {
                     dataset.license = getGBIFCompatibleLicence(dataResource.licenseType)
                     dataset.title = dataResource.name
                     dataset.description = dataResource.pubDescription
+
                     if (dataResource.buildLogoUrl()) {
                         dataset.logoUrl = dataResource.buildLogoUrl()
                     } else {
@@ -742,9 +740,9 @@ class GbifRegistryService {
         // Note: GBIF use this for counting "data published by Country X". There are cases where the postal Address
         // indicates the headquarters of an international organisation and the country it is located should not be
         // credited in GBIF as "owning the data". For International `ZZ` is required.
-        organisation.country = grailsApplication.config.gbifDefaultEntityCountry ?: '' // default to international if not set
+        organisation.country = grailsApplication.config.gbifDefaultEntityCountry ?: ''
         if (dp.gbifCountryToAttribute) {
-            if (isoCodeService.isIso2Code(dp.gbifCountryToAttribute)) {
+            if (isoCodeService.isIso2Code(dp.gbifCountryToAttribute.toUpperCase())) {
                 organisation.country = dp.gbifCountryToAttribute
             } else{
                 def iso2 = isoCodeService.iso3CountryCodeToIso2CountryCode(dp.gbifCountryToAttribute.toUpperCase())
