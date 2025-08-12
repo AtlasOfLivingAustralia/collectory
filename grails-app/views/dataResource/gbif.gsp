@@ -32,9 +32,8 @@
 
                 <div class="form-group">
                     <label for="repatriationCountry"><g:message code="dataResource.gbif.repatriationCountry.label" default="GBIF repatriation country" /></label>
-                    <select name="repatriationCountry" id="repatriationCountry" class="form-control">
-                        <option value="">Loading countries...</option>
-                    </select>
+                    <g:countrySelect id="repatriationCountry"  class="form-control" name="repatriationCountry" value="${command?.repatriationCountry}"
+                                     noSelection="['ZZZ':'-Use ZZZ for international organisations-']" required="true"/>
                 </div>
 
                 <!-- is shareable -->
@@ -59,35 +58,5 @@
                 </div>
             </g:form>
         </div>
-    <script>
-        $(document).ready(function () {
-            $.ajax({
-                url: '/gbif/repatriateCountries',
-                method: 'GET',
-                dataType: 'json',
-                success: function (data) {
-                    let $select = $('#repatriationCountry');
-                    $select.empty(); // Clear placeholder
-
-                    // Optional: Add a default empty option
-                    $select.append($('<option>', { value: '', text: '-- Select a Country --' }));
-
-                    // Loop through the returned key-value pairs and populate options
-                    $.each(data, function (key, value) {
-                        $select.append($('<option>', { value: key, text: value }));
-                    });
-
-                    // Pre-select a value from params or config if needed
-                    let selectedValue = '${command?.repatriationCountry ?: command?.repatriationCountry ?: ''}';
-                    if (selectedValue) {
-                        $select.val(selectedValue);
-                    }
-                },
-                error: function () {
-                    alert('Failed to load countries from server.');
-                }
-            });
-        });
-    </script>
     </body>
 </html>
