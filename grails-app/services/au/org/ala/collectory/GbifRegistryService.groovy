@@ -52,7 +52,6 @@ class GbifRegistryService {
     static final String API_DATASET_DETAIL = "dataset/{0}"
     static final String API_DATASET_ENDPOINT = "dataset/{0}/endpoint"
     static final String API_DATASET_ENDPOINT_DETAIL = "dataset/{0}/endpoint/{1}"
-
     static def pool = Executors.newFixedThreadPool(1) // very conservative
 
     Boolean isDryRun(){

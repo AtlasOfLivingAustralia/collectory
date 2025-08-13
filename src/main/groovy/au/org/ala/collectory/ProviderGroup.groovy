@@ -400,7 +400,7 @@ trait ProviderGroup implements Serializable {
         List<Attribution> list = []
         if (uids) {
             list = Attribution.createCriteria().list {
-                in('uid', uids)
+                inList('uid', uids)
             }
         }
 

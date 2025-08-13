@@ -251,11 +251,6 @@ class GbifController {
         render(fullOutput as JSON)
     }
 
-    def repatriateCountries() {
-        def countries = gbifService.getCountryMap()
-        render(countries as JSON)
-    }
-
     @JsonIgnoreProperties('metaClass')
     class GbifScanResponse {
         String loadGuid
