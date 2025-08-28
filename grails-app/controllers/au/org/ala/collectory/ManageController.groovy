@@ -218,6 +218,7 @@ class ManageController {
      *
      * @param show = user will display user login/cookie/roles details
      */
+    @PermissionRequired(roles = ['ROLE_EDITOR','ROLE_ADMIN'])
     def list() {
         // find the entities the user is allowed to edit
         def entities = collectoryAuthService.authorisedForUser(collectoryAuthService.userEmail()).sorted

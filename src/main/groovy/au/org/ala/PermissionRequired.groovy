@@ -26,6 +26,4 @@ import java.lang.annotation.*
      * @return
      */
     String[] scopes() default []
-
-
 }
