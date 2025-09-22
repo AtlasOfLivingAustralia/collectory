@@ -1,6 +1,6 @@
 <%@ page import="au.org.ala.collectory.CollectoryTagLib; java.text.DecimalFormat; java.text.SimpleDateFormat" %>
 <g:set var="orgNameLong" value="${grailsApplication.config.skin.orgNameLong}"/>
-<g:set var="showBelowH3" value="${grailsApplication.config.get('showDataResourceWebsiteBelowH3', false) as Boolean}" />
+<g:set var="showBelowH3" value="${grailsApplication.config.getProperty('showDataResourceWebsiteBelowH3', Boolean, false)}" />
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
@@ -23,7 +23,7 @@
     <asset:script>
         // define biocache server
         bieUrl = "${grailsApplication.config.bie.baseURL}";
-        loadLoggerStats = ${!grailsApplication.config.disableLoggerLinks.toBoolean()};
+        loadLoggerStats = ${!grailsApplication.config.getProperty('disableLoggerLinks', Boolean, false)};
     </asset:script>
     <asset:javascript src="application-pages.js"/>
 </head>
@@ -165,7 +165,7 @@
                     <cl:lastUpdated date="${instance.lastUpdated}"/>
                 </div>
 
-                <g:if test="${!grailsApplication.config.disableLoggerLinks.toBoolean() && (instance.resourceType == 'website' || instance.resourceType == 'records'  || instance.resourceType=='events')}">
+                <g:if test="${!grailsApplication.config.getProperty('disableLoggerLinks', Boolean, false) && (instance.resourceType == 'website' || instance.resourceType == 'records'  || instance.resourceType=='events')}">
                     <div id="usage-stats" class="tab-pane">
                         <div id='usage'>
                             <p><g:message code="public.usage.des" />...</p>
