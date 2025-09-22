@@ -460,4 +460,8 @@ liquibase.command.referencePassword: XXXXX
         </addColumn>
     </changeSet>
 
+    <changeSet author="vjrj" id="20241122-01">
+        <modifyDataType tableName="collection" columnName="sub_collections" newDataType="TEXT"/>
+    </changeSet>
+    
 </databaseChangeLog>
