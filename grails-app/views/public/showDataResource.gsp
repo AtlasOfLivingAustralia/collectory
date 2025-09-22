@@ -1,6 +1,6 @@
 <%@ page import="au.org.ala.collectory.CollectoryTagLib; java.text.DecimalFormat; java.text.SimpleDateFormat" %>
 <g:set var="orgNameLong" value="${grailsApplication.config.skin.orgNameLong}"/>
-<g:set var="showBelowH3" value="${grailsApplication.config.showDataResourceWebsiteBelowH3.toBoolean()?: false}" />
+<g:set var="showBelowH3" value="${grailsApplication.config.get('showDataResourceWebsiteBelowH3', false) as Boolean}" />
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
