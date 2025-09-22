@@ -41,6 +41,8 @@ publishing {
     }
 }
 
+
+
 bootWar {
     launchScript()
     dependsOn(compileGroovyPages)
@@ -52,6 +54,7 @@ war {
 
 bootJar {
     enabled = true
+    archiveClassifier.set("exec")
     launchScript() // Optional: For Linux service startup script
     from('grails-app/views') {
         into('views')
