@@ -30,13 +30,11 @@ publishing {
         }
     }
     publications {
-        mavenJar(MavenPublication) {
+        mavenWar(MavenPublication) {
+            artifact bootWar
             artifact bootJar {
                 classifier = 'exec'
             }
-        }
-        mavenWar(MavenPublication) {
-            artifact bootWar
         }
     }
 }
@@ -54,7 +52,7 @@ war {
 
 bootJar {
     enabled = true
-    archiveClassifier.set("exec")
+    archiveClassifier='exec'
     launchScript() // Optional: For Linux service startup script
     from('grails-app/views') {
         into('views')
