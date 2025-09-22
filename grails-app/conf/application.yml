@@ -244,6 +244,7 @@ citation.link.template: "For more information: @link@"
 citation.rights.template: ""
 
 siteDefaultLanguage: "en"
+showDataResourceWebsiteBelowH3: false
 
 networkTypes:
     - BCI
