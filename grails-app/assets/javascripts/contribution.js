@@ -74,6 +74,8 @@ function changeProtocol() {
 }
 
 instrument();
+
+$(document).ready(function() {
 //$('[name="start_date"]').datepicker({dateFormat: 'yy-mm-dd'});
 /* this expands lists of urls into an array of text inputs */
 // create a delete element that removes the element before it and itself
@@ -130,4 +132,5 @@ $('#more-terms').click(function() {
             "<input type='text' class='form-control' id='" + term + "' name='" + term + "'/></div>";
         $('#add-another').parent().append(newField);
     }
+});
 });
