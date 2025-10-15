@@ -394,7 +394,7 @@ class ProviderGroupService {
             if (isAuthorisedToEdit(pg.uid)) {
                 ContactFor cf = ContactFor.get(params.idToRemove)
                 if (cf) {
-                    cf.delete()
+                    cf.delete(flush: true)
                 }
                 [success: true, pg:pg, authorised:true]
             } else {
