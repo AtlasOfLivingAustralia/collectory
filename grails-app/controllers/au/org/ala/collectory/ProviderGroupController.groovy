@@ -533,7 +533,7 @@ abstract class ProviderGroupController {
                 ContactFor cf = ContactFor.get(params.idToRemove)
                 if (cf) {
                     ContactFor.withTransaction {
-                        cf.delete()
+                        cf.delete(flush: true)
                     }
                     redirect(action: "edit", params: [page:"/shared/showContacts"], id: params.id)
                 }

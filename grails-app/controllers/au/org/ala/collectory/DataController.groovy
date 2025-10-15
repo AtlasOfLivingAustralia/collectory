@@ -850,7 +850,7 @@ class DataController {
                     providerGroupService._get(params.uid)
             if (pg) {
                 def name = pg.name
-                pg.delete()
+                pg.delete(flush: true)
                 def message = ['message': "deleted ${name}"]
                 render message as JSON
             } else {
