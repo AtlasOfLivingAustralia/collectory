@@ -838,7 +838,8 @@ class DataController {
     /********* delete **************************
      *
      */
-    def delete = {
+    @Transactional
+    def delete() {
         if (grailsApplication.config.deletesForbidden) {
             render(status: 405, text: 'delete is currently unavailable')
             return
