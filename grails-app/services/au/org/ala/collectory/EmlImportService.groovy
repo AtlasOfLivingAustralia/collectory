@@ -67,7 +67,6 @@ class EmlImportService {
             }
             gbifDoi
         },
-
         licenseType: { eml -> getLicence(eml).licenseType },
         licenseVersion: { eml -> getLicence(eml).licenseVersion }
     ]

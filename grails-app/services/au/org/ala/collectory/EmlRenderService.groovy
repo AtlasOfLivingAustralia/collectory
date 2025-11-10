@@ -463,7 +463,12 @@ class EmlRenderService {
         def xml = new groovy.xml.MarkupBuilder(writer)
         xml.setDoubleQuotes(true)
         def dp = pg.dataProvider
-        def licence = Licence.where({ acronym == pg.licenseType && (pg.licenseVersion == null ) }).list()
+        def licence = Licence.where {
+            acronym == pg.licenseType
+            if (pg.licenseVersion != null) {
+                licenceVersion == pg.licenseVersion
+            }
+        }.list()
         def ids = identifiers(pg)
 //        def namespaces = [:]
 //        namespaces.putAll(ns)

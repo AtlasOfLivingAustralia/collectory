@@ -14,7 +14,7 @@ import org.springframework.web.context.request.ServletRequestAttributes
  *
  * It provides common code for shared attributes like contacts.
  */
-@PermissionRequired(roles=['ROLE_EDITOR', 'ROLE_ADMIN'])
+//@PermissionRequired(roles=['ROLE_EDITOR', 'ROLE_ADMIN'])
 abstract class ProviderGroupController {
 
     String entityName = "ProviderGroup"
