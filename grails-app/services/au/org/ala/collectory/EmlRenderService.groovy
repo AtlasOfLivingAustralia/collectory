@@ -14,6 +14,7 @@
  */
 package au.org.ala.collectory
 
+import groovy.json.JsonSlurper
 import groovy.xml.StreamingMarkupBuilder
 import groovy.xml.XmlUtil
 import java.text.SimpleDateFormat
@@ -284,7 +285,6 @@ class EmlRenderService {
 
                     /* coverage */
                     coverage() {
-
                         /* geographic */
                         def hasBoundingBox = pg.eastCoordinate != ProviderGroup.NO_INFO_AVAILABLE &&
                             pg.westCoordinate != ProviderGroup.NO_INFO_AVAILABLE &&
@@ -569,6 +569,10 @@ class EmlRenderService {
                             }
                         }
                     }
+
+                    if (pg.taxonomyHints) {
+                        mkp.yieldUnescaped getTaxonomicCoverage(pg.taxonomyHints)
+                    }
                 }
 
                 purpose {
@@ -733,6 +737,28 @@ class EmlRenderService {
         }
         else {
             return "specimens"  // default
+        }
+    }
+
+    def getTaxonomicCoverage(String hints) {
+        def json = new JsonSlurper().parseText(hints)
+        def builder = new StreamingMarkupBuilder()
+
+        return builder.bind {
+            taxonomicCoverage {
+                generalTaxonomicCoverage {
+                    // yield the joined string properly
+                    mkp.yield json.range.collect { it.replaceAll('"','').trim() }.join("; ")
+                }
+                json.coverage.each { entry ->
+                    entry.each { rank, value ->
+                        taxonomicClassification {
+                            taxonRankName(rank)
+                            taxonRankValue(value)
+                        }
+                    }
+                }
+            }
         }
     }
 }

@@ -829,7 +829,7 @@ abstract class ProviderGroupController {
                         // remove contact links (does not remove the contact)
                         ContactFor.findAllByEntityUid(pg.uid).each {
                             log.info "Removing link to contact " + it.contact?.buildName()
-                            it.delete()
+                            it.delete(flush: true)
                         }
                         // delete
                         pg.delete(flush: true)

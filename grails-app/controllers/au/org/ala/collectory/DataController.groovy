@@ -25,8 +25,6 @@ import javax.xml.transform.stream.StreamSource
 import javax.xml.validation.SchemaFactory
 import java.text.DateFormat
 import java.text.SimpleDateFormat
-
-import static io.swagger.v3.oas.annotations.enums.ParameterIn.HEADER
 import static io.swagger.v3.oas.annotations.enums.ParameterIn.PATH
 import static io.swagger.v3.oas.annotations.enums.ParameterIn.QUERY
 
@@ -937,9 +935,11 @@ class DataController {
                     render error
                 } else {
                     //render xml
-                    response.setContentType("text/xml")
-                    response.setCharacterEncoding("UTF-8")
+                    //todo - disturbed by layout
+                    response.contentType = 'application/xml'
+                    response.characterEncoding = 'UTF-8'
                     cacheAwareRender xml, pg.lastUpdated, xml.toString().encodeAsMD5()
+
                 }
             } else {
                 notFound 'no such entity ' + params.id

@@ -152,15 +152,6 @@ class DataImportService {
                     def xml = new XmlSlurper().parseText(zipFile.getInputStream(file).getText("UTF-8"))
                     def result = emlImportService.extractContactsFromEml(xml, dataResource)
                     contacts = result.contacts
-
-                    //License update
-                    def licence = emlImportService.getLicence(xml)
-                    if (licence.licenseType?.trim()) {
-                        dataResource.licenseType = licence.licenseType
-                    }
-                    if (licence.licenseVersion?.trim()) {
-                        dataResource.licenseVersion = licence.licenseVersion
-                    }
                 }
             }
         }
