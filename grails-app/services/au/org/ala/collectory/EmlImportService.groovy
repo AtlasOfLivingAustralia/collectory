@@ -8,6 +8,16 @@ class EmlImportService {
 
     def dataLoaderService, collectoryAuthService
 
+    /**
+     * Normalize phone number by removing common formatting characters.
+     * This allows matching phones like "+34-932565991" and "+34932565991" as the same.
+     */
+    private String normalizePhone(String phone) {
+        if (phone == null || phone.trim().isEmpty()) return ""
+        // Remove spaces, hyphens, parentheses, and dots
+        return phone.trim().replaceAll(/[\s\-\(\)\.]/, "").toLowerCase()
+    }
+
     /** Collect individual XML para elements together into a single block of text */
     protected def collectParas(GPathResult paras) {
         paras?.list().inject(null, { acc, para -> acc == null ? (para.text()?.trim() ?: "") : acc + " " + (para.text()?.trim() ?: "") })
@@ -115,7 +125,7 @@ class EmlImportService {
     def extractContactsFromEml(eml, dataResource) {
         def contacts = []
         def primaryContacts = []
-        def processedContacts = []
+        def processedContactKeys = []  // Track contacts within THIS extraction to avoid duplicates
 
         emlFields.each { name, accessor ->
             def val = accessor(eml)
@@ -124,80 +134,176 @@ class EmlImportService {
             }
         }
 
-        def addUniqueContact = { provider ->
-            def providerName = "${provider.individualName?.givenName?.text()?.trim()}_${provider.individualName?.surName?.text()?.trim()}"
-            def providerOrg = provider.organizationName?.text()?.trim()
-            def providerPosition = provider.positionName?.text()?.trim()
+        def addContact = { provider ->
+            def hasSurName = provider?.individualName?.surName?.text()?.trim()?.isEmpty() == false
+            def hasOrg = provider?.organizationName?.text()?.trim()?.isEmpty() == false
+            def hasPosition = provider?.positionName?.text()?.trim()?.isEmpty() == false
 
-            def uniqueKey = providerName ?: providerOrg ?: providerPosition
-            if (uniqueKey && !processedContacts.contains(uniqueKey)) {
-                def contact = addOrUpdateContact(provider)
-                if (contact) {
-                    contacts << contact
-                    processedContacts << uniqueKey
-                    return contact
+            // Only process if there's at least a surname, organization, or position
+            if (hasSurName || hasOrg || hasPosition) {
+                // Create a unique key for this contact based on its data
+                // This allows deduplication within the same EML while preserving different affiliations
+                def firstName = provider.individualName?.givenName?.text()?.trim() ?: ""
+                def lastName = provider.individualName?.surName?.text()?.trim() ?: ""
+                def email = provider.electronicMailAddress?.text()?.trim() ?: ""
+                def phone = provider.phone?.text()?.trim() ?: ""
+                def org = provider.organizationName?.text()?.trim() ?: ""
+                def position = provider.positionName?.text()?.trim() ?: ""
+                def userId = provider.userId?.text()?.trim() ?: ""
+                def userIdDirectory = provider.userId?.@directory?.text()?.trim() ?: ""
+
+                // Create unique key based on all contact attributes
+                // Normalize phone to handle different formatting: +34-932565991 == +34932565991
+                def normalizedPhone = normalizePhone(phone)
+                def contactKey = "${firstName}|${lastName}|${email}|${normalizedPhone}|${org}|${position}|${userId}|${userIdDirectory}".toLowerCase()
+
+                // Check if we've already processed this exact contact in this EML
+                if (!processedContactKeys.contains(contactKey)) {
+                    def contact = addOrUpdateContact(provider, dataResource)
+                    if (contact) {
+                        contacts << contact
+                        processedContactKeys << contactKey  // Mark as processed
+                        return contact
+                    }
+                } else {
+                    // This exact contact already processed - find it and return it for primaryContacts
+                    def existingContact = contacts.find { c ->
+                        def cNormalizedPhone = normalizePhone(c.phone ?: '')
+                        def cKey = "${c.firstName ?: ''}|${c.lastName ?: ''}|${c.email ?: ''}|${cNormalizedPhone}|${c.organizationName ?: ''}|${c.positionName ?: ''}|${c.userId ?: ''}".toLowerCase()
+                        return cKey == contactKey
+                    }
+                    return existingContact
                 }
             }
+            return null
         }
 
-        // EML Schema
+        // EML Schema - Process all contacts without deduplication across roles
         // https://eml.ecoinformatics.org/images/eml-party.png
+        // However, deduplicate identical contacts within same resource (GBIF approach)
 
         if (eml.dataset.creator) {
-            eml.dataset.creator.each { addUniqueContact(it) }
+            eml.dataset.creator.each { addContact(it) }
         }
 
         if (eml.dataset.contact) {
             eml.dataset.contact.each {
-                def contact = addUniqueContact(it)
-                if (contact) {
+                def contact = addContact(it)
+                if (contact && !primaryContacts.contains(contact)) {
                     primaryContacts << contact
                 }
             }
         }
 
         if (eml.dataset.metadataProvider) {
-            eml.dataset.metadataProvider.each { addUniqueContact(it) }
+            eml.dataset.metadataProvider.each { addContact(it) }
         }
 
         if (eml.dataset.associatedParty) {
-            eml.dataset.associatedParty.each { addUniqueContact(it) }
+            eml.dataset.associatedParty.each { addContact(it) }
         }
 
         [contacts: contacts, primaryContacts: primaryContacts]
     }
 
-    private def addOrUpdateContact(emlElement) {
-        def contact = null
-        if (emlElement.individualName?.givenName && emlElement.individualName?.surName) {
-            contact = Contact.findByFirstNameAndLastName(
-                    emlElement.individualName.givenName.text()?.trim(),
-                    emlElement.individualName.surName.text()?.trim()
-            )
-        } else if (emlElement.individualName?.surName) {
-            contact = Contact.findByLastName(emlElement.individualName.surName.text()?.trim())
-        } else if (emlElement.organizationName) {
-            contact = Contact.findByOrganizationName(emlElement.organizationName.text()?.trim())
-        } else if (emlElement.positionName) {
-            contact = Contact.findByPositionName(emlElement.positionName.text()?.trim())
-        }
-
-        boolean hasSurName = emlElement?.individualName?.surName?.text()?.trim()?.isEmpty() == false
-        boolean hasOrg = emlElement?.organizationName?.text()?.trim()?.isEmpty() == false
-        boolean hasPosition = emlElement?.positionName?.text()?.trim()?.isEmpty() == false
+    /**
+     * Add or update a contact from an EML element for a specific DataResource.
+     *
+     * GBIF-style approach:
+     * - Only matches contacts that are already associated with this specific DataResource
+     * - Creates new contacts for other resources (dissociated contacts)
+     * - Preserves user-set flags like 'publish'
+     * - Allows same person in multiple roles
+     *
+     * @param emlElement The EML contact element
+     * @param dataResource The DataResource this contact belongs to
+     * @return The created or updated Contact, or null if invalid
+     */
+    private def addOrUpdateContact(emlElement, DataResource dataResource) {
+        // Extract contact details from EML
+        String firstName = emlElement.individualName?.givenName?.text()?.trim() ?: null
+        String lastName = emlElement.individualName?.surName?.text()?.trim() ?: null
+        String email = emlElement.electronicMailAddress?.text()?.trim() ?: null
+        String phone = emlElement.phone?.text()?.trim() ?: null
+        String organizationName = emlElement.organizationName?.text()?.trim() ?: null
+        String positionName = emlElement.positionName?.text()?.trim() ?: null
         String userId = emlElement.userId?.text()?.trim()
         String userIdDirectory = emlElement.userId?.@directory?.text()?.trim()
         String userIdUrl = userIdDirectory && userId ? "${userIdDirectory}${userId}" : null
 
-        if (!contact && (hasSurName || hasOrg || hasPosition)) {
+        // Validation: must have at least surname, org, or position
+        boolean hasSurName = lastName != null && !lastName.isEmpty()
+        boolean hasOrg = organizationName != null && !organizationName.isEmpty()
+        boolean hasPosition = positionName != null && !positionName.isEmpty()
+
+        if (!hasSurName && !hasOrg && !hasPosition) {
+            return null
+        }
+
+        Contact contact = null
+
+        // Try to find existing contact ONLY among those already associated with this DataResource
+        if (dataResource?.uid) {
+            def existingContactFors = ContactFor.findAllByEntityUid(dataResource.uid)
+
+            for (contactFor in existingContactFors) {
+                Contact candidate = contactFor.contact
+
+                // Match based on multiple fields for exactness
+                boolean matches = true
+
+                // Check lastName (required if present)
+                if (hasSurName && candidate.lastName != lastName) {
+                    matches = false
+                }
+
+                // Check firstName if present in both
+                if (matches && firstName && candidate.firstName != firstName) {
+                    matches = false
+                }
+
+                // Check email if present in both
+                if (matches && email && candidate.email && candidate.email != email) {
+                    matches = false
+                }
+
+                // Check organization if present in both (case-insensitive for flexibility)
+                if (matches && organizationName && candidate.organizationName) {
+                    if (organizationName.toLowerCase() != candidate.organizationName.toLowerCase()) {
+                        matches = false
+                    }
+                }
+
+                // Check position if present in both (case-insensitive for flexibility)
+                if (matches && positionName && candidate.positionName) {
+                    if (positionName.toLowerCase() != candidate.positionName.toLowerCase()) {
+                        matches = false
+                    }
+                }
+
+                // Check userId if present in both
+                if (matches && userIdUrl && candidate.userId && candidate.userId != userIdUrl) {
+                    matches = false
+                }
+
+                if (matches) {
+                    contact = candidate
+                    break
+                }
+            }
+        }
+
+        if (!contact) {
+            // Create new contact - not associated with this resource yet
             contact = new Contact()
-            contact.firstName = emlElement.individualName?.givenName?.text()?.trim()
-            contact.lastName = emlElement.individualName?.surName?.text()?.trim()
-            contact.organizationName = emlElement.organizationName?.text()?.trim()
-            contact.positionName = emlElement.positionName?.text()?.trim()
+            contact.firstName = firstName
+            contact.lastName = lastName
+            contact.organizationName = organizationName
+            contact.positionName = positionName
             contact.userId = userIdUrl
-            contact.email = emlElement.electronicMailAddress?.text()?.trim()
-            contact.phone = emlElement.phone?.text()?.trim()
+            contact.email = email
+            contact.phone = phone
+            contact.publish = true  // Default for new contacts
             contact.setUserLastModified(collectoryAuthService.username())
 
             Contact.withTransaction {
@@ -208,38 +314,43 @@ class EmlImportService {
                     return null
                 }
             }
-        } else if (contact) {
+        } else {
             // Update existing contact fields if they differ
+            // IMPORTANT: Preserve the 'publish' flag - user may have set it manually
             boolean updated = false
-            if (emlElement.phone?.text()?.trim() && emlElement.phone.text().trim() != contact.phone) {
-                contact.phone = emlElement.phone.text().trim()
+            boolean originalPublish = contact.publish  // Preserve this
+
+            if (phone && phone != contact.phone) {
+                contact.phone = phone
                 updated = true
             }
-            if (emlElement.electronicMailAddress?.text()?.trim() && emlElement.electronicMailAddress.text().trim() != contact.email) {
-                contact.email = emlElement.electronicMailAddress.text().trim()
+            if (email && email != contact.email) {
+                contact.email = email
                 updated = true
             }
-            if (emlElement.individualName?.givenName?.text()?.trim() && emlElement.individualName.givenName.text().trim() != contact.firstName) {
-                contact.firstName = emlElement.individualName.givenName.text().trim()
+            if (firstName && firstName != contact.firstName) {
+                contact.firstName = firstName
                 updated = true
             }
-            if (emlElement.individualName?.surName?.text()?.trim() && emlElement.individualName.surName.text().trim() != contact.lastName) {
-                contact.lastName = emlElement.individualName.surName.text().trim()
+            if (lastName && lastName != contact.lastName) {
+                contact.lastName = lastName
                 updated = true
             }
-            if (emlElement.organizationName?.text()?.trim() && emlElement.organizationName.text().trim() != contact.organizationName) {
-                contact.organizationName = emlElement.organizationName.text().trim()
+            if (organizationName && organizationName != contact.organizationName) {
+                contact.organizationName = organizationName
                 updated = true
             }
-            if (emlElement.positionName?.text()?.trim() && emlElement.positionName.text().trim() != contact.positionName) {
-                contact.positionName = emlElement.positionName.text().trim()
+            if (positionName && positionName != contact.positionName) {
+                contact.positionName = positionName
                 updated = true
             }
-            if (userIdUrl != contact.userId) {
+            if (userIdUrl && userIdUrl != contact.userId) {
                 contact.userId = userIdUrl
                 updated = true
             }
+
             if (updated) {
+                contact.publish = originalPublish  // Restore preserved flag
                 contact.setUserLastModified(collectoryAuthService.username())
                 Contact.withTransaction {
                     if (contact.validate()) {
