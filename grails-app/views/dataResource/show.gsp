@@ -56,7 +56,7 @@
 
                 <!-- Data Provider --><!-- ALA Partner -->
                 <g:if test="${instance.dataProvider}">
-                    <h2 style="display:inline"><g:link controller="dataProvider" action="show" id="${instance.dataProvider?.id}">${instance.dataProvider?.name}</g:link></h2>
+                    <h2 style="display:inline"><g:link controller="dataProvider" action="show" id="${instance.dataProvider?.uid}">${instance.dataProvider?.name}</g:link></h2>
                 </g:if>
 
                 <cl:partner test="${instance.dataProvider?.isALAPartner}"/><br/>
