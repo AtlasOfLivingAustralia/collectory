@@ -256,13 +256,12 @@ class EmlRenderService {
 
             'eml:eml'(ids.ns) {
                 dataset() {
-
-                    /* alt identifier */
-                    alternateIdentifier ids.uuid
-
-                    alternateIdentifier "${grailsApplication.config.grails.serverURL}/public/show/" + ids.id
-                    if (ids.altId) {
-                        alternateIdentifier(ids.altId)
+                    /* External identifiers will be converted to alternative identifiers */
+                    pg.externalIdentifiers.each { ext ->
+                        alternateIdentifier {
+                            // Typical EML pattern: a value + an optional type attribute
+                            mkp.yield ext.identifier
+                        }
                     }
 
                     /* title, creator, metadataProvider, associatedParty, pubDate, language, abstract */
@@ -415,11 +414,12 @@ class EmlRenderService {
             'eml:eml'(ids.ns) {
                 dataset() {
 
-                    /* alt identifier */
-                    alternateIdentifier ids.uuid
-                    alternateIdentifier ids.id
-                    if (ids.altId) {
-                        alternateIdentifier(ids.altId)
+                    /* External identifiers will be converted to alternative identifiers */
+                    pg.externalIdentifiers.each { ext ->
+                        alternateIdentifier {
+                            // Typical EML pattern: a value + an optional type attribute
+                            mkp.yield ext.identifier
+                        }
                     }
 
                     /* title, creator, metadataProvider, associatedParty, pubDate, language, abstract */
@@ -476,18 +476,12 @@ class EmlRenderService {
 
         xml."eml:eml"(ids.ns) {
             dataset {
-                /* alt identifier */
-                alternateIdentifier ids.uuid
-                if (pg.gbifDoi){
-                    alternateIdentifier pg.gbifDoi
-                }
-                if (pg.gbifRegistryKey){
-                    alternateIdentifier pg.gbifRegistryKey
-                }
-
-                alternateIdentifier ids.id
-                if (ids.altId) {
-                    alternateIdentifier(ids.altId)
+                /* External identifiers will be converted to alternative identifiers */
+                pg.externalIdentifiers.each { ext ->
+                    alternateIdentifier {
+                        // Typical EML pattern: a value + an optional type attribute
+                        mkp.yield ext.identifier
+                    }
                 }
 
                 /* title, creator, metadataProvider, associatedParty, pubDate, language, abstract */
