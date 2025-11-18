@@ -67,9 +67,24 @@ class EmlImportService {
             }
             gbifDoi
         },
-
         licenseType: { eml -> getLicence(eml).licenseType },
-        licenseVersion: { eml -> getLicence(eml).licenseVersion }
+        licenseVersion: { eml -> getLicence(eml).licenseVersion },
+        externalIdentifiers: { eml ->
+            def identifiers = []
+            eml.dataset.alternateIdentifier?.each {
+                //todo: parse out source and entityUid if present
+                def id = it.text()
+                if (id) {
+                    ExternalIdentifier ei = new ExternalIdentifier()
+                    ei.identifier = id
+                    ei.source = id
+                    ei.entityUid =  id
+                    ei.uri = id
+                    identifiers << ei
+                }
+            }
+            return identifiers
+        }
     ]
 
 

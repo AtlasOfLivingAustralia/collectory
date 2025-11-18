@@ -265,7 +265,7 @@ class DataProviderController extends ProviderGroupController {
                     }
                     // remove contact links (does not remove the contact)
                     ContactFor.findAllByEntityUid(instance.uid).each {
-                        it.delete()
+                        it.delete(flush: true)
                     }
                     // now delete
                     try {

@@ -14,7 +14,7 @@ import org.springframework.web.context.request.ServletRequestAttributes
  *
  * It provides common code for shared attributes like contacts.
  */
-@PermissionRequired(roles=['ROLE_EDITOR', 'ROLE_ADMIN'])
+//@PermissionRequired(roles=['ROLE_EDITOR', 'ROLE_ADMIN'])
 abstract class ProviderGroupController {
 
     String entityName = "ProviderGroup"
@@ -829,7 +829,7 @@ abstract class ProviderGroupController {
                         // remove contact links (does not remove the contact)
                         ContactFor.findAllByEntityUid(pg.uid).each {
                             log.info "Removing link to contact " + it.contact?.buildName()
-                            it.delete()
+                            it.delete(flush: true)
                         }
                         // delete
                         pg.delete(flush: true)

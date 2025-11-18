@@ -57,7 +57,7 @@ class InstitutionController extends ProviderGroupController {
                 }
                 // remove contact links (does not remove the contact)
                 ContactFor.findAllByEntityUid(providerGroupInstance.uid).each {
-                    it.delete()
+                    it.delete(flush: true)
                 }
                 // now delete
                 try {
@@ -132,7 +132,7 @@ class InstitutionController extends ProviderGroupController {
 
                         gbifRegistryService.register(instance, syncContacts, syncDataResources)
                         flash.message = "${message(code: 'institution.gbif.register.success', default: 'Successfully registered in GBIF')}"
-                        instance.save()
+                        instance.save(flush:true)
                     } else {
                         log.info("REGISTERING FAILED for ${instance.uid}, triggered by user: ${collectoryAuthService.username()} - user not in role")
                         flash.message = "You don't have permission to do register this data partner."
