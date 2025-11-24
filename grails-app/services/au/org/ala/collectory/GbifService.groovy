@@ -199,7 +199,7 @@ class GbifService {
                 map.get("citation", xml.additionalMetadata.metadata.gbif.citation.toString())
                 map.get("rights", xml.additionalMetadata.metadata.gbif.rights.toString())
 
-                log.debug(map)
+                log.debug(map.toString())
 
             } else if (file.getName() == OCCURRENCE_FILE){
                 //save the record to the "directoryForArchive"
