@@ -25,6 +25,7 @@ class IptServiceSpec extends Specification implements ServiceUnitTest<IptService
                     "guid"                 : { eml -> eml.@packageId.toString() },
                     "name"                 : { eml -> eml.dataset.title.toString() },
                     "pubDescription"       : { eml -> "Sample description" },
+                    "websiteUrl"           : { eml -> "http://example.org" },
                     "methodStepDescription": { eml -> "Sample method step description" }
             ].keySet()
         }
@@ -697,6 +698,98 @@ class IptServiceSpec extends Specification implements ServiceUnitTest<IptService
         Contact.count() == 1
         ContactFor.countByEntityUid(resource.uid) == 1
         Contact.findByEmail("john@example.com").organizationName == null
+    }
+
+    void "test updateFields does not set required fields to null"() {
+        given: "A resource with required fields and an update without some fields"
+        def resource = new DataResource(
+                uid: "dr1",
+                name: "Original Name",
+                guid: "original-guid",
+                websiteUrl: "http://example.org/resource",
+                pubDescription: "Original Description",
+                userLastModified: "originalUser"
+        ).save(flush: true, failOnError: true)
+
+        def update = [
+                guid: "original-guid",
+                pubDescription: "New Description",
+                websiteUrl: "http://example.org/updated"
+        ]
+
+        when: "updateFields is called with some fields missing from the mock allFields()"
+        service.updateFields(resource, update, "testUser")
+
+        then: "Required field 'name' is NOT cleared even if missing from allFields"
+        resource.name == "Original Name"
+
+        and: "Optional fields are updated correctly"
+        resource.pubDescription == "New Description"
+        resource.websiteUrl == "http://example.org/updated"
+    }
+
+    void "test updateFields clears optional fields not in update"() {
+        given: "A resource with optional fields set"
+        def resource = new DataResource(
+                uid: "dr1",
+                name: "Test Resource",
+                guid: "test-guid",
+                websiteUrl: "http://example.org/resource",
+                pubDescription: "Description to remove",
+                methodStepDescription: "Method to remove",
+                userLastModified: "originalUser"
+        ).save(flush: true, failOnError: true)
+
+        def update = [
+                name: "Updated Name",
+                guid: "test-guid",
+                websiteUrl: "http://example.org/resource"
+                // pubDescription and methodStepDescription NOT in update
+        ]
+
+        when: "updateFields is called"
+        service.updateFields(resource, update, "testUser")
+
+        then: "Required field 'name' is preserved"
+        resource.name == "Updated Name"
+
+        and: "Optional fields are cleared"
+        resource.pubDescription == null
+        resource.methodStepDescription == null
+    }
+
+    void "test updateFields preserves required fields when null values come from update"() {
+        given: "A resource with all fields set"
+        def resource = new DataResource(
+                uid: "dr1",
+                name: "Resource Name",
+                guid: "resource-guid",
+                websiteUrl: "http://example.org/resource",
+                pubDescription: "Description",
+                methodStepDescription: "Method",
+                userLastModified: "originalUser"
+        ).save(flush: true, failOnError: true)
+
+        def update = [
+                name: "Resource Name",
+                guid: "resource-guid",
+                websiteUrl: "http://example.org/resource",
+                pubDescription: null, // Explicitly null to clear
+                methodStepDescription: null // Explicitly null to clear
+        ]
+
+        when: "updateFields is called with explicit nulls"
+        service.updateFields(resource, update, "testUser")
+
+        then: "Required field 'name' is preserved even with other nulls"
+        resource.name == "Resource Name"
+
+        and: "Optional fields are cleared"
+        resource.pubDescription == null
+        resource.methodStepDescription == null
+
+        and: "No validation errors occur"
+        !resource.hasErrors()
     }
 
     void "test syncContacts updates contact when name is updated"() {

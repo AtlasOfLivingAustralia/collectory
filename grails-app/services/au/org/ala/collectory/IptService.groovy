@@ -76,10 +76,18 @@ class IptService {
      */
     @org.springframework.transaction.annotation.Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRED)
     def scan(DataProvider provider, boolean create, boolean check, String keyName, String username, boolean admin, boolean shareWithGbif) {
+        long startTime = System.currentTimeMillis()
+        log.info("Starting scan for provider ${provider.uid}")
         activityLogService.log username, admin, provider.uid, Action.SCAN
         def updates = this.rss(provider, keyName, shareWithGbif)
 
-        return merge(provider, updates, create, check, username, admin)
+        def result = merge(provider, updates, create, check, username, admin)
+
+        long endTime = System.currentTimeMillis()
+        long durationMinutes = (endTime - startTime) / 60000
+        log.info("Scan for provider ${provider.uid} completed in ${durationMinutes} minutes")
+
+        return result
     }
 
     /**
@@ -126,11 +134,15 @@ class IptService {
         def fieldsToUpdate = allFields() // Retrieves all fields that can be updated
         log.info("Fields to update: ${fieldsToUpdate}")
 
+        // Define required fields that should never be set to null (fields with nullable:false in constraints)
+        def requiredFields = ['uid', 'name', 'status', 'resourceType', 'gbifDataset', 'isShareableWithGBIF', 'makeContactPublic']
+
         fieldsToUpdate.each { fieldName ->
             if (update.containsKey(fieldName)) {
                 def newValue = update[fieldName]
                 existingResource.setProperty(fieldName, newValue) // Update the field with the new value (even if it's null)
-            } else {
+            } else if (!requiredFields.contains(fieldName)) {
+                // Only clear non-required fields
                 existingResource.setProperty(fieldName, null) // Clear the field if it doesn't exist in the update
             }
         }
