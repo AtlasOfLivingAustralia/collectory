@@ -379,25 +379,25 @@ function showPaginator() {
     var $pago = $("<ul class='pagination'></ul>");
     // add prev
     if (offset > 0) {
-        $pago.append('<li class="pre"><a href="javascript:prevPage();">«</a></li>');
+        $pago.append('<li class="page-item"><a class="page-link" href="javascript:prevPage();">«</a></li>');
     }
     else {
-        $pago.append('<li class="prev disabled"><span>«</span></li>');
+        $pago.append('<li class="page-item disabled"><a class="page-link">«</a></li>');
     }
     for (var i = 1; i <= maxPage && i<20; i++) {
         if (i == currentPage) {
-            $pago.append('<li class="active"><span>' + i + '</span></li>');
+            $pago.append('<li class="page-item active"><a class="page-link">' + i + '</a></li>');
         }
         else {
-            $pago.append('<li><a href="javascript:gotoPage(' + i + ');">' + i + '</a></li>');
+            $pago.append('<li class="page-item"><a class="page-link" href="javascript:gotoPage(' + i + ');">' + i + '</a></li>');
         }
     }
     // add next
     if ((offset + pageSize()) < total) {
-        $pago.append('<li class="next"><a href="javascript:nextPage();">»</a><li>');
+        $pago.append('<li class="page-item"><a class="page-link" href="javascript:nextPage();">»</a></li>');
     }
     else {
-        $pago.append('<li class="next disabled">»</li>');
+        $pago.append('<li class="page-item disabled"><a class="page-link">»</a></li>');
     }
 
     $('div#navLinks').html($pago);
@@ -590,7 +590,7 @@ function displayFacet(facet, list) {
     return $div;
 }
 function moreLink() {
-    var $more = $('<li class="link"><span class="glyphicon glyphicon-hand-right"></span> '+ jQuery.i18n.prop('datasets.js.morelink')+'</li>');
+    var $more = $('<li class="link"><span class="fa fa-hand-o-right"></span> '+ jQuery.i18n.prop('datasets.js.morelink')+'</li>');
     $more.click(function() {
         // make following items visible and add a 'less' link
         $(this).parent().find('li').css('display','list-item');
@@ -602,7 +602,7 @@ function moreLink() {
     return $more
 }
 function lessLink() {
-    var $less = $('<li class="link"><span class="glyphicon glyphicon-hand-right"></span> ' + jQuery.i18n.prop('datasets.js.lesslink') + '</li>');
+    var $less = $('<li class="link"><span class="fa fa-hand-o-right"></span> ' + jQuery.i18n.prop('datasets.js.lesslink') + '</li>');
     $less.click(function() {
         // make items > 5 hidden and add a 'more' link
         $(this).parent().find('li:gt(4)').css('display','none');

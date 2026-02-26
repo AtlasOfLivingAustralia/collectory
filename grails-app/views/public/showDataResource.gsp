@@ -45,16 +45,16 @@
 
             <div class="tabbable">
                 <ul class="nav nav-tabs" id="home-tabs">
-                    <li class="active"><a href="#basicMetadata" data-toggle="tab"><g:message code="show.tab.metadata" /></a></li>
+                    <li class="nav-item"><a class="nav-link active" href="#basicMetadata" data-bs-toggle="tab"><g:message code="show.tab.metadata" /></a></li>
                     <g:if test="${instance.resourceType=='records' || instance.resourceType=='events'}">
-                        <li><a href="#usage-stats" data-toggle="tab"><g:message code="show.tab.usage.stats" /></a></li>
-                        <li><a href="#metrics" data-toggle="tab"><g:message code="show.tab.metrics" /></a></li>
+                        <li class="nav-item"><a class="nav-link" href="#usage-stats" data-bs-toggle="tab"><g:message code="show.tab.usage.stats" /></a></li>
+                        <li class="nav-item"><a class="nav-link" href="#metrics" data-bs-toggle="tab"><g:message code="show.tab.metrics" /></a></li>
                     </g:if>
                 </ul>
             </div>
 
             <div class="tab-content">
-                <div id="basicMetadata" class="tab-pane active">
+                <div id="basicMetadata" class="tab-pane show active">
 
                     <h3 class="dataResourceProviderLink">Dataset type</h3>
                     <p>
@@ -236,8 +236,8 @@
                 <section class="public-metadata">
                     <h4><g:message code="public.citations" default="Citations" /></h4>
                     <div class="btn-group-vertical dataAccess">
-                    <a class="btn btn-default" href="${citations.doiLink(gbifDoi: instance.gbifDoi)}">
-                        <span class="badge">DOI</span> <citations:doiLink gbifDoi="${instance.gbifDoi}"/>
+                    <a class="btn btn-outline-dark d-flex align-items-center gap-2" href="${citations.doiLink(gbifDoi: instance.gbifDoi)}">
+                        <span class="badge bg-secondary flex-shrink-0">DOI</span><span class="text-break"><citations:doiLink gbifDoi="${instance.gbifDoi}"/></span>
                     </a>
                     <g:if test="${instance.gbifRegistryKey}">
                         <citations:gbifLink gbifRegistryKey="${instance.gbifRegistryKey}"/>
@@ -331,7 +331,7 @@
                         <p><g:message code="public.network.membership.des04" /></p>
                         <img src="${resource(absolute: "true", dir: "data/network/", file: "chacm.png")}"/>
                     </g:if>
-                </div>
+                </section>
             </g:if>
 
             <!-- attribution -->

@@ -18,7 +18,7 @@
         <div class="body content">
             <h1><g:message code="collection.searchList.label" args="${criteria}" default="Collections" /></h1>
             <g:if test="${flash.message}">
-            <div class="message">${flash.message}</div>
+            <div class="alert alert-info">${flash.message}</div>
             </g:if>
             <g:render template="collectionList"
                     model="[collectionInstanceList: providerGroupInstanceList]"
