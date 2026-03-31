@@ -23,7 +23,7 @@
             </g:if>
             <g:render template="/shared/institutionList" model="[institutionInstanceList: institutionInstanceList, showALAPartner: 'true' ]" />
 
-            <div class="nav">
+            <div>
                 <tb:paginate controller="institution" action="list" total="${institutionInstanceTotal}" />
             </div>
         </div>

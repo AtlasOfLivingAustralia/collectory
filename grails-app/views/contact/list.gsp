@@ -65,7 +65,7 @@
                     </tbody>
                 </table>
             </div>
-            <div class="nav">
+            <div>
                 <tb:paginate controller="contact" action="list" total="${contactInstanceTotal}" />
             </div>
         </div>

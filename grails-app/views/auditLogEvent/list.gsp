@@ -61,7 +61,7 @@
                     </tbody>
                 </table>
             </div>
-            <div class="nav">
+            <div>
                 <tb:paginate controller="licence" action="list" total="${auditLogEventInstanceTotal}" />
             </div>
         </div>

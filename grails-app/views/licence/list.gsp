@@ -57,7 +57,7 @@
                 </table>
             </div>
 
-            <div class="nav">
+            <div>
                 <tb:paginate controller="licence" action="list" total="${instanceTotal}" />
             </div>
         </div>

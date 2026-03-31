@@ -69,7 +69,7 @@
                 </table>
             </div>
 
-            <div class="nav">
+            <div>
                 <tb:paginate controller="dataResource" action="list" total="${instanceTotal}" />
             </div>
         </div>

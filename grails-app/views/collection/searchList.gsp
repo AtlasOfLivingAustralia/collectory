@@ -7,7 +7,7 @@
         <title><g:message code="default.list.label" args="[entityName]" /></title>
     </head>
     <body>
-        <div class="nav">
+        <div>
             <ul>
             <li><span class="menuButton"><cl:homeLink/></span></li>
             <li><span class="menuButton"><g:link class="list" action="list"><g:message code="default.list.label" args="[entityName]" /></g:link></span></li>
@@ -23,7 +23,7 @@
             <g:render template="collectionList"
                     model="[collectionInstanceList: providerGroupInstanceList]"
                     params="[term: '${term}']"/>
-            <div class="nav">
+            <div>
                 <tb:paginate controller="collection" action="searchList" params="${[term:term]}" total="${providerGroupInstanceTotal}" />
             </div>
         </div>
