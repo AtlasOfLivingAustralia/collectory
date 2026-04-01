@@ -1,0 +1,263 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: Base resources for the Collectory service
+
+Parameters:
+  pBuild:
+    Type: String
+    Description: The build number
+  pCleanBranch:
+    Type: String
+    Description: The clean branch, can be used in resource names
+  pEnvironment:
+    Type: String
+    Description: The AWS environment this belongs to
+  pProductName:
+    Type: String
+    Description: The product name, used in resource names
+  pCognitoStackName:
+    Type: String
+    Description: The name of the Cognito stack
+  pAppClientHost:
+    Type: String
+    Description: The host for the app client for the frontend (UI subdomain)
+  pAppClientServiceHost:
+    Type: String
+    Description: The host for the app client for the backend service (WS subdomain)
+  pOidcConnectProvider:
+    Type: String
+    Description: The OIDC connect provider
+  pClusterOidcIssuerUrl:
+    Type: String
+    Description: The OIDC issuer URL for the cluster
+  pEksNamespace:
+    Type: String
+    Description: The EKS namespace for the service account
+
+Conditions:
+
+  IsDev: !Equals
+    - !Ref pEnvironment
+    - development
+  NotProd: !Not
+    - !Equals
+      - !Ref pEnvironment
+      - production
+  IsFirstBuild: !Equals [!Ref pBuild, "1"]
+
+Resources:
+
+  CollectoryAppClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      AccessTokenValidity: 8
+      AllowedOAuthFlows:
+        - code
+      AllowedOAuthFlowsUserPoolClient: True
+      AllowedOAuthScopes:
+        - ala/attrs
+        - ala/roles
+        - email
+        - openid
+        - profile
+      AuthSessionValidity: 3
+      CallbackURLs:
+        - !Sub ${pAppClientHost}
+        - !Sub ${pAppClientHost}/
+        - !Sub ${pAppClientHost}/callback
+        - !Sub ${pAppClientHost}/callback?client_name=OidcClient
+        - !Sub ${pAppClientHost}/oauth2-redirect.html
+      ClientName: !Sub
+          - collectory-ui-${ResourceName}
+          - ResourceName: !If [ IsDev, !Ref pCleanBranch, !Ref pEnvironment ]
+      DefaultRedirectURI: !Sub ${pAppClientHost}
+      EnablePropagateAdditionalUserContextData: False
+      EnableTokenRevocation: True
+      ExplicitAuthFlows:
+        - ALLOW_ADMIN_USER_PASSWORD_AUTH
+        - ALLOW_CUSTOM_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+        - ALLOW_USER_SRP_AUTH
+      GenerateSecret: False
+      IdTokenValidity: 8
+      LogoutURLs:
+        - !Sub ${pAppClientHost}
+        - !Sub ${pAppClientHost}/
+      PreventUserExistenceErrors: ENABLED
+      RefreshTokenValidity: 30
+      SupportedIdentityProviders:
+        - COGNITO
+        - Facebook
+        - Google
+        - AAF
+        - SignInWithApple
+      TokenValidityUnits:
+        AccessToken: hours
+        IdToken: hours
+        RefreshToken: days
+      UserPoolId:
+        Fn::ImportValue:
+            !Sub ${pCognitoStackName}-UserPoolId
+
+  CollectoryServiceAppClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      AccessTokenValidity: 8
+      AllowedOAuthFlows:
+        - client_credentials
+      AllowedOAuthFlowsUserPoolClient: True
+      AllowedOAuthScopes:
+        - ala/attrs
+        - ala/roles
+      AuthSessionValidity: 3
+      CallbackURLs:
+        - !Sub ${pAppClientServiceHost}
+        - !Sub ${pAppClientServiceHost}/
+        - !Sub ${pAppClientServiceHost}/callback?client_name=OidcClient
+        - !Sub ${pAppClientServiceHost}/oauth2-redirect.html
+      ClientName: !Sub
+          - collectory-s2s-${ResourceName}
+          - ResourceName: !If [ IsDev, !Ref pCleanBranch, !Ref pEnvironment ]
+      DefaultRedirectURI: !Sub ${pAppClientServiceHost}/callback?client_name=OidcClient
+      EnablePropagateAdditionalUserContextData: True
+      EnableTokenRevocation: True
+      ExplicitAuthFlows:
+        - ALLOW_ADMIN_USER_PASSWORD_AUTH
+        - ALLOW_CUSTOM_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+        - ALLOW_USER_SRP_AUTH
+      GenerateSecret: True
+      IdTokenValidity: 8
+      LogoutURLs:
+        - !Sub ${pAppClientServiceHost}
+        - !Sub ${pAppClientServiceHost}/
+      PreventUserExistenceErrors: ENABLED
+      RefreshTokenValidity: 30
+      SupportedIdentityProviders:
+        - COGNITO
+        - Facebook
+        - Google
+        - AAF
+        - SignInWithApple
+      TokenValidityUnits:
+        AccessToken: hours
+        IdToken: hours
+        RefreshToken: days
+      UserPoolId:
+        Fn::ImportValue:
+            !Sub ${pCognitoStackName}-UserPoolId
+
+  LoadBalancerAccessLogsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub
+        - ala-${pProductName}-${ResourceName}-alb-access-logs
+        - ResourceName: !If [ IsDev, !Ref pCleanBranch, !Ref pEnvironment ]
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      LifecycleConfiguration:
+        Rules:
+          - Id: "ExpireOldLogs"
+            Status: Enabled
+            ExpirationInDays: 90
+            Prefix: "logs/"
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: ObjectWriter
+      Tags:
+        - Key: Name
+          Value: LoadBalancerAccessLogs
+
+  LoadBalancerAccessLogsBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref LoadBalancerAccessLogsBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: AllowELBAccess
+            Effect: Allow
+            Principal:
+              Service: "logdelivery.elasticloadbalancing.amazonaws.com"
+            Action: "s3:PutObject"
+            Resource: !Sub "arn:aws:s3:::${LoadBalancerAccessLogsBucket}/logs/AWSLogs/${AWS::AccountId}/*"
+
+  CollectoryRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument: !Sub |
+        {
+          "Version": "2012-10-17",
+          "Statement": [
+              {
+                  "Effect": "Allow",
+                  "Principal": {
+                      "Federated": "${pOidcConnectProvider}"
+                  },
+                  "Action": "sts:AssumeRoleWithWebIdentity",
+                  "Condition": {
+                      "StringEquals": {
+                                        "${pClusterOidcIssuerUrl}:sub": "system:serviceaccount:${pEksNamespace}:collectory-service-account-${pCleanBranch}",
+                                        "${pClusterOidcIssuerUrl}:aud": "sts.amazonaws.com"
+                      }
+                  }
+              },
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Service":  "ec2.amazonaws.com"
+      
+                },
+                "Action": "sts:AssumeRole"
+              }
+          ]
+        }
+      Description: !Sub 'IAM role for collectory service account ${AWS::StackName} ${pEnvironment} build ${pBuild}'
+      ManagedPolicyArns:
+        - !Sub arn:aws:iam::${AWS::AccountId}:policy/cpt/cptSSMInstanceCoreCloudWatchPatch
+      RoleName: !Sub
+        - ${pProductName}-${ResourceName}
+        - ResourceName: !If [ IsDev, !Ref pCleanBranch, !Ref pEnvironment ]
+      Tags:
+        - Key: Name
+          Value: !Sub
+            - ${pProductName}-${ResourceName}
+            - ResourceName: !If [ IsDev, !Ref pCleanBranch, !Ref pEnvironment ]
+
+  CollectoryInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: !Sub
+        - ${pProductName}-${ResourceName}
+        - ResourceName: !If [ IsDev, !Ref pCleanBranch, !Ref pEnvironment ]
+      Roles:
+        - !Ref CollectoryRole
+
+Outputs:
+
+  AppClientId:
+    Description: The Cognito app client for the collectory frontend
+    Value: !Ref CollectoryAppClient
+    Export:
+      Name: !Sub ${AWS::StackName}-AppClientId
+
+  ServiceAppClientId:
+    Description: The Cognito app client for the collectory backend service
+    Value: !Ref CollectoryServiceAppClient
+    Export:
+      Name: !Sub ${AWS::StackName}-ServiceAppClientId
+
+  LoadBalancerAccessLogsBucket:
+    Description: The S3 bucket for the Load Balancer access logs
+    Value: !Ref LoadBalancerAccessLogsBucket
+    Export:
+      Name: !Sub ${AWS::StackName}-LoadBalancerAccessLogsBucket
+
+  CollectoryRoleArn:
+    Description: The role ARN for the Collectory service
+    Value: !GetAtt CollectoryRole.Arn
+    Export:
+      Name: !Sub ${AWS::StackName}-CollectoryRoleArn

@@ -33,6 +33,11 @@ class PublicController {
 
     def index = { redirect(action: 'map') }
 
+    def redirectCommonUIAsset = {
+        def baseURL = grailsApplication.config.getProperty('headerAndFooter.baseURL')
+        redirect(url: "${baseURL}/img/${params.file}")
+    }
+
     /**
      * Do logouts through this app so we can invalidate the session.
      *

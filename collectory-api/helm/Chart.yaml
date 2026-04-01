@@ -1,0 +1,12 @@
+apiVersion: v2
+name: ala-collectory
+description: Helm chart for the ALA Collectory API — biodiversity collections metadata registry
+type: application
+version: 1.0.0
+appVersion: "7.0.0"
+
+dependencies:
+  - name: postgresql
+    version: 1.0.0
+    repository: file://charts/postgresql
+    condition: postgresql.enabled

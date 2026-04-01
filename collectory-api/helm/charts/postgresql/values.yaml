@@ -1,0 +1,29 @@
+replicaCount: 1
+image: "postgres:17-alpine"
+
+resources:
+  requests:
+    cpu: "250m"
+    memory: "256Mi"
+  limits:
+    cpu: "1"
+    memory: "512Mi"
+
+service:
+  name: postgresql
+  port: 5432
+
+deployment:
+  name: postgresql
+
+database: "collectory"
+username: "collectory_user"
+password: ""
+
+persistence:
+  enabled: true
+  storageClass: "auto-ebs-sc"
+  accessMode: ReadWriteOnce
+  size: 10Gi
+
+enabled: true

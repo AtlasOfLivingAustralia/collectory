@@ -1,0 +1,38 @@
+version: 0.2
+###
+# This build project builds the Collectory UI site files ready for upload to s3
+
+env:
+  shell: bash
+
+phases:
+  install:
+    on-failure: ABORT
+    runtime-versions:
+      nodejs: $NODE_VERSION
+    commands:
+      - echo injecting app client config
+      - |
+        if [[ "$ENVIRONMENT" == "production" || "$ENVIRONMENT" == "staging" ]]; then
+          VITE_OIDC_CLIENT_ID=$PROD_VITE_OIDC_CLIENT_ID
+        fi
+      - sed -i "s|VITE_OIDC_CLIENT_ID=.*$|VITE_OIDC_CLIENT_ID=$VITE_OIDC_CLIENT_ID|g" collectory-ui/config/.env.$ENVIRONMENT
+      - sed -i "s|VITE_API_BASE_URL=.*$|VITE_API_BASE_URL=$VITE_API_BASE_URL|g" collectory-ui/config/.env.$ENVIRONMENT
+      - sed -i "s|VITE_OIDC_AUTHORITY=.*$|VITE_OIDC_AUTHORITY=$VITE_OIDC_AUTHORITY|g" collectory-ui/config/.env.$ENVIRONMENT
+      - sed -i "s|VITE_OIDC_REDIRECT_URI=.*$|VITE_OIDC_REDIRECT_URI=$VITE_OIDC_REDIRECT_URI|g" collectory-ui/config/.env.$ENVIRONMENT
+      - cat collectory-ui/config/.env.$ENVIRONMENT
+      - cd collectory-ui
+  pre_build:
+    commands:
+      - echo running npm install...
+      - npm install @rollup/rollup-linux-x64-gnu
+      - npm ci --platform=linux --arch=x64
+  build:
+    commands:
+      - echo building...
+      - npm run build:$ENVIRONMENT
+
+artifacts:
+  base-directory: collectory-ui/dist
+  files:
+    - '**/*'

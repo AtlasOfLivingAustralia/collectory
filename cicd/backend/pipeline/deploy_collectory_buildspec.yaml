@@ -1,0 +1,60 @@
+version: 0.2
+###
+# This build project sets up the eks context and deploys the collectory API
+# using Helm
+
+env:
+  shell: bash
+  variables:
+    JAVA_TOOL_OPTIONS: -Dhttps.protocols=TLSv1.2
+
+phases:
+
+  install:
+    commands:
+      - echo Installing dependencies...
+      - curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+      - chmod 700 get_helm.sh
+      - ./get_helm.sh
+
+  pre_build:
+    commands:
+      - echo Entered the pre_build phase...
+
+  build:
+    commands:
+      - echo Build started on $(date)
+      - aws eks update-kubeconfig --name $EKS_CLUSTER_NAME
+      - |
+        COLLECTORY_ROLE_ARN=$(aws cloudformation describe-stacks --stack-name $BASE_STACK_NAME \
+          --query "Stacks[0].Outputs[?OutputKey=='CollectoryRoleArn'].OutputValue" --output text)
+      - |
+        eksctl create iamserviceaccount --name collectory-service-account-$CLEAN_BRANCH \
+          --namespace $EKS_NAMESPACE --cluster $EKS_CLUSTER_NAME --attach-role-arn $COLLECTORY_ROLE_ARN \
+          --approve --override-existing-serviceaccounts \
+          --tags "product=collectory,environment=${ENVIRONMENT},branch=${CLEAN_BRANCH}"
+      - cd collectory-api/helm
+      - echo helm upgrade --install $HELM_RELEASE_NAME  . 
+                      -n $EKS_NAMESPACE 
+                      --set image.repository=$ECR_REPO 
+                      --set image.tag=$BUILD_TAG
+                      --set ingress.hostname=$WS_SUB_DOMAIN.$HOSTED_ZONE
+                      --set ingress.certificateArn=$APP_CERTIFICATE
+                      --set serviceAccount.name=collectory-service-account-$CLEAN_BRANCH
+                      -f $CODEBUILD_SRC_DIR_ExportConfigArtifact/helm-values.yaml
+                      --set deploymentAnnotations.checksum/configs="$(md5sum $CODEBUILD_SRC_DIR_ExportConfigArtifact/helm-values.yaml | awk '{print $1}')"
+                      --set deploymentAnnotations.commitHash=$CODEBUILD_RESOLVED_SOURCE_VERSION
+      - helm upgrade --install $HELM_RELEASE_NAME . 
+                      -n $EKS_NAMESPACE
+                      --set image.repository=$ECR_REPO 
+                      --set image.tag=$BUILD_TAG
+                      --set ingress.hostname=$WS_SUB_DOMAIN.$HOSTED_ZONE
+                      --set ingress.certificateArn=$APP_CERTIFICATE
+                      --set serviceAccount.name=collectory-service-account-$CLEAN_BRANCH
+                      -f $CODEBUILD_SRC_DIR_ExportConfigArtifact/helm-values.yaml
+                      --set deploymentAnnotations.checksum/configs="$(md5sum $CODEBUILD_SRC_DIR_ExportConfigArtifact/helm-values.yaml | awk '{print $1}')"
+                      --set deploymentAnnotations.commitHash=$CODEBUILD_RESOLVED_SOURCE_VERSION
+  post_build:
+    commands:
+      - echo Post-build phase...
+      - echo Build completed on $(date)

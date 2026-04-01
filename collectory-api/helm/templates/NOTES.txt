@@ -1,0 +1,20 @@
+CHART NAME: {{ .Chart.Name }}
+CHART VERSION: {{ .Chart.Version }}
+APP VERSION: {{ .Chart.AppVersion }}
+
+ALA Collectory API has been deployed.
+
+  Service URL: https://{{ .Values.ingress.hostname }}
+  API docs:    https://{{ .Values.ingress.hostname }}/swagger-ui/index.html
+  Health:      https://{{ .Values.ingress.hostname }}/actuator/health
+
+Storage:
+  The /data/collectory EBS volume (PVC: {{ include "ala-collectory.fullname" . }}-data)
+  is annotated with helm.sh/resource-policy: keep — it will NOT be deleted
+  when the release is uninstalled. Delete it manually if no longer needed:
+
+    kubectl delete pvc {{ include "ala-collectory.fullname" . }}-data
+
+NOTE: This deployment uses strategy: Recreate due to EBS ReadWriteOnce constraints.
+There will be a brief outage (~30s) during pod rescheduling while EBS detaches
+and reattaches. If zero-downtime deploys are required, migrate storage to EFS.

@@ -206,6 +206,12 @@ class UrlMappings {
 
         "/ws/$entity?(.$format)?"(controller: 'data', action: [GET: 'getEntity', POST: 'saveEntity', PUT: 'saveEntity', DELETE: 'delete'])
 
+        // Redirect relative img paths from ALA common-ui footer/banner HTML to the actual CDN
+        "/public/show/img/$file" {
+            controller = 'public'
+            action = 'redirectCommonUIAsset'
+        }
+
         "/public/resources(.$format)"(controller: 'public', action: 'resources')
         "/public/condensed(.$format)"(controller: 'public', action: 'condensed')
 

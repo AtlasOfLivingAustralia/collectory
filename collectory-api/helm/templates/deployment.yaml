@@ -1,0 +1,180 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "ala-collectory.fullname" . }}
+  labels:
+    {{- include "ala-collectory.labels" . | nindent 4 }}
+spec:
+  # Single replica is intentional — EBS volumes are ReadWriteOnce.
+  # Scaling requires migrating storage to EFS (ReadWriteMany) first.
+  replicas: 1
+  # Recreate ensures the old pod releases the EBS volume before the new pod
+  # tries to attach it. RollingUpdate would deadlock on RWO volumes.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "ala-collectory.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "ala-collectory.selectorLabels" . | nindent 8 }}
+      annotations:
+        {{- include "ala-collectory.deploymentAnnotations" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+
+      # Init container: ensure /data/collectory subdirs exist on the EBS volume
+      # and that config files from the ConfigMap are copied into place.
+      # This is needed because the EBS volume is mounted at /data/collectory,
+      # which shadows the directories the Dockerfile pre-created in the image.
+      initContainers:
+        - name: init-data-dirs
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            runAsUser: 0
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+              mkdir -p /data/collectory/data \
+                        /data/collectory/upload \
+                        /data/collectory/upload/tmp \
+                        /data/collectory/config \
+                        /data/collectory/bootstrap
+              echo "Data directories ready."
+              {{- if .Values.postgresql.enabled }}
+              echo "Waiting for PostgreSQL at {{ .Values.postgresql.service.name }}:{{ .Values.postgresql.service.port }}..."
+              until nc -z {{ .Values.postgresql.service.name }} {{ .Values.postgresql.service.port }}; do
+                echo "PostgreSQL not ready — retrying in 2s"
+                sleep 2
+              done
+              echo "PostgreSQL is ready."
+              {{- end }}
+          volumeMounts:
+            - name: collectory-data
+              mountPath: /data/collectory
+
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- with .Values.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: 8080
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+
+          {{- if .Values.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.livenessProbe.httpGet.path }}
+              port: {{ .Values.livenessProbe.httpGet.port }}
+              scheme: {{ .Values.livenessProbe.httpGet.scheme }}
+            initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.livenessProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.livenessProbe.successThreshold }}
+            failureThreshold: {{ .Values.livenessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.startupProbe.enabled }}
+          startupProbe:
+            httpGet:
+              path: {{ .Values.startupProbe.httpGet.path }}
+              port: {{ .Values.startupProbe.httpGet.port }}
+              scheme: {{ .Values.startupProbe.httpGet.scheme }}
+            initialDelaySeconds: {{ .Values.startupProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.startupProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.startupProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.startupProbe.successThreshold }}
+            failureThreshold: {{ .Values.startupProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.readinessProbe.httpGet.path }}
+              port: {{ .Values.readinessProbe.httpGet.port }}
+              scheme: {{ .Values.readinessProbe.httpGet.scheme }}
+            initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.readinessProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.readinessProbe.successThreshold }}
+            failureThreshold: {{ .Values.readinessProbe.failureThreshold }}
+          {{- end }}
+
+          # Pass DB credentials and other secrets as env vars.
+          # The collectory-config.properties file (mounted below) handles all
+          # other application config, matching the lists-service pattern.
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: "prod"
+            - name: DB_USERNAME
+              value: {{ .Values.config.db.username | quote }}
+            - name: DB_PASSWORD
+              value: {{ .Values.config.db.password | quote }}
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+
+          # Override the Dockerfile ENTRYPOINT to pass explicit JVM flags,
+          # same approach as lists-service.
+          command: ["java"]
+          args:
+            - "-XX:+UseContainerSupport"
+            - "-XX:MaxRAMPercentage=75.0"
+            - "-XX:+UseG1GC"
+            - "-XX:MaxGCPauseMillis=200"
+            - "-XX:+ParallelRefProcEnabled"
+            - "-XX:ConcGCThreads=2"
+            - "-Xlog:gc*:file=/tmp/gc.log:time,uptime,level,tags"
+            - "-jar"
+            - "app.jar"
+            # Point Spring at the config file mounted from the ConfigMap.
+            # This is loaded in addition to (not instead of) the bundled
+            # application-prod.properties, so only overrides need to be here.
+            - "--spring.config.additional-location=file:/data/collectory/config/collectory-config.properties"
+
+          volumeMounts:
+            # EBS volume — covers the entire /data/collectory tree (data, upload, sitemap, bootstrap)
+            - name: collectory-data
+              mountPath: /data/collectory
+            # Config files from ConfigMap, mounted as individual files via subPath
+            # so they sit inside the EBS-backed /data/collectory/config/ directory.
+            - name: config-volume
+              mountPath: /data/collectory/config/collectory-config.properties
+              subPath: collectory-config.properties
+
+      volumes:
+        - name: collectory-data
+          {{- if .Values.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "ala-collectory.fullname" . }}-data
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        - name: config-volume
+          configMap:
+            name: {{ include "ala-collectory.fullname" . }}
+
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

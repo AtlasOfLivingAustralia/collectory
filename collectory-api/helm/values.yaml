@@ -1,0 +1,214 @@
+# Default values for ala-collectory.
+# Override these in environment-specific values files (e.g. values-prod.yaml).
+
+replicaCount: 1  # Must stay 1 — EBS is ReadWriteOnce. See deployment.yaml strategy: Recreate.
+
+image:
+  repository: ""
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  name: ""
+
+deploymentAnnotations: {}
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext:
+  fsGroup: 101
+  # fsGroup: 1000  # Set this if the collectory user UID needs to own the EBS volume mount
+
+securityContext: {}
+
+service:
+  port: 80
+  targetPort: 8080
+
+ingress:
+  enabled: true
+  className: "alb"
+  certificateArn: ""
+  hostname: ""
+  accessLogsBucket: ""
+  accessLogsPrefix: ""
+
+tags:
+  branch: ""
+  component: "collectory-api"
+  environment: ""
+  Name: ""
+  product: "collectory"
+  version: ""
+
+# EBS PVC for /data/collectory — covers uploads, entity images, sitemaps, bootstrap
+persistence:
+  enabled: true
+  storageClass: "auto-ebs-sc"  # EKS Auto Mode default EBS storage class
+  size: 20Gi
+
+resources:
+  requests:
+    memory: 2048Mi
+    cpu: 500m
+  limits:
+    memory: 2048Mi
+    cpu: 2
+
+# Extra environment variables to inject into the container
+extraEnv: []
+# - name: SOME_VAR
+#   value: "some-value"
+
+# Spring Boot startup can be slow — allow up to 3 minutes before declaring failure.
+# startupProbe covers the startup window; liveness/readiness kick in after.
+startupProbe:
+  enabled: true
+  httpGet:
+    path: /actuator/health
+    port: 8080
+    scheme: HTTP
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  successThreshold: 1
+  failureThreshold: 18  # 18 * 10s = 3 minutes total startup window
+
+livenessProbe:
+  enabled: true
+  httpGet:
+    path: /actuator/health/liveness
+    port: 8080
+    scheme: HTTP
+  initialDelaySeconds: 0
+  periodSeconds: 15
+  timeoutSeconds: 5
+  successThreshold: 1
+  failureThreshold: 3
+
+readinessProbe:
+  enabled: true
+  httpGet:
+    path: /actuator/health/readiness
+    port: 8080
+    scheme: HTTP
+  initialDelaySeconds: 0
+  periodSeconds: 10
+  timeoutSeconds: 5
+  successThreshold: 1
+  failureThreshold: 3
+
+# HPA is disabled by default — EBS RWO prevents multi-pod anyway.
+# Enable only after migrating storage to EFS.
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 1
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# =============================================================================
+# PostgreSQL subchart
+# =============================================================================
+postgresql:
+  enabled: true
+  database: "collectory"
+  username: "collectory_user"
+  password: ""
+  service:
+    name: postgresql
+    port: 5432
+  deployment:
+    name: postgresql
+  persistence:
+    enabled: true
+    storageClass: "auto-ebs-sc"
+    accessMode: ReadWriteOnce
+    size: 10Gi
+
+# =============================================================================
+# Application configuration — rendered into collectory-config.properties
+# and mounted at /data/collectory/config/collectory-config.properties
+# =============================================================================
+config:
+  # Public URL the app is reachable at
+  serverUrl: ""
+
+  # URL path prefix used in download links returned to clients
+  uploadExternalUrlPath: ""
+
+  sitemapEnabled: true
+
+  db:
+    # JDBC URL — defaults to the subchart service. Override if using an external DB.
+    url: "jdbc:postgresql://postgresql:5432/collectory"
+    username: "collectory_user"
+    password: ""
+
+  security:
+    oidc:
+      enabled: true
+      discoveryUri: ""
+      clientId: ""
+      secret: ""
+      scope: "openid profile email ala roles"
+    jwt:
+      enabled: true
+      discoveryUri: ""
+      rolesFromAccessToken: true
+      userIdClaim: "username"
+      roleClaims: "cognito:groups"
+    oidcLogoutUrl: ""
+
+  gbif:
+    apiUrl: "https://api.gbif.org/v1/"
+    website: "https://www.gbif.org/"
+    registrationEnabled: false
+    registrationDryRun: true
+    endorsingNodeKey: ""
+    installationKey: ""
+    apiUser: ""
+    apiPassword: ""
+    orphansPublisherId: ""
+    useDoi: true
+    defaultEntityCountry: ""
+
+  biocacheServicesUrl: "https://biocache-ws.ala.org.au/ws"
+  biocacheUiUrl: "https://biocache.ala.org.au"
+  loggerUrl: "https://logger.ala.org.au/service"
+  alertsUrl: "https://alerts.ala.org.au"
+  speciesListToolUrl: "https://lists.ala.org.au/speciesListItem/list/"
+  bieBaseUrl: "https://bie.ala.org.au"
+  spatialBaseUrl: "https://spatial.ala.org.au/"
+  userDetailsUrl: "https://api.ala.org.au/userdetails/"
+
+  headerAndFooter:
+    baseUrl: "https://www.ala.org.au/commonui-bs5-2019"
+    version: "2"
+
+  skin:
+    layout: "ala-main"
+    homeUrl: "https://www.ala.org.au"
+    orgNameLong: "Atlas of Living Australia"
+    orgNameShort: "Atlas"
+    orgSupportEmail: "support@ala.org.au"
+
+  googleApiKey: ""
+  mapboxAccessToken: ""
+
+  cors:
+    enabled: true
+    allowedOrigins: "*"
+
+  sentry:
+    dsn: ""
+    environment: ""
+    tracesSampleRate: "0.1"

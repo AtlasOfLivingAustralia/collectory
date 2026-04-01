@@ -1,0 +1,32 @@
+{
+  "Parameters" : {
+    "pAppClientHost"        : "{{ app_client_host }}",
+    "pAppClientServiceHost" : "{{ app_client_service_host }}",
+    "pBuild"                : "{{ codebuild_build_number }}",
+    "pCleanBranch"          : "{{ clean_branch }}",
+    "pProductName"          : "{{ product_name }}",
+    "pCognitoStackName"     : "{{ cognito_stack_name }}",
+    "pOidcConnectProvider"  : "{{ oidc_connect_provider }}",
+    "pClusterOidcIssuerUrl" : "{{ cluster_oidc_issuer_url }}",
+    "pEksNamespace"         : "{{ eks_namespace }}",
+    "pEnvironment"          : "{{ environment }}"
+  },
+  "Tags" : {
+    "product"     : "{{ product_name }}",
+    "component"   : "{{ product_component }}",
+    "environment" : "{{ environment }}",
+    "branch"      : "{{ src_branch }}",
+    "version"     : "{{ commit_id }}",
+    "build"       : "{{ codebuild_build_number }}"
+  },
+  "StackPolicy" : {
+    "Statement" : [
+      {
+        "Effect" : "Allow",
+        "Action" : "Update:*",
+        "Principal": "*",
+        "Resource" : "*"
+      }
+    ]
+  }
+}

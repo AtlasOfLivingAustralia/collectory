@@ -1,0 +1,518 @@
+/*
+ * collectory.css
+ * App-specific styles for the Collectory SPA — mirrors grails-app/assets/stylesheets/main.css
+ * and adds spacing/layout rules needed by public show pages.
+ */
+
+/* ── Layout ──────────────────────────────────────────────────────────────── */
+
+/* Main content area: match Grails #main padding */
+#content {
+  padding-left: 50px;
+  padding-right: 50px;
+}
+
+/* Re-assert Bootstrap column gutters — ALA skin CSS overrides .row > * { padding-left: 0 }
+   which removes the column gap between main content and sidebar. */
+#content .row > * {
+  padding-left: calc(var(--bs-gutter-x) * .5);
+  padding-right: calc(var(--bs-gutter-x) * .5);
+}
+
+/* ── Public sidebar sections ─────────────────────────────────────────────── */
+
+/* Each sidebar card (logo, data access, location, contact, website, network) */
+.public-metadata {
+  margin-top: 1em;
+  margin-bottom: 1em;
+  padding-bottom: 0.5em;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.public-metadata:last-child {
+  border-bottom: none;
+}
+
+.public-metadata h4 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.4em;
+  color: #555;
+}
+
+/* Institution/collection logo */
+.institutionImage {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin-bottom: 0.5em;
+}
+
+/* ── Tabs ────────────────────────────────────────────────────────────────── */
+
+/* Give tab content panels breathing room */
+.tab-content > .tab-pane {
+  padding-top: 1.25rem;
+}
+
+/* Space between the nav-tabs strip and the pane below */
+.tabbable {
+  margin-bottom: 0;
+}
+
+.tabbable + .tab-content {
+  border: 1px solid #999;
+  border-top: none;
+  padding: 15px;
+}
+
+.nav-tabs .nav-link.active {
+  border-color: #999 #999 transparent;
+}
+
+/* ── Breadcrumb ──────────────────────────────────────────────────────────── */
+
+/* Full-width background bar — ALA common.css sets padding/bg, these are fallbacks */
+#breadcrumb {
+  background-color: rgb(231, 231, 231);
+  border-bottom: 1px solid rgb(231, 231, 231);
+  padding: 12px 0 15px 19px;
+  margin-bottom: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Breadcrumb list */
+.breadcrumb-list {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.breadcrumb-list li {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Chevron separator — SVG matching ALA ala-styles.css.
+   Uses higher specificity (section#breadcrumb) to override ALA common.css rule
+   "section#breadcrumb li + li::before { content: '' }" which clears our separator. */
+section#breadcrumb .breadcrumb-list li + li::before {
+  content: "";
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  margin: 0 4px;
+  background-image: url("data:image/svg+xml,<svg viewBox='0 0 16 16' fill='%23999' xmlns='http://www.w3.org/2000/svg'><path fill-rule='evenodd' d='M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708' clip-rule='evenodd'/></svg>");
+  background-repeat: no-repeat;
+  background-size: contain;
+  vertical-align: middle;
+}
+
+/* ALA orange for breadcrumb links */
+section#breadcrumb .breadcrumb-list li a {
+  color: #c44d34;
+  text-decoration: none;
+}
+
+section#breadcrumb .breadcrumb-list li a:hover {
+  text-decoration: underline;
+}
+
+/* Active (current page) item */
+section#breadcrumb .breadcrumb-list li.breadcrumb-item.active {
+  color: #333;
+}
+
+.breadcrumb {
+  margin-bottom: 1rem;
+}
+
+/* Space between breadcrumb bar and page content */
+main#content {
+  margin-top: 3rem;
+}
+
+/* Record count link — large orange display above Data Access buttons */
+#totalRecordCountLinkHdr {
+  margin-bottom: 20px;
+}
+
+#totalRecordCountLinkHdr a {
+  color: #c44d34;
+  font-size: 1.4rem;
+  font-weight: bold;
+  text-decoration: none;
+}
+
+#totalRecordCountLinkHdr a:hover {
+  text-decoration: underline;
+}
+
+/* ── Edit button row ─────────────────────────────────────────────────────── */
+
+.edit-button-row {
+  margin-bottom: 0.5rem;
+}
+
+/* ── Section headings inside tab content ─────────────────────────────────── */
+
+.tab-content h2 {
+  font-size: 1.25rem;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.tab-content h2:first-child {
+  margin-top: 0;
+}
+
+/* ── Data access panel (sidebar) ─────────────────────────────────────────── */
+
+.dataAccess.btn-group-vertical {
+  width: 100%;
+}
+
+.dataAccess.btn-group-vertical .btn {
+  text-align: left;
+  font-size: 0.875rem;
+  margin-bottom: 0.25rem;
+  white-space: normal;
+}
+
+/* ── Contacts ────────────────────────────────────────────────────────────── */
+
+.contact {
+  margin-bottom: 0.5em;
+}
+
+.contact-name-highlight {
+  font-weight: 600;
+}
+
+.contact-role {
+  color: #555;
+  font-style: italic;
+}
+
+/* ── Website links ───────────────────────────────────────────────────────── */
+
+.webSite a {
+  word-break: break-all;
+}
+
+/* External link icon (Font Awesome) */
+a.external_icon::after,
+a.external::after {
+  content: ' \f08e';
+  font-family: 'FontAwesome', sans-serif;
+  font-size: 0.75em;
+  vertical-align: super;
+}
+
+/* ── LSID popup ──────────────────────────────────────────────────────────── */
+
+span.lsid {
+  font-size: 0.85em;
+  margin-left: 0.5em;
+}
+
+span.acronym {
+  font-size: 0.85em;
+  color: #888;
+  margin-left: 0.25em;
+}
+
+/* ── Records / metrics section ───────────────────────────────────────────── */
+
+/* Progress bar caption text */
+.progress-caption {
+  font-size: 0.85em;
+  color: #666;
+  margin-top: 0.25em;
+}
+
+/* Charts grid */
+.vertical-charts .row > [class^="col"] {
+  margin-bottom: 1.5rem;
+}
+
+/* ── Collections list in showInstitution ─────────────────────────────────── */
+
+.tab-content ol li {
+  margin-bottom: 0.4em;
+}
+
+/* ── Images grid ─────────────────────────────────────────────────────────── */
+
+.image-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.image-grid a img {
+  width: 100%;
+  height: 110px;
+  object-fit: cover;
+  border-radius: 3px;
+  border: 1px solid #ddd;
+}
+
+/* ── Manage / admin pages ────────────────────────────────────────────────── */
+
+/* Spacing between form control groups */
+.form-group {
+  margin-bottom: 1rem;
+}
+
+/* Form action buttons row */
+div.buttons {
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+/* ── Dataset list ────────────────────────────────────────────────────────── */
+
+.result {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.result:last-child {
+  border-bottom: none;
+}
+
+/* ── General spacing ─────────────────────────────────────────────────────── */
+
+/* First element inside tab-pane should not add extra top margin */
+.tab-pane > *:first-child {
+  margin-top: 0;
+}
+
+/* Row-level dividers used in list views */
+.rowA {
+  border-top: 1px solid silver;
+  padding-top: 8px;
+}
+
+.rowA,
+.rowB {
+  padding-bottom: 0;
+}
+
+.rowB {
+  border-bottom: none;
+  padding-left: 20px;
+}
+
+.rowB .viewRecords {
+  padding-left: 10px;
+}
+
+.rowC p {
+  overflow: hidden;
+  padding-bottom: 1px;
+  padding-left: 20px;
+}
+
+.rowA img {
+  vertical-align: middle;
+}
+
+.resultsLabel,
+.lastUpdatedDrView,
+.drNumRecordsDrView {
+  margin-left: 10px;
+}
+
+/* Licence image spacing */
+.licenceImage {
+  clear: both;
+  margin-top: 5px;
+  margin-bottom: 5px;
+}
+
+/* ── Nav tabs — match GSP border colour ─────────────────────────────────── */
+
+.nav-tabs {
+  border-bottom-color: #999;
+}
+
+/* ── Map page ───────────────────────────────────────────────────────────── */
+
+/* Filter buttons — mirrors grails-app/assets/stylesheets/map.css */
+.filter-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.filter-buttons > div {
+  padding: 0;
+  width: 100%;
+  margin-bottom: 0;
+  opacity: 0.45;
+  cursor: pointer;
+}
+
+.filter-buttons > div.selected {
+  opacity: 1.0;
+}
+
+.filter-buttons h2 {
+  margin: 0;
+}
+
+/* The h2 > a text inherits ALA skin orange for h2.
+   Provide fallback in case skin CSS isn't loaded. */
+.filter-buttons h2 a {
+  color: #d5502a;
+  font-weight: bold;
+  text-decoration: none;
+}
+
+.filter-buttons h2 a span {
+  padding-top: 0.3em;
+  padding-bottom: 0.3em;
+  display: block;
+  color: #000;
+  font-size: 13px;
+  font-weight: normal;
+  line-height: 1.2em;
+  width: 75%;
+}
+
+.filter-buttons a {
+  padding: 4px 10px 3px 10px;
+  height: 60px;
+  display: block;
+  box-sizing: content-box;
+  overflow: hidden;
+  border: 1px solid #ccc;
+  border-radius: 7px;
+  box-shadow: 4px 4px 0 #d9d9d9;
+  text-decoration: none;
+  color: inherit;
+}
+
+.filter-buttons a:hover,
+.filter-buttons a:active {
+  text-decoration: none;
+  border-color: darkgrey;
+  box-shadow: 4px 4px 0 darkgrey;
+}
+
+.filter-buttons a:hover span,
+.filter-buttons a:active span {
+  color: darkgrey;
+}
+
+/* Background images — positioned to show the illustration on the right side */
+.filter-buttons .all a {
+  background: transparent url(/images/ala/all_button_bgwd.png) no-repeat;
+  background-size: contain;
+  background-position: right center;
+}
+
+.filter-buttons .fauna a {
+  background: transparent url(/images/ala/fauna_button_bgwd.png) no-repeat;
+  background-size: contain;
+  background-position: right center;
+}
+
+.filter-buttons .insects a {
+  background: transparent url(/images/ala/insects_button_bgwd.png) no-repeat;
+  background-size: contain;
+  background-position: right center;
+}
+
+.filter-buttons .microbes a {
+  background: transparent url(/images/ala/microbes_button_bgwd.png) no-repeat;
+  background-size: contain;
+  background-position: right center;
+}
+
+.filter-buttons .plants a {
+  background: transparent url(/images/ala/plants_button_bgwd.png) no-repeat;
+  background-size: contain;
+  background-position: right center;
+}
+
+.filter-buttons .fungi a {
+  background: transparent url(/images/ala/fungi_button_bgwd.png) no-repeat;
+  background-size: contain;
+  background-position: right center;
+}
+
+/* Gap between filter sidebar and map/list column */
+#map-list-col {
+  padding-left: 30px;
+}
+
+#collectionTypesFooter {
+  margin-top: 20px;
+  margin-left: 4px;
+}
+
+.collectionsCount {
+  font-size: 14px;
+  font-weight: normal;
+  margin: 0;
+}
+
+/* ── Taxonomy tree ──────────────────────────────────────────────────────── */
+
+#treeContainer {
+  margin: 5px 0 20px 0;
+  width: 100%;
+}
+
+#taxonTreeHead {
+  height: 55px;
+}
+
+#taxonTreeHead p {
+  padding: 10px;
+}
+
+#taxonTreeHead p a {
+  padding-left: 10px;
+}
+
+#taxaTree {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+}
+
+#tree {
+  margin-top: 20px;
+}
+
+/* ── Dataset list (dataSets.gsp) ────────────────────────────────────────── */
+
+#resultsReturned {
+  font-size: 13px !important;
+}
+
+.collectory-content {
+  margin-top: 1rem;
+}
+
+#sidebarBox {
+  margin-bottom: 1rem;
+}
+
+/* ── Institution image ──────────────────────────────────────────────────── */
+
+.institutionImage {
+  max-width: 300px;
+  max-height: 250px;
+  border-radius: 0 !important;
+  padding-bottom: 5px;
+  margin-bottom: 15px;
+}

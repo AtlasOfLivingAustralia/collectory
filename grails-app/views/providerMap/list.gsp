@@ -68,7 +68,7 @@
                     </tbody>
                 </table>
             </div>
-            <div>
+            <div class="nav">
                 <tb:paginate controller="providerMap" action="list" total="${providerMapInstanceTotal}" />
             </div>
         </div>

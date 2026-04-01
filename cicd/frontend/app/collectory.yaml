@@ -1,0 +1,158 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Collectory UI Infrastructure
+
+Parameters:
+  pCollectoryWafWebAclArn:
+    Type: String
+    Description: The WAF Web ACL to attach the CloudFront distribution to
+  pSourceBucket:
+    Type: String
+    Description: The bucket name for the site
+  pBucketPath:
+    Type: String
+    Description: Optional path that the files are stored under
+  pCleanBranch:
+    Type: String
+    Description: A cleaned version of the code branch name
+    Default: development
+  pEnvironment:
+    Type: String
+    Description: The AWS environment this belongs to
+  pHostedZone:
+    Type: String
+    Description: The hosted zone the site are accessed under
+  pUiSubDomain:
+    Type: String
+    Description: The subdomain the site are accessed on
+  pCloudfrontCertificate:
+    Type: String
+    Description: The arn of the SSL certificate to be used
+
+Conditions:
+  IsDev: !Equals
+    - !Ref pEnvironment
+    - development
+  NotDev: !Not [ Condition: IsDev ]
+
+Resources:
+  CollectoryBucket:
+    Type: 'AWS::S3::Bucket'
+    DeletionPolicy: Delete
+    Properties:
+      BucketName: !Sub ${pSourceBucket}
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: TRUE
+        BlockPublicPolicy: TRUE
+        RestrictPublicBuckets: TRUE
+      Tags:
+        - Key: component
+          Value: website
+        - Key: Name
+          Value: !Sub ${pSourceBucket}
+
+  CollectoryBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref CollectoryBucket
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action:
+              - 's3:GetObject'
+            Effect: Allow
+            Resource: !Sub 'arn:aws:s3:::${CollectoryBucket}/*'
+            Principal:
+              AWS: !Sub 'arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity ${CollectoryCloudFrontOai}'
+
+  CollectoryDnsRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      Name: !Sub '${pUiSubDomain}.${pHostedZone}'
+      Comment: !Sub Collectory UI domain for the ${pEnvironment} environment
+      Type: A
+      AliasTarget:
+        DNSName: !GetAtt CollectoryCloudFrontDistro.DomainName
+        HostedZoneId: Z2FDTNDATAQYW2
+      HostedZoneName: !Sub '${pHostedZone}.'
+
+  CollectoryCloudFrontDistro:
+    Type: AWS::CloudFront::Distribution
+    DependsOn: CollectoryBucket
+    Properties:
+      DistributionConfig:
+        Aliases:
+          - !Sub '${pUiSubDomain}.${pHostedZone}'
+        Comment: !Sub CF Distribution for the Collectory UI site ${pEnvironment}
+        CustomErrorResponses:
+          - ErrorCode: 403
+            ErrorCachingMinTTL: 300
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+        DefaultCacheBehavior:
+          AllowedMethods:
+            - GET
+            - HEAD
+          CachedMethods:
+            - GET
+            - HEAD
+          CachePolicyId: !Ref CollectoryCachePolicy
+          Compress: true
+          TargetOriginId: collectory-s3
+          ViewerProtocolPolicy: redirect-to-https
+        DefaultRootObject: index.html
+        Enabled: true
+        HttpVersion: http2
+        IPV6Enabled: false
+        Origins:
+          - DomainName: !Sub '${pSourceBucket}.s3.${AWS::Region}.amazonaws.com'
+            Id: collectory-s3
+            S3OriginConfig:
+              OriginAccessIdentity: !Sub 'origin-access-identity/cloudfront/${CollectoryCloudFrontOai}'
+            OriginPath: !Sub '/${pBucketPath}'
+        ViewerCertificate:
+          AcmCertificateArn: !Ref pCloudfrontCertificate
+          MinimumProtocolVersion: TLSv1.2_2021
+          SslSupportMethod: sni-only
+        WebACLId: !Ref pCollectoryWafWebAclArn
+      Tags:
+        - Key: component
+          Value: cdn
+
+  CollectoryCachePolicy:
+    Type: AWS::CloudFront::CachePolicy
+    Properties:
+      CachePolicyConfig:
+        Comment: !Sub CF Cache Policy for the Collectory UI site ${pEnvironment}
+        DefaultTTL: 300
+        MaxTTL: 86400
+        MinTTL: 1
+        Name: !Sub
+          - "Collectory-cache-Policy-${ResourceName}"
+          - ResourceName: !If [ IsDev, !Ref pCleanBranch, !Ref pEnvironment ]
+        ParametersInCacheKeyAndForwardedToOrigin:
+          CookiesConfig:
+            CookieBehavior: none
+          EnableAcceptEncodingBrotli: true
+          EnableAcceptEncodingGzip: true
+          HeadersConfig:
+            HeaderBehavior: none
+          QueryStringsConfig:
+            QueryStringBehavior: whitelist
+            QueryStrings:
+              - cb
+
+  CollectoryCloudFrontOai:
+    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: !Sub CF Origin Access Identity for the Collectory UI ${pEnvironment}
+
+Outputs:
+  CollectoryBucketName:
+    Value: !Ref CollectoryBucket
+  CollectoryBucketArn:
+    Value: !GetAtt CollectoryBucket.Arn
+  CollectoryCloudFrontDistributionArn:
+    Value: !Sub
+      - "arn:aws:cloudfront::${AWS::AccountId}:distribution/${DistributionId}"
+      - DistributionId: !GetAtt CollectoryCloudFrontDistro.Id

@@ -232,7 +232,7 @@ ul.facets {
 .category { font-weight:bold; min-width: 120px; }
 .category-large { font-weight:bold; min-width: 180px;  }
 
-.flex-column .icon-chevron-right {
+.nav-stacked .icon-chevron-right {
     float: right;
     margin-top: 2px;
     margin-right: -6px;

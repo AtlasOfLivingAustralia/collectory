@@ -45,7 +45,7 @@
         </table>
     </div>
 
-    <div>
+    <div class="nav">
         <tb:paginate controller="dataHub" action="list" total="${instanceTotal}" />
     </div>
 </div>

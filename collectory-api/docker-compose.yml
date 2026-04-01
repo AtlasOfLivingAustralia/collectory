@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: collectory
+      POSTGRES_USER: collectory_user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - collectory-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U collectory_user -d collectory"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+#  app:
+#    build: .
+#    ports:
+#      - "8080:8080"
+#    environment:
+#      SPRING_PROFILES_ACTIVE: prod
+#      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/collectory
+#      DB_USERNAME: collectory_user
+#      DB_PASSWORD: password
+#    depends_on:
+#      db:
+#        condition: service_healthy
+#    volumes:
+#      - collectory-data:/data/collectory/data
+#      - collectory-upload:/data/collectory/upload
+#      - ./config:/data/collectory/config:ro
+#    healthcheck:
+#      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health || exit 1"]
+#      interval: 30s
+#      timeout: 5s
+#      start_period: 60s
+#      retries: 3
+
+volumes:
+  collectory-pgdata:
+  collectory-data:
+  collectory-upload:

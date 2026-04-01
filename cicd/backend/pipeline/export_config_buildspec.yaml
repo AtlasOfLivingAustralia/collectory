@@ -1,0 +1,190 @@
+version: 0.2
+###
+# This build project exports any variables needed for later stages and actions,
+# builds the template configs used to launch the CloudFormation templates
+
+env:
+  shell: bash
+  git-credential-helper: yes
+  variables:
+    DEBIAN_FRONTEND: noninteractive
+  exported-variables:
+    - ACCESS_LOGS_S3_BUCKET_NAME
+    - ALA_SECRETS_NAME
+    - APP_CERTIFICATE
+    - CODEBUILD_BUILD_NUMBER
+    - DOCKER_USERNAME
+    - ECR_REPO
+    - ECR_STACK_NAME
+    - ECR_STACK_FILE_PFIX
+    - EKS_NAMESPACE
+    - HELM_RELEASE_NAME
+    - HOSTED_ZONE
+    - IMAGE_NAME
+    - IMAGE_TAG
+    - PRODUCT_COMPONENT
+    - PRODUCT_NAME
+    - SLACK_ALERT_CHANNEL
+    - SLACK_DEPLOY_NOTIFICATION
+    - WS_SUB_DOMAIN
+
+phases:
+
+  install:
+    commands:
+      - echo Running on $(lsb_release -d | cut -f2)
+      - echo aws-cli version $(aws --version)
+      - pip install jinja2
+      - export CUR_PIPELINE_FINGERPRINT=$(md5sum cicd/$PRODUCT_COMPONENT/pipeline/pipeline.yaml | awk '{print $1}')
+      - # This next bit checks if the running pipeline is out of sync with the pipeline in the
+      - # current code revision. If it is it re-launches itself! For a normal branch commit the
+      - # pipeline is set to autorun on update so it will restart automatically and launch the
+      - # latest revision on the branch. For a rollback we dont want it to restart automatically as
+      - # we need to run a specific commit, not the latest. In this case the pipeline is set NOT to
+      - # autorun on update. It will have to be manually started after the rollback pipeline
+      - # has finished launching
+      - | 
+          if [[ $PIPELINE_FINGERPRINT != $CUR_PIPELINE_FINGERPRINT ]]; then
+            echo existing pipeline is out of sync with current code revision, relaunching!
+            cd cicd/$PRODUCT_COMPONENT/pipeline/
+            ./deploy_pipeline.sh -e ${ENVIRONMENT:0:4} -b $SRC_BRANCH
+            # pipeline execution should now stop if this is a rollback, 
+            # or restart automatically if this a normal branch deploy
+            exit 1
+          else
+            echo existing pipeline is in sync with current code revision, proceeding with the deploy!
+          fi
+    finally:
+      - #echo This always runs even if the update or install command fails
+
+  pre_build:
+    commands:
+      - echo Entered the pre_build phase...
+      - echo source branch is $SRC_BRANCH
+      - echo clean branch is $CLEAN_BRANCH
+      - echo Environment is $ENVIRONMENT
+      - echo generating environment vars...
+      - cicd/gen_env_vars.py --env $ENVIRONMENT --clean-branch $CLEAN_BRANCH --conf cicd/$PRODUCT_COMPONENT/config.ini > env.txt
+      - echo loading config..
+      - set -a ; source env.txt ; set +a
+      # this is not being used in the deploy build spec. The environment vars are exported into the pipeline namespace.
+      - echo creating the app environment for the collectory deployment...
+      - |
+         source cicd/unset_codebuild_env_vars.sh
+         for var in $(printenv | awk -F= '{print $1}'); do
+           echo "$var=\"$(printenv $var)\"" >> app.env
+         done
+    finally:
+      - #echo This always runs
+
+  build:
+    commands:
+      - echo Entered the build phase...
+      # package templates and generate the template configs
+      - |
+          for i in cicd/$PRODUCT_COMPONENT/app/*.yaml; do
+            stack=$(echo $i | sed 's/.yaml$//')
+            aws cloudformation package --template-file $stack.yaml \
+                                       --s3-bucket $ARTIFACTS_BUCKET \
+                                       --s3-prefix $PRODUCT_NAME/$PRODUCT_COMPONENT/$CLEAN_BRANCH-$CODEBUILD_BUILD_NUMBER \
+                                       --output-template-file ${stack}.yaml \
+                                       --region $REGION
+
+            echo Generating the template config for $stack
+            cicd/gen_template_config.py --template ${stack}_template_config.j2 > ${stack}_template_config.json
+          done
+      - echo importing base stack outputs...
+      - ACCESS_LOGS_S3_BUCKET_NAME=$(aws cloudformation describe-stacks --stack-name $BASE_STACK_NAME --query "Stacks[0].Outputs[?OutputKey=='LoadBalancerAccessLogsBucket'].OutputValue" --output text)
+      - echo generating values file for helm...
+      - | 
+        echo "config:
+          serverUrl: \"$SERVER_URL\"
+          uploadExternalUrlPath: \"$UPLOAD_EXTERNAL_URL_PATH\"
+          sitemapEnabled: $SITEMAP_ENABLED
+          db:
+            url: \"$DB_URL\"
+            username: \"$DB_USERNAME\"
+            password: \"$DB_PASSWORD\"
+          security:
+            oidc:
+              enabled: $SECURITY_OIDC_ENABLED
+              discoveryUri: \"$SECURITY_OIDC_DISCOVERY_URI\"
+              clientId: \"$SECURITY_OIDC_CLIENT_ID\"
+              secret: \"$SECURITY_OIDC_SECRET\"
+              scope: \"$SECURITY_OIDC_SCOPE\"
+            jwt:
+              enabled: $SECURITY_JWT_ENABLED
+              discoveryUri: \"$SECURITY_JWT_DISCOVERY_URI\"
+              rolesFromAccessToken: $SECURITY_JWT_ROLES_FROM_ACCESS_TOKEN
+              userIdClaim: \"$SECURITY_JWT_USER_ID_CLAIM\"
+              roleClaims: \"$SECURITY_JWT_ROLE_CLAIMS\"
+            oidcLogoutUrl: \"$SECURITY_OIDC_LOGOUT_URL\"
+          gbif:
+            apiUrl: \"$GBIF_API_URL\"
+            website: \"$GBIF_WEBSITE\"
+            registrationEnabled: $GBIF_REGISTRATION_ENABLED
+            registrationDryRun: $GBIF_REGISTRATION_DRY_RUN
+            endorsingNodeKey: \"$GBIF_ENDORSING_NODE_KEY\"
+            installationKey: \"$GBIF_INSTALLATION_KEY\"
+            apiUser: \"$GBIF_API_USER\"
+            apiPassword: \"$GBIF_API_PASSWORD\"
+            orphansPublisherId: \"$GBIF_ORPHANS_PUBLISHER_ID\"
+            useDoi: $GBIF_USE_DOI
+            defaultEntityCountry: \"$GBIF_DEFAULT_ENTITY_COUNTRY\"
+          biocacheServicesUrl: \"$BIOCACHE_SERVICES_URL\"
+          biocacheUiUrl: \"$BIOCACHE_UI_URL\"
+          loggerUrl: \"$LOGGER_URL\"
+          alertsUrl: \"$ALERTS_URL\"
+          speciesListToolUrl: \"$SPECIES_LIST_TOOL_URL\"
+          bieBaseUrl: \"$BIE_BASE_URL\"
+          spatialBaseUrl: \"$SPATIAL_BASE_URL\"
+          userDetailsUrl: \"$USER_DETAILS_URL\"
+          headerAndFooter:
+            baseUrl: \"$HEADER_AND_FOOTER_BASE_URL\"
+            version: \"$HEADER_AND_FOOTER_VERSION\"
+          skin:
+            layout: \"$SKIN_LAYOUT\"
+            homeUrl: \"$SKIN_HOME_URL\"
+            orgNameLong: \"$SKIN_ORG_NAME_LONG\"
+            orgNameShort: \"$SKIN_ORG_NAME_SHORT\"
+            orgSupportEmail: \"$SKIN_ORG_SUPPORT_EMAIL\"
+          googleApiKey: \"$GOOGLE_API_KEY\"
+          mapboxAccessToken: \"$MAPBOX_ACCESS_TOKEN\"
+          cors:
+            enabled: $CORS_ENABLED
+            allowedOrigins: \"$CORS_ALLOWED_ORIGINS\"
+          sentry:
+            dsn: \"$SENTRY_DSN\"
+            environment: \"$SENTRY_ENVIRONMENT\"
+            tracesSampleRate: \"$SENTRY_TRACES_SAMPLE_RATE\"
+        postgresql:
+          password: \"$DB_PASSWORD\"
+        ingress:
+          accessLogsPrefix: \"logs\"
+          accessLogsBucket: \"${ACCESS_LOGS_S3_BUCKET_NAME}\"
+        tags:
+          product: \"${PRODUCT_NAME}\"
+          component: \"${PRODUCT_COMPONENT}\"
+          environment: \"${ENVIRONMENT}\"
+          branch: \"${CLEAN_BRANCH}\"
+          version: \"${COMMIT_ID}\"
+          Name: \"${HELM_RELEASE_NAME}\"
+        environment: \"${ENVIRONMENT}\"
+        resources:
+          requests:
+            cpu: \"${CPU_REQUEST}\"
+            memory: \"${MEMORY_REQUEST}\"
+          limits:
+            cpu: \"${CPU_LIMIT}\"
+            memory: \"${MEMORY_LIMIT}\"" > helm-values.yaml
+    finally:
+      - #echo This always runs
+
+
+  post_build:
+    commands:
+      - #echo Entered the post_build phase...
+
+artifacts:
+  files:
+    - '**/*'

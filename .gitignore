@@ -7,3 +7,8 @@ build/*
 /.gradle/
 /build/
 .DS_Store
+collectory-ui/node_modules
+collectory-ui/dist
+collectory-api/target/*
+bin/
+.settings/
