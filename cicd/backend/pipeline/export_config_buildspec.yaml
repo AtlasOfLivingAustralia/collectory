@@ -95,6 +95,9 @@ phases:
           done
       - echo importing base stack outputs...
       - ACCESS_LOGS_S3_BUCKET_NAME=$(aws cloudformation describe-stacks --stack-name $BASE_STACK_NAME --query "Stacks[0].Outputs[?OutputKey=='LoadBalancerAccessLogsBucket'].OutputValue" --output text)
+      - SECURITY_OIDC_CLIENT_ID=$(aws cloudformation describe-stacks --stack-name $BASE_STACK_NAME --query "Stacks[0].Outputs[?OutputKey=='ServiceAppClientId'].OutputValue" --output text)
+      - COGNITO_USER_POOL_ID=$(echo $SECURITY_OIDC_DISCOVERY_URI | awk -F'/' '{print $(NF-2)}')
+      - SECURITY_OIDC_SECRET=$(aws cognito-idp describe-user-pool-client --user-pool-id $COGNITO_USER_POOL_ID --client-id $SECURITY_OIDC_CLIENT_ID --query "UserPoolClient.ClientSecret" --output text)
       - echo generating values file for helm...
       - | 
         echo "config:
