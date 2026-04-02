@@ -160,13 +160,25 @@ config:
       clientId: ""
       secret: ""
       scope: "openid profile email ala roles"
+      userIdClaim: "username"
+      roleClaims: "ala:role"
+      logoutAction: "DEFAULT"
+      logoutUrl: ""
     jwt:
       enabled: true
       discoveryUri: ""
       rolesFromAccessToken: true
       userIdClaim: "username"
       roleClaims: "cognito:groups"
-    oidcLogoutUrl: ""
+    cors:
+      origins: "http://localhost:3000,http://localhost:8080"
+    cookie:
+      name: "ALA-SESSION"
+      domain: ""
+      debug: false
+      rotate: false
+    login:
+      maxAgeDays: 30
 
   gbif:
     apiUrl: "https://api.gbif.org/v1/"
