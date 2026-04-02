@@ -8,6 +8,7 @@ import { getInstitutions } from '../../api/endpoints/institutions';
 import { getDataProviders } from '../../api/endpoints/dataProviders';
 import type { ProviderGroup, Institution, DataProvider, DataResource, Collection } from '../../api/types';
 import { ProtectedRoute } from '../../auth/ProtectedRoute';
+import Breadcrumb from '../../components/public/Breadcrumb';
 
 /** Maps URL entityType to API path and labels */
 const ENTITY_CONFIG: Record<string, { apiPath: string; singular: string; plural: string }> = {
@@ -276,19 +277,14 @@ export default function EntityEditForm() {
   return (
     <ProtectedRoute>
       <div className="container mt-4">
-        <nav aria-label="breadcrumb" className="mb-3">
-          <ol className="breadcrumb">
-            <li className="breadcrumb-item">
-              <Link to={`/${entityType}/list`}>{config.plural}</Link>
-            </li>
-            {!isCreateMode && entity && (
-              <li className="breadcrumb-item">
-                <Link to={`/${entityType}/show/${id}`}>{entity.uid || id}</Link>
-              </li>
-            )}
-            <li className="breadcrumb-item active">{isCreateMode ? `New ${config.singular}` : 'Edit'}</li>
-          </ol>
-        </nav>
+        <Breadcrumb
+          parent={{ url: '/manage/list', label: 'Metadata management' }}
+          extra={[
+            { url: `/${entityType}/list`, label: config.plural },
+            ...(!isCreateMode && entity ? [{ url: `/${entityType}/show/${id}`, label: entity.uid || id || '' }] : []),
+          ]}
+          current={isCreateMode ? `New ${config.singular}` : 'Edit'}
+        />
         <h1>{isCreateMode ? `New ${config.singular}` : `Edit ${config.singular}`}</h1>
         {!isCreateMode && entity && (
           <p className="text-muted">

@@ -9,6 +9,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { contactsApi } from '../../api/endpoints/contacts';
 import type { Contact, ContactFor } from '../../api/types';
 import { ProtectedRoute } from '../../auth/ProtectedRoute';
+import Breadcrumb from '../../components/public/Breadcrumb';
 
 const ENTITY_CONFIG: Record<string, { apiPath: string; singular: string; showPath: string }> = {
   collection: { apiPath: 'collection', singular: 'Collection', showPath: '/public/showCollection' },
@@ -119,17 +120,14 @@ export default function ContactRoleEditor() {
   return (
     <ProtectedRoute>
       <div className="container mt-4">
-        <nav aria-label="breadcrumb" className="mb-3">
-          <ol className="breadcrumb">
-            <li className="breadcrumb-item">
-              <Link to={`/${entityType}/list`}>{ENTITY_LABELS[entityType ?? ''] ?? entityType}</Link>
-            </li>
-            <li className="breadcrumb-item">
-              <Link to={`/${entityType}/show/${id}`}>{id}</Link>
-            </li>
-            <li className="breadcrumb-item active">Contacts</li>
-          </ol>
-        </nav>
+        <Breadcrumb
+          parent={{ url: '/manage/list', label: 'Metadata management' }}
+          extra={[
+            { url: `/${entityType}/list`, label: ENTITY_LABELS[entityType ?? ''] ?? entityType ?? '' },
+            { url: `/${entityType}/show/${id}`, label: id || '' },
+          ]}
+          current="Contacts"
+        />
         <h1>Contacts</h1>
         <p className="text-muted"><code>{id}</code></p>
 

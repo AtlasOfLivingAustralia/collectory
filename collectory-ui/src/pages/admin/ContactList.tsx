@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getContacts } from '../../api/endpoints/contacts';
 import Pagination from '../../components/common/Pagination';
 import { ProtectedRoute } from '../../auth/ProtectedRoute';
+import Breadcrumb from '../../components/public/Breadcrumb';
 
 const PAGE_SIZE = 20;
 
@@ -73,11 +74,7 @@ export default function ContactList() {
   return (
     <ProtectedRoute>
       <div className="container mt-4">
-        <nav aria-label="breadcrumb" className="mb-3">
-          <ol className="breadcrumb">
-            <li className="breadcrumb-item active">Contacts</li>
-          </ol>
-        </nav>
+        <Breadcrumb parent={{ url: '/manage/list', label: 'Metadata management' }} current="Contacts" />
         <div className="d-flex justify-content-between align-items-center mb-3">
           <h1>Contacts</h1>
           <Link to="/contact/create" className="btn btn-primary">

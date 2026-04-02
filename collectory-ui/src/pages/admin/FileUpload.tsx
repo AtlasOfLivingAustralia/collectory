@@ -1,9 +1,10 @@
 import { useState, useRef } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import apiClient from '../../api/client';
 import type { DataResource } from '../../api/types';
 import { ProtectedRoute } from '../../auth/ProtectedRoute';
+import Breadcrumb from '../../components/public/Breadcrumb';
 
 export default function FileUpload() {
   const { id } = useParams<{ id: string }>();
@@ -73,13 +74,14 @@ export default function FileUpload() {
   return (
     <ProtectedRoute>
       <div className="container mt-4">
-        <nav aria-label="breadcrumb" className="mb-3">
-          <ol className="breadcrumb">
-            <li className="breadcrumb-item"><Link to="/dataResource/list">Data Resources</Link></li>
-            <li className="breadcrumb-item"><Link to={`/dataResource/show/${id}`}>{id}</Link></li>
-            <li className="breadcrumb-item active">Upload</li>
-          </ol>
-        </nav>
+        <Breadcrumb
+          parent={{ url: '/manage/list', label: 'Metadata management' }}
+          extra={[
+            { url: '/dataResource/list', label: 'Data Resources' },
+            { url: `/dataResource/show/${id}`, label: resource.name || id || '' },
+          ]}
+          current="Upload"
+        />
         <h1>Upload Data File - {resource.name}</h1>
         <p className="text-muted">
           Upload a Darwin Core Archive (DwC-A) file for this data resource. The file should be a

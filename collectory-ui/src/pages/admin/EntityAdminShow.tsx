@@ -16,6 +16,7 @@ import type {
 import { deleteEntity } from '../../api/endpoints/mutations';
 import { ProtectedRoute } from '../../auth/ProtectedRoute';
 import { useConfig } from '../../hooks/useConfig';
+import Breadcrumb from '../../components/public/Breadcrumb';
 
 /* ---------- mini-map for location preview ---------- */
 
@@ -302,15 +303,11 @@ export default function EntityAdminShow() {
   return (
     <ProtectedRoute>
       <div className="container mt-4">
-        {/* Breadcrumb */}
-        <nav aria-label="breadcrumb" className="mb-3">
-          <ol className="breadcrumb">
-            <li className="breadcrumb-item">
-              <Link to={`/${entityType}/list`}>{config.plural}</Link>
-            </li>
-            <li className="breadcrumb-item active">{entity.name}</li>
-          </ol>
-        </nav>
+        <Breadcrumb
+          parent={{ url: '/manage/list', label: 'Metadata management' }}
+          extra={[{ url: `/${entityType}/list`, label: config.plural }]}
+          current={entity.name}
+        />
 
         {/* ===== 1. Toolbar links ===== */}
         <div className="d-flex gap-2 mb-3">

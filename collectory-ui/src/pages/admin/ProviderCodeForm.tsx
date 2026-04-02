@@ -1,9 +1,10 @@
 import { useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '../../api/client';
 import { ProtectedRoute } from '../../auth/ProtectedRoute';
+import Breadcrumb from '../../components/public/Breadcrumb';
 
 interface ProviderCodeFormData {
   code: string;
@@ -58,12 +59,11 @@ export default function ProviderCodeForm() {
   return (
     <ProtectedRoute>
       <div className="container mt-4">
-        <nav aria-label="breadcrumb" className="mb-3">
-          <ol className="breadcrumb">
-            <li className="breadcrumb-item"><Link to="/providerCode/list">Provider Codes</Link></li>
-            <li className="breadcrumb-item active">{isEdit ? 'Edit Provider Code' : 'New Provider Code'}</li>
-          </ol>
-        </nav>
+        <Breadcrumb
+          parent={{ url: '/manage/list', label: 'Metadata management' }}
+          extra={[{ url: '/providerCode/list', label: 'Provider Codes' }]}
+          current={isEdit ? 'Edit Provider Code' : 'New Provider Code'}
+        />
         <h1>{isEdit ? 'Edit Provider Code' : 'New Provider Code'}</h1>
 
         <form onSubmit={handleSubmit(onSubmit)}>

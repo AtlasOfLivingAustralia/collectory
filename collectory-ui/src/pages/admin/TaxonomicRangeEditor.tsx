@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 
 const ENTITY_LABELS: Record<string, string> = {
   collection: 'Collections', institution: 'Institutions', dataResource: 'Data Resources',
@@ -10,6 +10,7 @@ import { useForm } from 'react-hook-form';
 import apiClient from '../../api/client';
 import type { ProviderGroup } from '../../api/types';
 import { ProtectedRoute } from '../../auth/ProtectedRoute';
+import Breadcrumb from '../../components/public/Breadcrumb';
 
 const ENTITY_CONFIG: Record<string, { apiPath: string; singular: string }> = {
   collection: { apiPath: 'collection', singular: 'Collection' },
@@ -112,17 +113,14 @@ export default function TaxonomicRangeEditor() {
   return (
     <ProtectedRoute>
       <div className="container mt-4">
-        <nav aria-label="breadcrumb" className="mb-3">
-          <ol className="breadcrumb">
-            <li className="breadcrumb-item">
-              <Link to={`/${entityType}/list`}>{ENTITY_LABELS[entityType ?? ''] ?? entityType}</Link>
-            </li>
-            <li className="breadcrumb-item">
-              <Link to={`/${entityType}/show/${id}`}>{id}</Link>
-            </li>
-            <li className="breadcrumb-item active">Taxonomic Range</li>
-          </ol>
-        </nav>
+        <Breadcrumb
+          parent={{ url: '/manage/list', label: 'Metadata management' }}
+          extra={[
+            { url: `/${entityType}/list`, label: ENTITY_LABELS[entityType ?? ''] ?? entityType ?? '' },
+            { url: `/${entityType}/show/${id}`, label: entity.name || id || '' },
+          ]}
+          current="Taxonomic Range"
+        />
         <h1>Taxonomic Range - {entity.name}</h1>
         <p className="text-muted">
           Enter a comma-separated list of higher taxa that describe the taxonomic range of this{' '}

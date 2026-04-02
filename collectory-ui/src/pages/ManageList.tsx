@@ -4,6 +4,7 @@ import { ProtectedRoute } from '../auth/ProtectedRoute';
 import { useAuth } from '../auth/useAuth';
 import apiClient from '../api/client';
 import { entityTypeFromUid } from '../api/types';
+import Breadcrumb from '../components/public/Breadcrumb';
 
 interface ManagedEntity {
   uid: string;
@@ -73,6 +74,7 @@ function ManageListContent() {
 
   return (
     <div className="container mt-4">
+      <Breadcrumb current="Metadata management" />
       <h1>Manage Collections</h1>
 
       <ul className="nav nav-pills mb-4">

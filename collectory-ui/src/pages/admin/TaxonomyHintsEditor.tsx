@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 
 const ENTITY_LABELS: Record<string, string> = {
   collection: 'Collections', institution: 'Institutions', dataResource: 'Data Resources',
@@ -10,6 +10,7 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import apiClient from '../../api/client';
 import type { ProviderGroup } from '../../api/types';
 import { ProtectedRoute } from '../../auth/ProtectedRoute';
+import Breadcrumb from '../../components/public/Breadcrumb';
 
 interface HintRow {
   key: string;
@@ -93,17 +94,14 @@ export default function TaxonomyHintsEditor() {
   return (
     <ProtectedRoute>
       <div className="container mt-4">
-        <nav aria-label="breadcrumb" className="mb-3">
-          <ol className="breadcrumb">
-            <li className="breadcrumb-item">
-              <Link to={`/${entityType}/list`}>{ENTITY_LABELS[entityType ?? ''] ?? entityType}</Link>
-            </li>
-            <li className="breadcrumb-item">
-              <Link to={`/${entityType}/show/${id}`}>{id}</Link>
-            </li>
-            <li className="breadcrumb-item active">Taxonomy Hints</li>
-          </ol>
-        </nav>
+        <Breadcrumb
+          parent={{ url: '/manage/list', label: 'Metadata management' }}
+          extra={[
+            { url: `/${entityType}/list`, label: ENTITY_LABELS[entityType ?? ''] ?? entityType ?? '' },
+            { url: `/${entityType}/show/${id}`, label: entity.name || id || '' },
+          ]}
+          current="Taxonomy Hints"
+        />
         <h1>Taxonomy Hints - {entity.name}</h1>
         <p className="text-muted">
           Taxonomy hints are used to guide the name matching process. Each hint is a key-value pair

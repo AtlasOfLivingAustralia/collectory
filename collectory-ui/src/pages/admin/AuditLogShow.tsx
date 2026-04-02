@@ -1,7 +1,8 @@
-import { useParams, Link } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import apiClient from '../../api/client';
 import { ProtectedRoute } from '../../auth/ProtectedRoute';
+import Breadcrumb from '../../components/public/Breadcrumb';
 
 interface AuditLogEvent {
   id: number;
@@ -51,14 +52,11 @@ export default function AuditLogShow() {
   return (
     <ProtectedRoute requiredRole="ROLE_ADMIN">
       <div className="container mt-4">
-        <nav aria-label="breadcrumb" className="mb-3">
-          <ol className="breadcrumb">
-            <li className="breadcrumb-item">
-              <Link to="/auditLogEvent/list">Audit Log Events</Link>
-            </li>
-            <li className="breadcrumb-item active">Event #{event.id}</li>
-          </ol>
-        </nav>
+        <Breadcrumb
+          parent={{ url: '/manage/list', label: 'Metadata management' }}
+          extra={[{ url: '/auditLogEvent/list', label: 'Audit Log Events' }]}
+          current={`Event #${event.id}`}
+        />
 
         <h1>Audit Log Event #{event.id}</h1>
 

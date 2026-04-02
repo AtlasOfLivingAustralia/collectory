@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '../../api/client';
 import type { DataHub, ProviderGroup } from '../../api/types';
 import { ProtectedRoute } from '../../auth/ProtectedRoute';
+import Breadcrumb from '../../components/public/Breadcrumb';
 
 type MemberType = 'institution' | 'collection' | 'dataResource';
 
@@ -144,13 +145,14 @@ export default function MembersEditor() {
   return (
     <ProtectedRoute>
       <div className="container mt-4">
-        <nav aria-label="breadcrumb" className="mb-3">
-          <ol className="breadcrumb">
-            <li className="breadcrumb-item"><Link to="/dataHub/list">Data Hubs</Link></li>
-            <li className="breadcrumb-item"><Link to={`/dataHub/show/${id}`}>{id}</Link></li>
-            <li className="breadcrumb-item active">Members</li>
-          </ol>
-        </nav>
+        <Breadcrumb
+          parent={{ url: '/manage/list', label: 'Metadata management' }}
+          extra={[
+            { url: '/dataHub/list', label: 'Data Hubs' },
+            { url: `/dataHub/show/${id}`, label: dataHub?.name || id || '' },
+          ]}
+          current="Members"
+        />
         <h1>Members - {dataHub.name}</h1>
 
         {opError && <div className="alert alert-danger">{opError}</div>}

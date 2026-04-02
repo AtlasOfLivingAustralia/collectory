@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import apiClient from '../../api/client';
 import Pagination from '../../components/common/Pagination';
 import { ProtectedRoute } from '../../auth/ProtectedRoute';
+import Breadcrumb from '../../components/public/Breadcrumb';
 
 const PAGE_SIZE = 20;
 
@@ -76,11 +77,7 @@ export default function LicenceList() {
   return (
     <ProtectedRoute>
       <div className="container mt-4">
-        <nav aria-label="breadcrumb" className="mb-3">
-          <ol className="breadcrumb">
-            <li className="breadcrumb-item active">Licences</li>
-          </ol>
-        </nav>
+        <Breadcrumb parent={{ url: '/manage/list', label: 'Metadata management' }} current="Licences" />
         <div className="d-flex justify-content-between align-items-center mb-3">
           <h1>Licences</h1>
           <Link to="/licence/create" className="btn btn-primary">

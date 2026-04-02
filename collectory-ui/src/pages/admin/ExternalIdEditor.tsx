@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 
 const ENTITY_LABELS: Record<string, string> = {
   collection: 'Collections', institution: 'Institutions', dataResource: 'Data Resources',
@@ -9,6 +9,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '../../api/client';
 import type { ExternalIdentifier, ProviderGroup } from '../../api/types';
 import { ProtectedRoute } from '../../auth/ProtectedRoute';
+import Breadcrumb from '../../components/public/Breadcrumb';
 
 interface NewIdentifier {
   source: string;
@@ -95,17 +96,14 @@ export default function ExternalIdEditor() {
   return (
     <ProtectedRoute>
       <div className="container mt-4">
-        <nav aria-label="breadcrumb" className="mb-3">
-          <ol className="breadcrumb">
-            <li className="breadcrumb-item">
-              <Link to={`/${entityType}/list`}>{ENTITY_LABELS[entityType ?? ''] ?? entityType}</Link>
-            </li>
-            <li className="breadcrumb-item">
-              <Link to={`/${entityType}/show/${id}`}>{id}</Link>
-            </li>
-            <li className="breadcrumb-item active">External Identifiers</li>
-          </ol>
-        </nav>
+        <Breadcrumb
+          parent={{ url: '/manage/list', label: 'Metadata management' }}
+          extra={[
+            { url: `/${entityType}/list`, label: ENTITY_LABELS[entityType ?? ''] ?? entityType ?? '' },
+            { url: `/${entityType}/show/${id}`, label: (entity?.name as string) || id || '' },
+          ]}
+          current="External Identifiers"
+        />
         <h1>External Identifiers - {entity?.name ?? id}</h1>
 
         {opError && <div className="alert alert-danger">{opError}</div>}

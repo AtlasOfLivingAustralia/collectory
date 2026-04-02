@@ -6,6 +6,7 @@ import apiClient from '../../api/client';
 import { contactsApi } from '../../api/endpoints/contacts';
 import type { ContactFor } from '../../api/types';
 import { ProtectedRoute } from '../../auth/ProtectedRoute';
+import Breadcrumb from '../../components/public/Breadcrumb';
 
 /** Map entity UID prefix to entity type for linking */
 function entityTypeFromPrefix(uid: string): string | null {
@@ -87,15 +88,11 @@ export default function ContactShow() {
   return (
     <ProtectedRoute>
       <div className="container mt-4">
-        {/* Breadcrumb */}
-        <nav aria-label="breadcrumb" className="mb-3">
-          <ol className="breadcrumb">
-            <li className="breadcrumb-item">
-              <Link to="/contact/list">Contacts</Link>
-            </li>
-            <li className="breadcrumb-item active">{fullName}</li>
-          </ol>
-        </nav>
+        <Breadcrumb
+          parent={{ url: '/manage/list', label: 'Metadata management' }}
+          extra={[{ url: '/contact/list', label: 'Contacts' }]}
+          current={fullName}
+        />
 
         <div className="d-flex justify-content-between align-items-start mb-3">
           <h1>{fullName}</h1>

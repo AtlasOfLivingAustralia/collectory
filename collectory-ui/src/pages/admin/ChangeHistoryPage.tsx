@@ -8,6 +8,7 @@ import { useQuery } from '@tanstack/react-query';
 import apiClient from '../../api/client';
 import type { ProviderGroup } from '../../api/types';
 import { ProtectedRoute } from '../../auth/ProtectedRoute';
+import Breadcrumb from '../../components/public/Breadcrumb';
 
 interface AuditEvent {
   id: number;
@@ -197,17 +198,14 @@ export default function ChangeHistoryPage() {
   return (
     <ProtectedRoute>
       <div className="container mt-4">
-        <nav aria-label="breadcrumb" className="mb-3">
-          <ol className="breadcrumb">
-            <li className="breadcrumb-item">
-              <Link to={`/${entityType}/list`}>{ENTITY_LABELS[entityType ?? ''] ?? entityType}</Link>
-            </li>
-            <li className="breadcrumb-item">
-              <Link to={`/${entityType}/show/${id}`}>{id}</Link>
-            </li>
-            <li className="breadcrumb-item active">Change History</li>
-          </ol>
-        </nav>
+        <Breadcrumb
+          parent={{ url: '/manage/list', label: 'Metadata management' }}
+          extra={[
+            { url: `/${entityType}/list`, label: ENTITY_LABELS[entityType ?? ''] ?? entityType ?? '' },
+            { url: `/${entityType}/show/${id}`, label: (entity?.name as string) || id || '' },
+          ]}
+          current="Change History"
+        />
         <h1>Change History - {entity?.name ?? id}</h1>
 
         {changes && changes.length > 0 ? (

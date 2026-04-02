@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query';
 import apiClient from '../../api/client';
 import { ProtectedRoute } from '../../auth/ProtectedRoute';
+import Breadcrumb from '../../components/public/Breadcrumb';
 
 interface ProviderMap {
   id: number;
@@ -47,14 +48,6 @@ export default function ProviderMapShow() {
     }
   }
 
-  function handleBack() {
-    const returnTo = searchParams.get('returnTo');
-    if (returnTo) {
-      navigate(returnTo);
-    } else {
-      navigate('/providerMap/list');
-    }
-  }
 
   if (isLoading) {
     return (
@@ -77,14 +70,11 @@ export default function ProviderMapShow() {
   return (
     <ProtectedRoute>
       <div className="container mt-4">
-        <nav aria-label="breadcrumb" className="mb-3">
-          <ol className="breadcrumb">
-            <li className="breadcrumb-item">
-              <button className="btn btn-link p-0" onClick={handleBack}>Provider Maps</button>
-            </li>
-            <li className="breadcrumb-item active">Provider Map #{providerMap.id}</li>
-          </ol>
-        </nav>
+        <Breadcrumb
+          parent={{ url: '/manage/list', label: 'Metadata management' }}
+          extra={[{ url: '/providerMap/list', label: 'Provider Maps' }]}
+          current={`Provider Map #${providerMap.id}`}
+        />
 
         <div className="d-flex justify-content-between align-items-start mb-3">
           <h1>Provider Map #{providerMap.id}</h1>

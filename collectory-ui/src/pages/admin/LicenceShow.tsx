@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import apiClient from '../../api/client';
 import { ProtectedRoute } from '../../auth/ProtectedRoute';
 import { useAuth } from '../../auth/useAuth';
+import Breadcrumb from '../../components/public/Breadcrumb';
 
 interface Licence {
   id: number;
@@ -66,14 +67,11 @@ export default function LicenceShow() {
   return (
     <ProtectedRoute>
       <div className="container mt-4">
-        <nav aria-label="breadcrumb" className="mb-3">
-          <ol className="breadcrumb">
-            <li className="breadcrumb-item">
-              <Link to="/licence/list">Licences</Link>
-            </li>
-            <li className="breadcrumb-item active">{licence.name}</li>
-          </ol>
-        </nav>
+        <Breadcrumb
+          parent={{ url: '/manage/list', label: 'Metadata management' }}
+          extra={[{ url: '/licence/list', label: 'Licences' }]}
+          current={licence.name}
+        />
 
         <div className="d-flex justify-content-between align-items-start mb-3">
           <h1>{licence.name}</h1>

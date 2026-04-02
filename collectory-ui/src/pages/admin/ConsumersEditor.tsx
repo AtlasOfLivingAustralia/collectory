@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '../../api/client';
 import type { DataResource, ProviderGroup } from '../../api/types';
 import { ProtectedRoute } from '../../auth/ProtectedRoute';
+import Breadcrumb from '../../components/public/Breadcrumb';
 
 interface ConsumerEntry {
   uid: string;
@@ -123,13 +124,14 @@ export default function ConsumersEditor() {
   return (
     <ProtectedRoute>
       <div className="container mt-4">
-        <nav aria-label="breadcrumb" className="mb-3">
-          <ol className="breadcrumb">
-            <li className="breadcrumb-item"><Link to="/dataResource/list">Data Resources</Link></li>
-            <li className="breadcrumb-item"><Link to={`/dataResource/show/${id}`}>{id}</Link></li>
-            <li className="breadcrumb-item active">Consumers</li>
-          </ol>
-        </nav>
+        <Breadcrumb
+          parent={{ url: '/manage/list', label: 'Metadata management' }}
+          extra={[
+            { url: '/dataResource/list', label: 'Data Resources' },
+            { url: `/dataResource/show/${id}`, label: resource?.name || id || '' },
+          ]}
+          current="Consumers"
+        />
         <h1>Data Consumers - {resource?.name ?? id}</h1>
         <p className="text-muted">
           Manage which institutions and collections consume this data resource.

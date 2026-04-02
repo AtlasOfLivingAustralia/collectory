@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import apiClient from '../../api/client';
 import { ProtectedRoute } from '../../auth/ProtectedRoute';
+import Breadcrumb from '../../components/public/Breadcrumb';
 
 interface ProviderCode {
   id: number;
@@ -60,14 +61,11 @@ export default function ProviderCodeShow() {
   return (
     <ProtectedRoute>
       <div className="container mt-4">
-        <nav aria-label="breadcrumb" className="mb-3">
-          <ol className="breadcrumb">
-            <li className="breadcrumb-item">
-              <Link to="/providerCode/list">Provider Codes</Link>
-            </li>
-            <li className="breadcrumb-item active">{providerCode.code}</li>
-          </ol>
-        </nav>
+        <Breadcrumb
+          parent={{ url: '/manage/list', label: 'Metadata management' }}
+          extra={[{ url: '/providerCode/list', label: 'Provider Codes' }]}
+          current={providerCode.code}
+        />
 
         <div className="d-flex justify-content-between align-items-start mb-3">
           <h1>{providerCode.code}</h1>

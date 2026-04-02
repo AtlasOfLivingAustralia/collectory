@@ -928,7 +928,7 @@ public class CrudService {
 
     // --- M8: data resource verified check ---
 
-    private boolean isDataResourceVerified(DataResource dr) {
+    public boolean isDataResourceVerified(DataResource dr) {
         if (dr.getDefaultDarwinCoreValues() == null) return false;
         try {
             @SuppressWarnings("unchecked")

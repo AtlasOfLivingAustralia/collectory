@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import apiClient from '../../api/client';
 import type { DataResource } from '../../api/types';
 import { ProtectedRoute } from '../../auth/ProtectedRoute';
+import Breadcrumb from '../../components/public/Breadcrumb';
 
 interface FormValues {
   gbifRegistryKey: string;
@@ -71,13 +72,14 @@ export default function GbifEditForm() {
   return (
     <ProtectedRoute>
       <div className="container mt-4">
-        <nav aria-label="breadcrumb" className="mb-3">
-          <ol className="breadcrumb">
-            <li className="breadcrumb-item"><Link to="/dataResource/list">Data Resources</Link></li>
-            <li className="breadcrumb-item"><Link to={`/dataResource/show/${id}`}>{id}</Link></li>
-            <li className="breadcrumb-item active">GBIF Settings</li>
-          </ol>
-        </nav>
+        <Breadcrumb
+          parent={{ url: '/manage/list', label: 'Metadata management' }}
+          extra={[
+            { url: '/dataResource/list', label: 'Data Resources' },
+            { url: `/dataResource/show/${id}`, label: resource.name || id || '' },
+          ]}
+          current="GBIF Settings"
+        />
         <h1>GBIF Registration - {resource.name}</h1>
         <p className="text-muted">
           Edit the GBIF registration details for this data resource.

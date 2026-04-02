@@ -5,6 +5,7 @@ import apiClient from '../../api/client';
 import type { ProviderGroup } from '../../api/types';
 import Pagination from '../../components/common/Pagination';
 import { ProtectedRoute } from '../../auth/ProtectedRoute';
+import Breadcrumb from '../../components/public/Breadcrumb';
 
 /** Maps URL entityType param to API path and display label */
 const ENTITY_CONFIG: Record<string, { apiPath: string; plural: string; singular: string }> = {
@@ -282,6 +283,7 @@ export default function EntityList() {
   return (
     <ProtectedRoute>
       <div className="container mt-4">
+        <Breadcrumb parent={{ url: '/manage/list', label: 'Metadata management' }} current={config.plural} />
         <div className="d-flex justify-content-between align-items-center mb-3">
           <h1>{config.plural}</h1>
           <Link to={`/${entityType}/create`} className="btn btn-primary">

@@ -122,7 +122,7 @@ public class DataController {
         if (!params.isEmpty()) {
             final List<? extends ProviderGroup> toFilter = entities;
             entities = toFilter.stream().filter(pg -> {
-                Map<String, Object> json = readEntity(pg);
+                Map<String, Object> json = readEntityBrief(pg);
                 for (Map.Entry<String, String> entry : params.entrySet()) {
                     String key = entry.getKey();
                     String paramValue = entry.getValue();
@@ -149,7 +149,7 @@ public class DataController {
         }
 
         List<Map<String, Object>> result = entities.stream()
-                .map(this::readEntity)
+                .map(this::readEntityBrief)
                 .collect(Collectors.toList());
 
         ResponseEntity.BodyBuilder builder = ResponseEntity.ok();
@@ -744,6 +744,40 @@ public class DataController {
         if (pg instanceof Institution inst) return crudService.readInstitution(inst);
         if (pg instanceof au.org.ala.collectory.domain.Collection co) return crudService.readCollection(co);
         return Map.of("uid", pg.getUid(), "name", pg.getName());
+    }
+
+    /**
+     * Lightweight brief format for list endpoints — matches Grails {name, uri, uid} brief plus
+     * the extra fields the admin list UI needs. Avoids N+1 queries triggered by readEntity()
+     * (linkedRecordProviders, hubMembership, etc.).
+     */
+    private Map<String, Object> readEntityBrief(ProviderGroup pg) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("name", pg.getName());
+        m.put("uid", pg.getUid());
+        m.put("acronym", pg.getAcronym());
+        m.put("uri", pg.buildUri(appProperties.getServerUrl()));
+        m.put("lastUpdated", pg.getLastUpdated());
+
+        if (pg instanceof au.org.ala.collectory.domain.Collection co) {
+            m.put("collectionType", JSONHelper.parseJson(co.getCollectionType()));
+            if (co.getInstitution() != null) {
+                m.put("institution", Map.of(
+                        "name", co.getInstitution().getName(),
+                        "uid", co.getInstitution().getUid()));
+            }
+        } else if (pg instanceof Institution inst) {
+            m.put("isALAPartner", inst.isALAPartner());
+            m.put("institutionType", inst.getInstitutionType());
+        } else if (pg instanceof DataResource dr) {
+            m.put("resourceType", dr.getResourceType());
+            m.put("isPrivate", dr.getIsPrivate());
+            m.put("licenseType", dr.getLicenseType());
+            m.put("verified", crudService.isDataResourceVerified(dr));
+        } else if (pg instanceof DataProvider dp) {
+            m.put("gbifRegistryKey", dp.getGbifRegistryKey());
+        }
+        return m;
     }
 
     private void updateContactFromMap(Contact contact, Map<String, Object> body) {

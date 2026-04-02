@@ -1,11 +1,12 @@
 import { useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '../../api/client';
 import { getInstitutions } from '../../api/endpoints/institutions';
 import { getCollections } from '../../api/endpoints/collections';
 import { ProtectedRoute } from '../../auth/ProtectedRoute';
+import Breadcrumb from '../../components/public/Breadcrumb';
 
 interface ProviderMapFormData {
   institutionUid: string;
@@ -94,12 +95,11 @@ export default function ProviderMapForm() {
   return (
     <ProtectedRoute>
       <div className="container mt-4">
-        <nav aria-label="breadcrumb" className="mb-3">
-          <ol className="breadcrumb">
-            <li className="breadcrumb-item"><Link to="/providerMap/list">Provider Maps</Link></li>
-            <li className="breadcrumb-item active">{isEdit ? 'Edit Provider Map' : 'New Provider Map'}</li>
-          </ol>
-        </nav>
+        <Breadcrumb
+          parent={{ url: '/manage/list', label: 'Metadata management' }}
+          extra={[{ url: '/providerMap/list', label: 'Provider Maps' }]}
+          current={isEdit ? 'Edit Provider Map' : 'New Provider Map'}
+        />
         <h1>{isEdit ? 'Edit Provider Map' : 'New Provider Map'}</h1>
 
         <form onSubmit={handleSubmit(onSubmit)}>
