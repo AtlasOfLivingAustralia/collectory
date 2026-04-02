@@ -18,62 +18,79 @@ import org.springframework.security.web.authentication.www.BasicAuthenticationFi
 /**
  * Spring Security configuration for the Collectory API.
  *
- * <p>Security model (mirrors the Grails app):
- * <ul>
- *   <li>All {@code GET} requests to public/read endpoints are permitted without authentication.</li>
- *   <li>Write operations ({@code POST}, {@code PUT}, {@code DELETE}) on the data-management
- *       web-service paths ({@code /ws/**}) require authentication.  Fine-grained role checks
- *       are delegated to {@link au.org.ala.collectory.security.PermissionChecker}.</li>
- *   <li>Admin endpoints ({@code /ws/admin/**}) require {@code ROLE_ADMIN}.</li>
- *   <li>Actuator, OpenAPI docs, and static assets are always accessible.</li>
- * </ul>
+ * <p>Two filter chains are registered:
+ * <ol>
+ *   <li><b>authFilterChain</b> (Order 1) — handles session-based auth endpoints
+ *       ({@code /session}, {@code /login}, {@code /callback}, {@code /logout}).
+ *       Sessions are created on-demand; Spring Security logout handling is disabled
+ *       because {@code AuthController} manages it directly.</li>
+ *   <li><b>apiFilterChain</b> (Order 2) — handles all remaining requests with the
+ *       existing stateless JWT / Bearer-token security model.</li>
+ * </ol>
  *
- * <p>JWT / M2M tokens are validated by the ALA {@link AlaWebServiceAuthFilter} (provided by
- * {@code ala-ws-spring-security}) which is inserted before Spring Security's
- * {@link BasicAuthenticationFilter}.  It populates the {@link org.springframework.security.core.context.SecurityContext}
- * with the user's roles so that both URL-level rules and {@link au.org.ala.collectory.security.PermissionChecker}
- * can consult them.
+ * <p>JWT / M2M tokens are validated by the ALA {@link AlaWebServiceAuthFilter} inserted
+ * only into the API chain (chain 2).  Chain 1 is intentionally JWT-free so that the
+ * auth endpoints can be reached before any token exists.
  */
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
-@Order(1)
 public class SecurityConfig {
 
     /**
-     * The ALA JWT/token filter — auto-configured by {@code ala-ws-spring-security}'s
-     * {@code AlaWsSpringSecurityConfiguration} auto-configuration class.  It is optional
-     * here so the application still starts in test environments where pac4j beans are absent.
+     * The ALA JWT/token filter — auto-configured by {@code ala-ws-spring-security}.
+     * Optional so the application still starts in test environments where pac4j beans are absent.
      */
     @Autowired(required = false)
     private AlaWebServiceAuthFilter alaWebServiceAuthFilter;
 
+    // ────────────────────────────────────────────────────────────────────────
+    // Chain 1 — Session-based auth endpoints
+    // ────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Handles {@code /session}, {@code /login}, {@code /callback}, {@code /logout}.
+     * Uses session-scoped storage for PKCE state and encrypted tokens.
+     * CSRF is disabled (these endpoints use state-parameter / PKCE for CSRF protection).
+     */
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        // ── CSRF / session ────────────────────────────────────────────────────
-        // Stateless REST API — no CSRF needed and no HTTP sessions
+    @Order(1)
+    public SecurityFilterChain authFilterChain(HttpSecurity http, CorsConfig corsConfig) throws Exception {
+        http
+            .securityMatcher("/session", "/login", "/callback", "/logout")
+            .csrf(AbstractHttpConfigurer::disable)
+            .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+            // Disable Spring Security's built-in logout filter — AuthController handles logout directly
+            .logout(logout -> logout.logoutUrl("/never-match"))
+            .cors(cors -> cors.configurationSource(corsConfig.corsConfigurationSource()))
+            .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+
+        return http.build();
+    }
+
+    // ────────────────────────────────────────────────────────────────────────
+    // Chain 2 — Stateless REST API (unchanged from previous single-chain design)
+    // ────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Handles all non-auth requests with the existing stateless JWT security model.
+     */
+    @Bean
+    @Order(2)
+    public SecurityFilterChain apiFilterChain(HttpSecurity http, CorsConfig corsConfig) throws Exception {
         http
             .csrf(AbstractHttpConfigurer::disable)
-            .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+            .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .cors(cors -> cors.configurationSource(corsConfig.corsConfigurationSource()))
+            .headers(h -> h.frameOptions(HeadersConfigurer.FrameOptionsConfig::deny));
 
-        // ── CORS ──────────────────────────────────────────────────────────────
-        http.cors(cors -> cors.configurationSource(new CorsConfig().corsConfigurationSource()));
-
-        // ── Frame options ─────────────────────────────────────────────────────
-        http.headers(h -> h.frameOptions(HeadersConfigurer.FrameOptionsConfig::deny));
-
-        // ── JWT filter (C6) ───────────────────────────────────────────────────
-        // Insert the ALA filter that validates Bearer tokens and populates the
-        // SecurityContext before Spring Security's own auth filter runs.
         if (alaWebServiceAuthFilter != null) {
             http.addFilterBefore(alaWebServiceAuthFilter, BasicAuthenticationFilter.class);
         }
 
-        // ── URL-level authorization (C5) ──────────────────────────────────────
         http.authorizeHttpRequests(auth -> auth
 
-            // ── Always public ──────────────────────────────────────────────
-            // Actuator, OpenAPI, static SPA assets
+            // ── Always public ────────────────────────────────────────────────
             .requestMatchers(
                     "/actuator/**",
                     "/v3/api-docs/**",
@@ -100,21 +117,19 @@ public class SecurityConfig {
                     "/licence/**"
             ).permitAll()
 
-            // ── Admin endpoints — ROLE_ADMIN only ──────────────────────────
+            // ── Admin endpoints — ROLE_ADMIN only ────────────────────────────
             .requestMatchers("/ws/admin/**").hasRole("ADMIN")
 
-            // ── Mutating WS operations — any authenticated user ─────────────
-            // Fine-grained role checking (EDITOR vs ADMIN) is done by
-            // PermissionChecker based on @PermissionRequired annotations.
+            // ── Mutating WS operations — any authenticated user ───────────────
             .requestMatchers(HttpMethod.POST,   "/ws/**").authenticated()
             .requestMatchers(HttpMethod.PUT,    "/ws/**").authenticated()
             .requestMatchers(HttpMethod.DELETE, "/ws/**").authenticated()
             .requestMatchers(HttpMethod.PATCH,  "/ws/**").authenticated()
 
-            // ── Manage endpoints — authenticated ────────────────────────────
+            // ── Manage endpoints — authenticated ─────────────────────────────
             .requestMatchers("/ws/manage/**").authenticated()
 
-            // ── Everything else — permit (read-only public data) ────────────
+            // ── Everything else — permit ──────────────────────────────────────
             .anyRequest().permitAll()
         );
 

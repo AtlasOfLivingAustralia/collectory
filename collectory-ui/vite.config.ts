@@ -7,6 +7,9 @@ export default defineConfig({
   // Load .env.* files from collectory-ui/config/ instead of the project root.
   // This matches the species-lists pattern where per-env files live in config/.
   envDir: 'config',
+  optimizeDeps: {
+    exclude: ['@ala/common-ui'],
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
@@ -14,6 +17,9 @@ export default defineConfig({
   },
   server: {
     port: 3000,
+    fs: {
+      allow: ['..'],
+    },
     proxy: {
       '/ws': {
         target: 'http://localhost:8080',

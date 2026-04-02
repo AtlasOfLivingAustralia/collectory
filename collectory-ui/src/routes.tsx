@@ -83,7 +83,6 @@ const GbifHealthCheckLinked = lazy(() => import('./pages/manage/GbifHealthCheckL
 const ContactProfile = lazy(() => import('./pages/manage/ContactProfile'));
 const MyCollections = lazy(() => import('./pages/manage/MyCollections'));
 const DataCatalogue = lazy(() => import('./pages/DataCatalogue'));
-const OidcCallback = lazy(() => import('./pages/OidcCallback'));
 
 function Loading() {
   return (
@@ -110,8 +109,6 @@ function CollectionSearchRedirect() {
 }
 
 const routes: RouteObject[] = [
-  // OIDC callback — outside AlaLayout so it renders before auth/header settle
-  { path: 'callback', element: withSuspense(OidcCallback) },
   {
     element: <AlaLayout />,
     children: [

@@ -9,6 +9,8 @@ build/*
 .DS_Store
 collectory-ui/node_modules
 collectory-ui/dist
+collectory-ui/package-lock.json
 collectory-api/target/*
+common-ui/node_modules
 bin/
 .settings/
