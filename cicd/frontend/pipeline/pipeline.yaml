@@ -310,23 +310,22 @@ Resources:
                 Provider: CodeBuild
               Configuration:
                 ProjectName: !Ref BuildCode
-                EnvironmentVariables:
-                  Fn::Sub:
-                    - |
-                      [
-                        { "name":"COMMIT_ID", "value":"#{CheckoutSrcNS.CommitId}" },
-                        { "name":"ENVIRONMENT", "value":"#{ExportConfigNS.ENVIRONMENT}" },
-                        { "name":"NODE_VERSION", "value":"#{ExportConfigNS.NODE_VERSION}" },
-                        { "name":"SRC_BRANCH", "value":"#{CheckoutSrcNS.BranchName}" },
-                        { "name":"VITE_API_BASE_URL", "value":"#{ExportConfigNS.VITE_API_BASE_URL}" },
-                        { "name":"VITE_OIDC_AUTHORITY", "value":"#{ExportConfigNS.VITE_OIDC_AUTHORITY}" },
-                        { "name":"VITE_OIDC_CLIENT_ID", "value":"${AppClientId}" },
-                        { "name":"VITE_OIDC_REDIRECT_URI", "value":"#{ExportConfigNS.VITE_OIDC_REDIRECT_URI}"},
-                        { "name":"PROD_VITE_OIDC_CLIENT_ID", "value":"#{ExportConfigNS.PROD_VITE_OIDC_CLIENT_ID}" }
-                      ]
-                    - AppClientId:
-                        Fn::ImportValue:
-                          Fn::Sub: ${pBaseStackName}-AppClientId
+                EnvironmentVariables: |
+                  [
+                    { "name":"COMMIT_ID", "value":"#{CheckoutSrcNS.CommitId}" },
+                    { "name":"ENVIRONMENT", "value":"#{ExportConfigNS.ENVIRONMENT}" },
+                    { "name":"NODE_VERSION", "value":"#{ExportConfigNS.NODE_VERSION}" },
+                    { "name":"SRC_BRANCH", "value":"#{CheckoutSrcNS.BranchName}" },
+                    { "name":"VITE_APP_API_URL", "value":"#{ExportConfigNS.VITE_APP_API_URL}" },
+                    { "name":"VITE_APP_BASE_URL", "value":"#{ExportConfigNS.VITE_APP_BASE_URL}" },
+                    { "name":"VITE_COMMON_HEADER_HTML", "value":"#{ExportConfigNS.VITE_COMMON_HEADER_HTML}" },
+                    { "name":"VITE_COMMON_FOOTER_HTML", "value":"#{ExportConfigNS.VITE_COMMON_FOOTER_HTML}" },
+                    { "name":"VITE_COMMON_CSS", "value":"#{ExportConfigNS.VITE_COMMON_CSS}" },
+                    { "name":"VITE_COMMON_JS", "value":"#{ExportConfigNS.VITE_COMMON_JS}" },
+                    { "name":"VITE_BANNER_SCOPE", "value":"#{ExportConfigNS.VITE_BANNER_SCOPE}" },
+                    { "name":"VITE_BANNER_MESSAGES_URL", "value":"#{ExportConfigNS.VITE_BANNER_MESSAGES_URL}" },
+                    { "name":"VITE_ENV", "value":"#{ExportConfigNS.VITE_ENV}" }
+                  ]
               Namespace: BuildCollectoryNS
               InputArtifacts:
                 - Name: CollectorySourceArtifact

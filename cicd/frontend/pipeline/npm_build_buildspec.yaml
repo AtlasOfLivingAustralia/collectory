@@ -11,26 +11,25 @@ phases:
     runtime-versions:
       nodejs: $NODE_VERSION
     commands:
-      - echo injecting app client config
-      - |
-        if [[ "$ENVIRONMENT" == "production" || "$ENVIRONMENT" == "staging" ]]; then
-          VITE_OIDC_CLIENT_ID=$PROD_VITE_OIDC_CLIENT_ID
-        fi
-      - sed -i "s|VITE_OIDC_CLIENT_ID=.*$|VITE_OIDC_CLIENT_ID=$VITE_OIDC_CLIENT_ID|g" collectory-ui/config/.env.$ENVIRONMENT
-      - sed -i "s|VITE_API_BASE_URL=.*$|VITE_API_BASE_URL=$VITE_API_BASE_URL|g" collectory-ui/config/.env.$ENVIRONMENT
-      - sed -i "s|VITE_OIDC_AUTHORITY=.*$|VITE_OIDC_AUTHORITY=$VITE_OIDC_AUTHORITY|g" collectory-ui/config/.env.$ENVIRONMENT
-      - sed -i "s|VITE_OIDC_REDIRECT_URI=.*$|VITE_OIDC_REDIRECT_URI=$VITE_OIDC_REDIRECT_URI|g" collectory-ui/config/.env.$ENVIRONMENT
+      - echo injecting session auth config
+      - sed -i "s|VITE_APP_API_URL=.*$|VITE_APP_API_URL=$VITE_APP_API_URL|g" collectory-ui/config/.env.$ENVIRONMENT
+      - sed -i "s|VITE_APP_BASE_URL=.*$|VITE_APP_BASE_URL=$VITE_APP_BASE_URL|g" collectory-ui/config/.env.$ENVIRONMENT
+      - sed -i "s|VITE_COMMON_HEADER_HTML=.*$|VITE_COMMON_HEADER_HTML=$VITE_COMMON_HEADER_HTML|g" collectory-ui/config/.env.$ENVIRONMENT
+      - sed -i "s|VITE_COMMON_FOOTER_HTML=.*$|VITE_COMMON_FOOTER_HTML=$VITE_COMMON_FOOTER_HTML|g" collectory-ui/config/.env.$ENVIRONMENT
+      - sed -i "s|VITE_COMMON_CSS=.*$|VITE_COMMON_CSS=$VITE_COMMON_CSS|g" collectory-ui/config/.env.$ENVIRONMENT
+      - sed -i "s|VITE_COMMON_JS=.*$|VITE_COMMON_JS=$VITE_COMMON_JS|g" collectory-ui/config/.env.$ENVIRONMENT
+      - sed -i "s|VITE_BANNER_MESSAGES_URL=.*$|VITE_BANNER_MESSAGES_URL=$VITE_BANNER_MESSAGES_URL|g" collectory-ui/config/.env.$ENVIRONMENT
+      - sed -i "s|VITE_ENV=.*$|VITE_ENV=$VITE_ENV|g" collectory-ui/config/.env.$ENVIRONMENT
       - cat collectory-ui/config/.env.$ENVIRONMENT
       - cd collectory-ui
   pre_build:
     commands:
-      - echo running npm install...
-      - npm install @rollup/rollup-linux-x64-gnu
-      - npm ci --platform=linux --arch=x64
+      - echo running yarn install...
+      - yarn install
   build:
     commands:
       - echo building...
-      - npm run build:$ENVIRONMENT
+      - yarn build:$ENVIRONMENT
 
 artifacts:
   base-directory: collectory-ui/dist

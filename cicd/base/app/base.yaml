@@ -64,7 +64,6 @@ Resources:
       CallbackURLs:
         - !Sub ${pAppClientHost}
         - !Sub ${pAppClientHost}/
-        - !Sub ${pAppClientHost}/callback
         - !Sub ${pAppClientHost}/callback?client_name=OidcClient
         - !Sub ${pAppClientHost}/oauth2-redirect.html
       ClientName: !Sub

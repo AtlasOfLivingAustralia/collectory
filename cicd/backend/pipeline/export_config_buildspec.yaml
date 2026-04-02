@@ -112,12 +112,25 @@ phases:
               clientId: \"$SECURITY_OIDC_CLIENT_ID\"
               secret: \"$SECURITY_OIDC_SECRET\"
               scope: \"$SECURITY_OIDC_SCOPE\"
+              userIdClaim: \"$SECURITY_OIDC_USER_ID_CLAIM\"
+              roleClaims: \"$SECURITY_OIDC_ROLE_CLAIMS\"
+              logoutAction: \"$SECURITY_OIDC_LOGOUT_ACTION\"
+              logoutUrl: \"$SECURITY_OIDC_LOGOUT_URL\"
             jwt:
               enabled: $SECURITY_JWT_ENABLED
               discoveryUri: \"$SECURITY_JWT_DISCOVERY_URI\"
               rolesFromAccessToken: $SECURITY_JWT_ROLES_FROM_ACCESS_TOKEN
               userIdClaim: \"$SECURITY_JWT_USER_ID_CLAIM\"
               roleClaims: \"$SECURITY_JWT_ROLE_CLAIMS\"
+            cookie:
+              name: \"$SECURITY_COOKIE_NAME\"
+              domain: \"$SECURITY_COOKIE_DOMAIN\"
+              debug: $SECURITY_COOKIE_DEBUG
+              rotate: $SECURITY_COOKIE_ROTATE
+            login:
+              maxAgeDays: $SECURITY_LOGIN_MAX_AGE_DAYS
+            cors:
+              origins: \"$SECURITY_CORS_ORIGINS\"
             oidcLogoutUrl: \"$SECURITY_OIDC_LOGOUT_URL\"
           gbif:
             apiUrl: \"$GBIF_API_URL\"

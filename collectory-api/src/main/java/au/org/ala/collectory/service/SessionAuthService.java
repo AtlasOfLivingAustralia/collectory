@@ -444,18 +444,19 @@ public class SessionAuthService {
         String revokeUrl = fetchRevokeEndpointFromDiscovery();
         try {
             Map<String, String> params = new HashMap<>();
+            params.put("token", refreshToken);
+            ResponseEntity<String> revokeResponse;
             if ("COGNITO".equalsIgnoreCase(logoutAction)) {
-                params.put("token", refreshToken);
-                params.put("client_id", clientId);
+                // Cognito revocation endpoint requires HTTP Basic auth (client_id:client_secret)
+                revokeResponse = doPostWithBasicAuth(revokeUrl, params, clientId, secret);
             } else {
-                params.put("token", refreshToken);
                 params.put("token_type_hint", "refresh_token");
                 params.put("client_id", clientId);
                 if (StringUtils.isNotEmpty(secret)) {
                     params.put("client_secret", secret);
                 }
+                revokeResponse = doPost(revokeUrl, params);
             }
-            ResponseEntity<String> revokeResponse = doPost(revokeUrl, params);
             if (revokeResponse.getStatusCode() != HttpStatus.OK) {
                 log.warn("Failed to revoke token, status: {}", revokeResponse.getStatusCode());
             }
@@ -470,7 +471,7 @@ public class SessionAuthService {
         String encodedRedirect = URLEncoder.encode(path, StandardCharsets.UTF_8);
 
         if ("COGNITO".equalsIgnoreCase(logoutAction)) {
-            return logoutUrl + "?client_id=" + clientId + "&logout_uri=" + encodedRedirect;
+            return logoutUrl + "?client_id=" + clientId + "&redirect_uri=" + encodedRedirect + "&response_type=code";
         } else {
             return logoutUrl + "?post_logout_redirect_uri=" + encodedRedirect
                     + "&id_token_hint=" + URLEncoder.encode(idToken, StandardCharsets.UTF_8);
@@ -612,6 +613,20 @@ public class SessionAuthService {
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+        StringBuilder body = new StringBuilder();
+        for (Map.Entry<String, String> entry : params.entrySet()) {
+            if (!body.isEmpty()) body.append("&");
+            body.append(entry.getKey()).append("=").append(entry.getValue());
+        }
+        return restTemplate.postForEntity(url, new HttpEntity<>(body.toString(), headers), String.class);
+    }
+
+    private ResponseEntity<String> doPostWithBasicAuth(String url, Map<String, String> params,
+                                                        String basicUser, String basicPass) {
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+        headers.setBasicAuth(basicUser, basicPass);
         StringBuilder body = new StringBuilder();
         for (Map.Entry<String, String> entry : params.entrySet()) {
             if (!body.isEmpty()) body.append("&");
