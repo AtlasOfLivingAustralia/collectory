@@ -21,12 +21,18 @@ class IptServiceSpec extends Specification implements ServiceUnitTest<IptService
         service.activityLogService = Mock(ActivityLogService)
         service.collectoryAuthService.username() >> "testUser"
         service.metaClass.allFields = {
+            // Union of rssFields + emlFields keys (mirrors IptService.allFields())
             [
-                    "guid"                 : { eml -> eml.@packageId.toString() },
-                    "name"                 : { eml -> eml.dataset.title.toString() },
-                    "pubDescription"       : { eml -> "Sample description" },
-                    "methodStepDescription": { eml -> "Sample method step description" }
-            ].keySet()
+                    "guid", "name", "pubDescription", "websiteUrl", "dataCurrency",
+                    "lastChecked", "provenance", "contentTypes", "gbifRegistryKey",
+                    "email", "rights", "citation", "state", "phone",
+                    "geographicDescription",
+                    "northBoundingCoordinate", "southBoundingCoordinate",
+                    "eastBoundingCoordinate", "westBoundingCoordinate",
+                    "beginDate", "endDate",
+                    "purpose", "methodStepDescription", "qualityControlDescription",
+                    "gbifDoi", "licenseType", "licenseVersion", "externalIdentifiers"
+            ] as Set
         }
     }
 
@@ -479,66 +485,94 @@ class IptServiceSpec extends Specification implements ServiceUnitTest<IptService
         ContactFor.findAllByContact(sharedContact).size() == 2
     }
 
-    void "test updateFields removes values when new value is null"() {
-        given: "A resource with existing values"
-        def resource = new DataResource(
-                uid: "dr1",
-                name: "Test Resource",
-                websiteUrl: "http://example.org/resource",
-                pubDescription: "Description to be removed",
+    void "test updateFields preserves existing values when new value is null"() {
+        given: "A provider with a resource that has existing values"
+        def provider = new DataProvider(
+                uid: "dpUF1",
+                name: "Test Provider",
+                gbifCountryToAttribute: "AU",
                 userLastModified: "testUser"
         ).save(flush: true, failOnError: true)
 
-        def update = [
-                resource: new DataResource(
-                        websiteUrl: "http://example.org/resource",
-                        pubDescription: null // Null value should clear the field
-                )
+        def resource = new DataResource(
+                uid: "drUF1",
+                name: "Test Resource",
+                websiteUrl: "http://example.org/resource",
+                pubDescription: "Description that should be preserved",
+                userLastModified: "testUser"
+        ).save(flush: true, failOnError: true)
+
+        provider.addToResources(resource)
+        provider.save(flush: true, failOnError: true)
+
+        def updates = [
+                [
+                        resource       : new DataResource(
+                                websiteUrl: "http://example.org/resource",
+                                pubDescription: null // IPT sends null - should NOT overwrite existing value
+                        ),
+                        contacts       : [],
+                        primaryContacts: []
+                ]
         ]
 
-        when: "The updateFields method is called"
-        service.updateFields(resource, update, "testUser")
+        when: "merge is called (which internally calls updateFields)"
+        def result = service.merge(provider, updates, true, false, "testUser", true)
 
-        then: "The field with null value is cleared"
-        resource.pubDescription == null
+        then: "The existing value is preserved when the new value is null"
+        result.size() == 1
+        result[0].pubDescription == "Description that should be preserved"
     }
 
-    void "test updateFields updates and clears fields correctly"() {
-        given: "A resource with existing values and an update with new values"
+    void "test updateFields updates non-null fields and preserves existing values for null fields"() {
+        given: "A provider with a resource that has existing values"
+        def provider = new DataProvider(
+                uid: "dpUF2",
+                name: "Test Provider",
+                gbifCountryToAttribute: "AU",
+                userLastModified: "testUser"
+        ).save(flush: true, failOnError: true)
+
         def resource = new DataResource(
-                uid: "dr1",
+                uid: "drUF2",
                 name: "Original Name",
-                websiteUrl: "http://example.org/resource",
+                websiteUrl: "http://example.org/resource2",
                 pubDescription: "Original Description",
                 methodStepDescription: "Original Set Description",
                 userLastModified: "originalUser",
                 lastChecked: new Timestamp(System.currentTimeMillis() - 10000)
         ).save(flush: true, failOnError: true)
 
-        def update = [
-                resource: new DataResource(
-                        uid: "dr1",
-                        websiteUrl: "http://example.org/resource",
-                        name: "Updated Name",
-                        pubDescription: null, // This field should be cleared
-                        methodStepDescription: "Updated Set Description" // This field should be updated
-                )
+        provider.addToResources(resource)
+        provider.save(flush: true, failOnError: true)
+
+        def updates = [
+                [
+                        resource       : new DataResource(
+                                websiteUrl: "http://example.org/resource2",
+                                name: "Updated Name",
+                                pubDescription: null, // null should NOT clear the existing value
+                                methodStepDescription: "Updated Set Description"
+                        ),
+                        contacts       : [],
+                        primaryContacts: []
+                ]
         ]
 
-        when: "updateFields is called"
+        when: "merge is called (which internally calls updateFields)"
         def fieldsToUpdate = service.allFields()
-        assert fieldsToUpdate.containsAll(["name", "pubDescription", "methodStepDescription"]) // Ensure the fields are present
-        service.updateFields(resource, update.resource.properties, "testUser")
+        assert fieldsToUpdate.containsAll(["name", "pubDescription", "methodStepDescription"])
+        def result = service.merge(provider, updates, true, false, "testUser", true)
 
-        then: "The fields are updated and cleared"
-        resource.refresh()
-        resource.name == "Updated Name"
-        resource.pubDescription == null
-        resource.methodStepDescription == "Updated Set Description"
-        resource.userLastModified == "testUser"
+        then: "Non-null fields are updated; existing value is preserved when new value is null"
+        result.size() == 1
+        result[0].name == "Updated Name"
+        result[0].pubDescription == "Original Description"
+        result[0].methodStepDescription == "Updated Set Description"
+        result[0].userLastModified == "testUser"
 
         and: "The lastChecked field is updated"
-        resource.lastChecked.time >= System.currentTimeMillis() - 1000
+        result[0].lastChecked.time >= System.currentTimeMillis() - 1000
     }
 
     void "test syncContacts removes orphaned contacts"() {
@@ -809,6 +843,340 @@ class IptServiceSpec extends Specification implements ServiceUnitTest<IptService
 
         then: "The userId is removed from the existing contact"
         Contact.findByEmail("contact@example.com").userId == null
+    }
+
+    void "test EML metadata fields update from IPT sync"() {
+        given: "A resource with existing name and description, and updates from IPT with new values"
+        def provider = new DataProvider(
+                uid: "dp1",
+                name: "Test Provider",
+                gbifCountryToAttribute: "AU",
+                userLastModified: "testUser"
+        ).save(flush: true, failOnError: true)
+
+        def existingResource = new DataResource(
+                uid: "dr1",
+                websiteUrl: "http://example.org/dataset",
+                name: "Old Dataset Name",
+                pubDescription: "Old description",
+                userLastModified: "testUser"
+        ).save(flush: true, failOnError: true)
+
+        provider.addToResources(existingResource)
+        provider.save(flush: true, failOnError: true)
+
+        def newResource = new DataResource(
+                websiteUrl: "http://example.org/dataset",
+                name: "Updated Dataset Name",
+                pubDescription: "Field observations of bird species in Australian wetlands"
+        )
+
+        def updates = [
+                [
+                        resource       : newResource,
+                        contacts       : [],
+                        primaryContacts: []
+                ]
+        ]
+
+        when: "merge is called with IPT updates"
+        def result = service.merge(provider, updates, true, false, "testUser", true)
+
+        then: "The name and pubDescription are updated from IPT"
+        result.size() == 1
+        result[0].name == "Updated Dataset Name"
+        result[0].pubDescription == "Field observations of bird species in Australian wetlands"
+    }
+
+    void "test citation is updated when EML provides a new value (old citation is replaced)"() {
+        given: "A resource with an existing citation and an update with a new citation"
+        def provider = new DataProvider(
+                uid: "dpCit1",
+                name: "Test Provider",
+                gbifCountryToAttribute: "ES",
+                userLastModified: "testUser"
+        ).save(flush: true, failOnError: true)
+
+        def existingResource = new DataResource(
+                uid: "drCit1",
+                websiteUrl: "http://ipt.example.org/dataset",
+                name: "Test Dataset",
+                citation: "Old Citation 2020. Version 1.0. Old Org.",
+                userLastModified: "testUser"
+        ).save(flush: true, failOnError: true)
+
+        provider.addToResources(existingResource)
+        provider.save(flush: true, failOnError: true)
+
+        def newResource = new DataResource(
+                websiteUrl: "http://ipt.example.org/dataset",
+                name: "Test Dataset",
+                citation: "New Citation 2025. Version 2.0. New Org. https://doi.org/10.1234/test"
+        )
+
+        def updates = [
+                [
+                        resource       : newResource,
+                        contacts       : [],
+                        primaryContacts: []
+                ]
+        ]
+
+        when: "merge is called with updated citation from EML"
+        def result = service.merge(provider, updates, true, false, "testUser", true)
+
+        then: "The citation is updated to the new value"
+        result.size() == 1
+        result[0].citation == "New Citation 2025. Version 2.0. New Org. https://doi.org/10.1234/test"
+    }
+
+    void "test pubDescription is updated when EML provides a new value (old description is replaced)"() {
+        given: "A resource with an existing pubDescription and an update with a new one"
+        def provider = new DataProvider(
+                uid: "dpDesc1",
+                name: "Test Provider",
+                gbifCountryToAttribute: "ES",
+                userLastModified: "testUser"
+        ).save(flush: true, failOnError: true)
+
+        def existingResource = new DataResource(
+                uid: "drDesc1",
+                websiteUrl: "http://ipt.example.org/dataset2",
+                name: "Test Dataset",
+                pubDescription: "Old short description from RSS.",
+                userLastModified: "testUser"
+        ).save(flush: true, failOnError: true)
+
+        provider.addToResources(existingResource)
+        provider.save(flush: true, failOnError: true)
+
+        def newResource = new DataResource(
+                websiteUrl: "http://ipt.example.org/dataset2",
+                name: "Test Dataset",
+                pubDescription: "New full description extracted from EML abstract. Much longer and more detailed."
+        )
+
+        def updates = [
+                [
+                        resource       : newResource,
+                        contacts       : [],
+                        primaryContacts: []
+                ]
+        ]
+
+        when: "merge is called with updated pubDescription from EML"
+        def result = service.merge(provider, updates, true, false, "testUser", true)
+
+        then: "The pubDescription is updated to the new value"
+        result.size() == 1
+        result[0].pubDescription == "New full description extracted from EML abstract. Much longer and more detailed."
+    }
+
+    void "test IPT preserves existing EML fields when update contains null values"() {
+        given: "A resource with existing metadata fields"
+        def provider = new DataProvider(
+                uid: "dp2",
+                name: "Test Provider",
+                gbifCountryToAttribute: "AU",
+                userLastModified: "testUser"
+        ).save(flush: true, failOnError: true)
+
+        def existingResource = new DataResource(
+                uid: "dr2",
+                websiteUrl: "http://example.org/dataset",
+                name: "Original Name",
+                pubDescription: "Original Description",
+                rights: "Original Rights",
+                citation: "Original Citation",
+                userLastModified: "testUser"
+        ).save(flush: true, failOnError: true)
+
+        provider.addToResources(existingResource)
+        provider.save(flush: true, failOnError: true)
+
+        def newResource = new DataResource(
+                websiteUrl: "http://example.org/dataset",
+                name: "Updated Name",
+                pubDescription: null,  // null should preserve existing value
+                rights: null,           // null should preserve existing value
+                citation: "Updated Citation"
+        )
+
+        def updates = [
+                [
+                        resource       : newResource,
+                        contacts       : [],
+                        primaryContacts: []
+                ]
+        ]
+
+        when: "merge is called"
+        def result = service.merge(provider, updates, true, false, "testUser", true)
+
+        then: "Non-null fields are updated; null fields preserve the existing values"
+        result.size() == 1
+        result[0].name == "Updated Name"
+        result[0].pubDescription == "Original Description"
+        result[0].rights == "Original Rights"
+        result[0].citation == "Updated Citation"
+    }
+
+    void "test all EML fields sync during IPT merge (coordinates, dates, etc)"() {
+        given: "A resource and IPT update with multiple EML metadata fields"
+        def provider = new DataProvider(
+                uid: "dp3",
+                name: "Test Provider",
+                gbifCountryToAttribute: "AU",
+                userLastModified: "testUser"
+        ).save(flush: true, failOnError: true)
+
+        def existingResource = new DataResource(
+                uid: "dr3",
+                websiteUrl: "http://example.org/dataset",
+                name: "Original Name",
+                userLastModified: "testUser"
+        ).save(flush: true, failOnError: true)
+
+        provider.addToResources(existingResource)
+        provider.save(flush: true, failOnError: true)
+
+        def newResource = new DataResource(
+                websiteUrl: "http://example.org/dataset",
+                name: "Bird Survey Dataset",
+                pubDescription: "Comprehensive bird survey data",
+                rights: "CC BY 4.0",
+                citation: "Smith & Jones 2024",
+                northBoundingCoordinate: "-10.5",
+                southBoundingCoordinate: "-43.2",
+                eastBoundingCoordinate: "154.0",
+                westBoundingCoordinate: "113.0",
+                geographicDescription: "Eastern Australia",
+                beginDate: "2020-01-01",
+                endDate: "2024-12-31",
+                purpose: "Long-term bird population monitoring",
+                methodStepDescription: "Field observations and mist-netting",
+                qualityControlDescription: "Expert validation and peer review"
+        )
+
+        def updates = [
+                [
+                        resource       : newResource,
+                        contacts       : [],
+                        primaryContacts: []
+                ]
+        ]
+
+        when: "merge is called"
+        def result = service.merge(provider, updates, true, false, "testUser", true)
+
+        then: "All EML fields are successfully updated"
+        result.size() == 1
+        result[0].name == "Bird Survey Dataset"
+        result[0].pubDescription == "Comprehensive bird survey data"
+        result[0].rights == "CC BY 4.0"
+        result[0].citation == "Smith & Jones 2024"
+        result[0].northBoundingCoordinate == "-10.5"
+        result[0].southBoundingCoordinate == "-43.2"
+        result[0].eastBoundingCoordinate == "154.0"
+        result[0].westBoundingCoordinate == "113.0"
+        result[0].geographicDescription == "Eastern Australia"
+        result[0].beginDate == "2020-01-01"
+        result[0].endDate == "2024-12-31"
+        result[0].purpose == "Long-term bird population monitoring"
+        result[0].methodStepDescription == "Field observations and mist-netting"
+        result[0].qualityControlDescription == "Expert validation and peer review"
+    }
+
+    void "test IPT merge updates citation when old value is collection-name-only and new value is full GBIF format"() {
+        given: "A resource with a legacy collection-name citation and an IPT update with full GBIF-format citation"
+        // Replicates the real scenario seen in MCNB-Tissue:
+        // Collectory stored "Coleccion de Banco de Tejidos, MCNB" (old manual entry)
+        // IPT now publishes "Quesada Lara J, ... (2026). ... https://doi.org/10.15468/mwcmb5"
+        def provider = new DataProvider(
+                uid: "dpCitIPT1",
+                name: "MCNB IPT",
+                gbifCountryToAttribute: "ES",
+                userLastModified: "testUser"
+        ).save(flush: true, failOnError: true)
+
+        def existingResource = new DataResource(
+                uid: "drCitIPT1",
+                websiteUrl: "http://ipt.gbif.es/resource?r=mcnb-tissue",
+                name: "MCNB-Tissue",
+                citation: "Coleccion de Banco de Tejidos, MCNB",
+                userLastModified: "testUser"
+        ).save(flush: true, failOnError: true)
+
+        provider.addToResources(existingResource)
+        provider.save(flush: true, failOnError: true)
+
+        def newResource = new DataResource(
+                websiteUrl: "http://ipt.gbif.es/resource?r=mcnb-tissue",
+                name: "MCNB-Tissue",
+                citation: "Quesada Lara J, Agullo Villaronga J (2026). Museu de Ciències Naturals de Barcelona: MCNB-Tissue, Museu de Ciències Naturals de Barcelona. Occurrence dataset https://doi.org/10.15468/mwcmb5"
+        )
+
+        def updates = [
+                [
+                        resource       : newResource,
+                        contacts       : [],
+                        primaryContacts: []
+                ]
+        ]
+
+        when: "merge is called with full GBIF-format citation from IPT EML"
+        def result = service.merge(provider, updates, true, false, "testUser", true)
+
+        then: "Citation is updated from legacy collection name to full GBIF format with authors, year, and DOI"
+        result.size() == 1
+        result[0].citation == "Quesada Lara J, Agullo Villaronga J (2026). Museu de Ciències Naturals de Barcelona: MCNB-Tissue, Museu de Ciències Naturals de Barcelona. Occurrence dataset https://doi.org/10.15468/mwcmb5"
+        result[0].citation.contains("doi.org/10.15468")
+        result[0].citation.contains("2026")
+    }
+
+    void "test IPT merge does NOT replace a full GBIF-format citation with an empty or null value"() {
+        given: "A resource with a full GBIF-format citation and an IPT update where EML citation is absent"
+        def provider = new DataProvider(
+                uid: "dpCitIPT2",
+                name: "Test Provider IPT",
+                gbifCountryToAttribute: "ES",
+                userLastModified: "testUser"
+        ).save(flush: true, failOnError: true)
+
+        def fullCitation = "García R, López M (2025). My Collection, My Museum. Occurrence dataset https://doi.org/10.9999/abc"
+        def existingResource = new DataResource(
+                uid: "drCitIPT2",
+                websiteUrl: "http://ipt.example.org/resource?r=mycol",
+                name: "My Collection",
+                citation: fullCitation,
+                userLastModified: "testUser"
+        ).save(flush: true, failOnError: true)
+
+        provider.addToResources(existingResource)
+        provider.save(flush: true, failOnError: true)
+
+        // EML had no citation element — EmlImportService returns null for missing nodes
+        def newResource = new DataResource(
+                websiteUrl: "http://ipt.example.org/resource?r=mycol",
+                name: "My Collection Updated",
+                citation: null   // null = EML had no <citation> element
+        )
+
+        def updates = [
+                [
+                        resource       : newResource,
+                        contacts       : [],
+                        primaryContacts: []
+                ]
+        ]
+
+        when: "merge is called with a null citation (EML lacked the element)"
+        def result = service.merge(provider, updates, true, false, "testUser", true)
+
+        then: "Existing full GBIF citation is preserved; other fields are updated normally"
+        result.size() == 1
+        result[0].citation == fullCitation
+        result[0].name == "My Collection Updated"
     }
 
 }

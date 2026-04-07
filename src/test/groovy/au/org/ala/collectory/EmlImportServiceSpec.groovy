@@ -1421,4 +1421,582 @@ class EmlImportServiceSpec extends Specification implements ServiceUnitTest<EmlI
         result.primaryContacts[0].firstName == 'Maria'
     }
 
+    // -------------------------------------------------------------------------
+    // Citation tests
+    // -------------------------------------------------------------------------
+
+    void "test citation is set from additionalMetadata when present in EML"() {
+        given: "EML with a citation in additionalMetadata/gbif"
+        def emlText = '''
+<eml:eml xmlns:eml="eml://ecoinformatics.org/eml-2.1.1"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         packageId="test.1.1" system="https://example.org" scope="system">
+    <dataset>
+        <title>Test Dataset</title>
+        <intellectualRights><para>CC BY 4.0</para></intellectualRights>
+    </dataset>
+    <additionalMetadata>
+        <metadata>
+            <gbif>
+                <citation>Smith J (2024). Test dataset. Version 1.0. My Org. https://doi.org/10.1234/test</citation>
+            </gbif>
+        </metadata>
+    </additionalMetadata>
+</eml:eml>'''
+        def eml = new XmlSlurper().parseText(emlText)
+        def dataResource = new DataResource(uid: "dr-cit-1", name: "Test", userLastModified: "testUser")
+                .save(flush: true, failOnError: true)
+
+        when: "EML is extracted"
+        service.extractContactsFromEml(eml, dataResource)
+
+        then: "Citation is populated from EML"
+        dataResource.citation == "Smith J (2024). Test dataset. Version 1.0. My Org. https://doi.org/10.1234/test"
+    }
+
+    void "test existing citation is NOT overwritten when EML has no citation element"() {
+        given: "EML without additionalMetadata/gbif/citation and a resource with existing citation"
+        def emlText = '''
+<eml:eml xmlns:eml="eml://ecoinformatics.org/eml-2.1.1"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         packageId="test.1.2" system="https://example.org" scope="system">
+    <dataset>
+        <title>Updated Title</title>
+        <intellectualRights><para>CC BY 4.0</para></intellectualRights>
+    </dataset>
+</eml:eml>'''
+        def eml = new XmlSlurper().parseText(emlText)
+        def dataResource = new DataResource(
+                uid: "dr-cit-2",
+                name: "Original Name",
+                citation: "Original citation from publisher",
+                userLastModified: "testUser"
+        ).save(flush: true, failOnError: true)
+
+        when: "EML without citation is extracted"
+        service.extractContactsFromEml(eml, dataResource)
+
+        then: "Existing citation is preserved (not overwritten with empty string)"
+        dataResource.citation == "Original citation from publisher"
+
+        and: "Other fields that do have values are still updated"
+        dataResource.name == "Updated Title"
+    }
+
+     void "test citation is updated when EML has a new citation value"() {
+        given: "EML with a new citation and a resource with an old citation"
+        def emlText = '''
+<eml:eml xmlns:eml="eml://ecoinformatics.org/eml-2.1.1"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         packageId="test.1.3" system="https://example.org" scope="system">
+    <dataset>
+        <title>Test Dataset</title>
+        <intellectualRights><para>CC BY 4.0</para></intellectualRights>
+    </dataset>
+    <additionalMetadata>
+        <metadata>
+            <gbif>
+                <citation>New Citation 2025. Version 2.0.</citation>
+            </gbif>
+        </metadata>
+    </additionalMetadata>
+</eml:eml>'''
+        def eml = new XmlSlurper().parseText(emlText)
+        def dataResource = new DataResource(
+                uid: "dr-cit-3",
+                name: "Test",
+                citation: "Old Citation 2020. Version 1.0.",
+                userLastModified: "testUser"
+        ).save(flush: true, failOnError: true)
+
+        when: "EML with updated citation is extracted"
+        service.extractContactsFromEml(eml, dataResource)
+
+        then: "Citation is updated to the new value"
+        dataResource.citation == "New Citation 2025. Version 2.0."
+    }
+
+    void "test citation is extracted when gbif block contains dc:replaces (real IPT EML structure)"() {
+        given: "EML that mirrors the real IPT structure with dc namespace and dc:replaces sibling"
+        def emlText = '''
+<eml:eml xmlns:eml="eml://ecoinformatics.org/eml-2.1.1"
+         xmlns:dc="http://purl.org/dc/terms/"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         packageId="8347f6ba-f762-11e1-a439-00145eb45e9a/v1.11"
+         system="https://ipt.gbif.es" scope="system">
+    <dataset>
+        <title>Test Dataset With DC Namespace</title>
+        <intellectualRights><para>CC BY 4.0</para></intellectualRights>
+    </dataset>
+    <additionalMetadata>
+        <metadata>
+            <gbif>
+                <dateStamp>2017-05-23T07:11:03.394+02:00</dateStamp>
+                <hierarchyLevel>dataset</hierarchyLevel>
+                <citation>Real IPT Citation 2023. Version 1.11. https://ipt.gbif.es/resource?r=test&amp;v=1.11</citation>
+                <resourceLogoUrl>https://ipt.gbif.es/logo.do?r=test</resourceLogoUrl>
+                <dc:replaces>8347f6ba-f762-11e1-a439-00145eb45e9a/v1.10.xml</dc:replaces>
+            </gbif>
+        </metadata>
+    </additionalMetadata>
+</eml:eml>'''
+        def eml = new XmlSlurper().parseText(emlText)
+        def dataResource = new DataResource(
+                uid: "dr-cit-dc-1",
+                name: "Test",
+                citation: "Old citation that should be replaced",
+                userLastModified: "testUser"
+        ).save(flush: true, failOnError: true)
+
+        when: "EML with dc namespace is extracted"
+        service.extractContactsFromEml(eml, dataResource)
+
+        then: "Citation is updated despite dc:replaces sibling element"
+        dataResource.citation == "Real IPT Citation 2023. Version 1.11. https://ipt.gbif.es/resource?r=test&v=1.11"
+    }
+
+    void "test citation with identifier attribute is extracted as text (real GBIF IPT format)"() {
+        given: "EML with citation element that has a DOI in the identifier attribute (real IPT/GBIF format)"
+        // Real IPT EML uses: <citation identifier="https://doi.org/10.xxxxx">Author A, Author B (2026)...</citation>
+        // The citation text must be extracted, not the identifier attribute
+        def emlText = '''
+<eml:eml xmlns:eml="eml://ecoinformatics.org/eml-2.1.1"
+         xmlns:dc="http://purl.org/dc/terms/"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         packageId="8347f6ba-f762-11e1-a439-00145eb45e9a/v1.12"
+         system="https://ipt.gbif.es" scope="system">
+    <dataset>
+        <title>MCNB-Tissue Dataset</title>
+        <intellectualRights><para>CC BY 4.0</para></intellectualRights>
+    </dataset>
+    <additionalMetadata>
+        <metadata>
+            <gbif>
+                <dateStamp>2026-01-15T10:00:00.000+01:00</dateStamp>
+                <hierarchyLevel>dataset</hierarchyLevel>
+                <citation identifier="https://doi.org/10.15468/mwcmb5">Quesada Lara J, Agullo Villaronga J (2026). Museu de Ciències Naturals de Barcelona: MCNB-Tissue, Museu de Ciències Naturals de Barcelona. Occurrence dataset https://doi.org/10.15468/mwcmb5</citation>
+                <dc:replaces>8347f6ba-f762-11e1-a439-00145eb45e9a/v1.11.xml</dc:replaces>
+            </gbif>
+        </metadata>
+    </additionalMetadata>
+</eml:eml>'''
+        def eml = new XmlSlurper().parseText(emlText)
+        def dataResource = new DataResource(
+                uid: "dr-cit-identifier-1",
+                name: "MCNB-Tissue",
+                citation: "Coleccion de Banco de Tejidos, MCNB",
+                userLastModified: "testUser"
+        ).save(flush: true, failOnError: true)
+
+        when: "EML with citation identifier attribute is extracted"
+        service.extractContactsFromEml(eml, dataResource)
+
+        then: "Citation text is updated (old collection-name-only citation replaced by full GBIF format)"
+        dataResource.citation == "Quesada Lara J, Agullo Villaronga J (2026). Museu de Ciències Naturals de Barcelona: MCNB-Tissue, Museu de Ciències Naturals de Barcelona. Occurrence dataset https://doi.org/10.15468/mwcmb5"
+    }
+
+    void "test citation with identifier attribute - identifier DOI is NOT stored as citation text"() {
+        given: "EML with citation element that has DOI as identifier attribute and authors as text"
+        def emlText = '''
+<eml:eml xmlns:eml="eml://ecoinformatics.org/eml-2.1.1"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         packageId="test.doi.1" system="https://ipt.example.org" scope="system">
+    <dataset>
+        <title>DOI Citation Test Dataset</title>
+        <intellectualRights><para>CC BY 4.0</para></intellectualRights>
+    </dataset>
+    <additionalMetadata>
+        <metadata>
+            <gbif>
+                <citation identifier="https://doi.org/10.1234/test">Smith J, Jones A (2025). My dataset. Version 3.0. My Institution. https://doi.org/10.1234/test</citation>
+            </gbif>
+        </metadata>
+    </additionalMetadata>
+</eml:eml>'''
+        def eml = new XmlSlurper().parseText(emlText)
+        def dataResource = new DataResource(
+                uid: "dr-cit-doi-1",
+                name: "DOI Test",
+                userLastModified: "testUser"
+        ).save(flush: true, failOnError: true)
+
+        when: "EML is extracted"
+        service.extractContactsFromEml(eml, dataResource)
+
+        then: "Citation stores the human-readable text, not the raw DOI URL from identifier attribute"
+        dataResource.citation == "Smith J, Jones A (2025). My dataset. Version 3.0. My Institution. https://doi.org/10.1234/test"
+        !dataResource.citation.startsWith("https://doi.org")
+    }
+
+    void "test citation is updated when EML has full GBIF-format citation (authors year doi)"() {
+        given: "Collectory resource has old-style citation (just collection name), IPT EML has new GBIF-format citation"
+        // This replicates the real scenario: Collectory had a manually-entered collection name,
+        // but now the IPT publishes a proper GBIF citation with authors, year, DOI
+        def emlText = '''
+<eml:eml xmlns:eml="eml://ecoinformatics.org/eml-2.1.1"
+         xmlns:dc="http://purl.org/dc/terms/"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         packageId="abc123/v5" system="https://ipt.example.org" scope="system">
+    <dataset>
+        <title>My Collection Dataset</title>
+        <intellectualRights><para>CC BY 4.0</para></intellectualRights>
+    </dataset>
+    <additionalMetadata>
+        <metadata>
+            <gbif>
+                <citation identifier="https://doi.org/10.9999/abc123">García R, López M (2025). My Collection, My Museum. Occurrence dataset https://doi.org/10.9999/abc123</citation>
+            </gbif>
+        </metadata>
+    </additionalMetadata>
+</eml:eml>'''
+        def eml = new XmlSlurper().parseText(emlText)
+        def dataResource = new DataResource(
+                uid: "dr-cit-oldstyle-1",
+                name: "My Collection",
+                citation: "My Collection, My Museum",  // old-style: just the collection name
+                userLastModified: "testUser"
+        ).save(flush: true, failOnError: true)
+
+        when: "IPT EML with full GBIF-format citation is extracted"
+        service.extractContactsFromEml(eml, dataResource)
+
+        then: "Citation is updated to the full GBIF format with authors, year, and DOI"
+        dataResource.citation == "García R, López M (2025). My Collection, My Museum. Occurrence dataset https://doi.org/10.9999/abc123"
+        dataResource.citation.contains("doi.org")
+        dataResource.citation.contains("2025")
+    }
+
+    // -------------------------------------------------------------------------
+    // Tests for emlFields accessor semantics (geographic, temporal, additional)
+    //
+    // Each affected field follows three cases:
+    //   A) EML node present with value  → field is set
+    //   B) EML node absent              → existing value is preserved (null not applied)
+    //   C) EML node present but empty   → existing value is overwritten with ""
+    // -------------------------------------------------------------------------
+
+    void "test geographicDescription is set when EML node is present with value"() {
+        given: "EML with geographicDescription"
+        def emlText = '''
+<eml:eml xmlns:eml="eml://ecoinformatics.org/eml-2.1.1" packageId="dr-geo-1.1">
+    <dataset>
+        <title>Test</title>
+        <coverage>
+            <geographicCoverage>
+                <geographicDescription>Australia</geographicDescription>
+            </geographicCoverage>
+        </coverage>
+    </dataset>
+</eml:eml>'''
+        def eml = new XmlSlurper().parseText(emlText)
+        def dataResource = new DataResource(uid: "dr-geo-1", name: "Test", userLastModified: "testUser")
+                .save(flush: true, failOnError: true)
+
+        when:
+        service.extractContactsFromEml(eml, dataResource)
+
+        then: "geographicDescription is populated"
+        dataResource.geographicDescription == "Australia"
+    }
+
+    void "test geographicDescription is NOT overwritten when EML node is absent"() {
+        given: "EML without geographicDescription and a resource with existing value"
+        def emlText = '''
+<eml:eml xmlns:eml="eml://ecoinformatics.org/eml-2.1.1" packageId="dr-geo-2.1">
+    <dataset>
+        <title>Test</title>
+    </dataset>
+</eml:eml>'''
+        def eml = new XmlSlurper().parseText(emlText)
+        def dataResource = new DataResource(
+                uid: "dr-geo-2", name: "Test",
+                geographicDescription: "Existing description",
+                userLastModified: "testUser"
+        ).save(flush: true, failOnError: true)
+
+        when:
+        service.extractContactsFromEml(eml, dataResource)
+
+        then: "existing geographicDescription is preserved"
+        dataResource.geographicDescription == "Existing description"
+    }
+
+    void "test geographicDescription is overwritten when EML node is present but empty"() {
+        given: "EML with an empty geographicDescription node"
+        def emlText = '''
+<eml:eml xmlns:eml="eml://ecoinformatics.org/eml-2.1.1" packageId="dr-geo-3.1">
+    <dataset>
+        <title>Test</title>
+        <coverage>
+            <geographicCoverage>
+                <geographicDescription></geographicDescription>
+            </geographicCoverage>
+        </coverage>
+    </dataset>
+</eml:eml>'''
+        def eml = new XmlSlurper().parseText(emlText)
+        def dataResource = new DataResource(
+                uid: "dr-geo-3", name: "Test",
+                geographicDescription: "Old description",
+                userLastModified: "testUser"
+        ).save(flush: true, failOnError: true)
+
+        when:
+        service.extractContactsFromEml(eml, dataResource)
+
+        then: "geographicDescription is cleared (node present but empty)"
+        dataResource.geographicDescription == ""
+    }
+
+    void "test beginDate is set when EML node is present with value"() {
+        given: "EML with beginDate"
+        def emlText = '''
+<eml:eml xmlns:eml="eml://ecoinformatics.org/eml-2.1.1" packageId="dr-date-1.1">
+    <dataset>
+        <title>Test</title>
+        <coverage>
+            <temporalCoverage>
+                <rangeOfDates>
+                    <beginDate><calendarDate>2000-01-01</calendarDate></beginDate>
+                    <endDate><calendarDate>2023-12-31</calendarDate></endDate>
+                </rangeOfDates>
+            </temporalCoverage>
+        </coverage>
+    </dataset>
+</eml:eml>'''
+        def eml = new XmlSlurper().parseText(emlText)
+        def dataResource = new DataResource(uid: "dr-date-1", name: "Test", userLastModified: "testUser")
+                .save(flush: true, failOnError: true)
+
+        when:
+        service.extractContactsFromEml(eml, dataResource)
+
+        then:
+        dataResource.beginDate == "2000-01-01"
+        dataResource.endDate == "2023-12-31"
+    }
+
+    void "test beginDate and endDate are NOT overwritten when EML temporal coverage is absent"() {
+        given: "EML without temporalCoverage and a resource with existing dates"
+        def emlText = '''
+<eml:eml xmlns:eml="eml://ecoinformatics.org/eml-2.1.1" packageId="dr-date-2.1">
+    <dataset>
+        <title>Test</title>
+    </dataset>
+</eml:eml>'''
+        def eml = new XmlSlurper().parseText(emlText)
+        def dataResource = new DataResource(
+                uid: "dr-date-2", name: "Test",
+                beginDate: "1990-01-01",
+                endDate: "2020-12-31",
+                userLastModified: "testUser"
+        ).save(flush: true, failOnError: true)
+
+        when:
+        service.extractContactsFromEml(eml, dataResource)
+
+        then: "existing dates are preserved"
+        dataResource.beginDate == "1990-01-01"
+        dataResource.endDate == "2020-12-31"
+    }
+
+    void "test purpose is set when EML node is present with value"() {
+        given: "EML with purpose"
+        def emlText = '''
+<eml:eml xmlns:eml="eml://ecoinformatics.org/eml-2.1.1" packageId="dr-purpose-1.1">
+    <dataset>
+        <title>Test</title>
+        <purpose><para>Research and monitoring</para></purpose>
+    </dataset>
+</eml:eml>'''
+        def eml = new XmlSlurper().parseText(emlText)
+        def dataResource = new DataResource(uid: "dr-purpose-1", name: "Test", userLastModified: "testUser")
+                .save(flush: true, failOnError: true)
+
+        when:
+        service.extractContactsFromEml(eml, dataResource)
+
+        then:
+        dataResource.purpose == "Research and monitoring"
+    }
+
+    void "test purpose is NOT overwritten when EML node is absent"() {
+        given: "EML without purpose and a resource with existing value"
+        def emlText = '''
+<eml:eml xmlns:eml="eml://ecoinformatics.org/eml-2.1.1" packageId="dr-purpose-2.1">
+    <dataset>
+        <title>Test</title>
+    </dataset>
+</eml:eml>'''
+        def eml = new XmlSlurper().parseText(emlText)
+        def dataResource = new DataResource(
+                uid: "dr-purpose-2", name: "Test",
+                purpose: "Original purpose",
+                userLastModified: "testUser"
+        ).save(flush: true, failOnError: true)
+
+        when:
+        service.extractContactsFromEml(eml, dataResource)
+
+        then: "existing purpose is preserved"
+        dataResource.purpose == "Original purpose"
+    }
+
+    void "test methodStepDescription and qualityControlDescription are set from EML"() {
+        given: "EML with methods block"
+        def emlText = '''
+<eml:eml xmlns:eml="eml://ecoinformatics.org/eml-2.1.1" packageId="dr-methods-1.1">
+    <dataset>
+        <title>Test</title>
+        <methods>
+            <methodStep>
+                <description><para>Field surveys every 3 months</para></description>
+            </methodStep>
+            <qualityControl>
+                <description><para>Expert verification</para></description>
+            </qualityControl>
+        </methods>
+    </dataset>
+</eml:eml>'''
+        def eml = new XmlSlurper().parseText(emlText)
+        def dataResource = new DataResource(uid: "dr-methods-1", name: "Test", userLastModified: "testUser")
+                .save(flush: true, failOnError: true)
+
+        when:
+        service.extractContactsFromEml(eml, dataResource)
+
+        then:
+        dataResource.methodStepDescription == "Field surveys every 3 months"
+        dataResource.qualityControlDescription == "Expert verification"
+    }
+
+    void "test methodStepDescription is NOT overwritten when EML methods block is absent"() {
+        given: "EML without methods and a resource with existing method description"
+        def emlText = '''
+<eml:eml xmlns:eml="eml://ecoinformatics.org/eml-2.1.1" packageId="dr-methods-2.1">
+    <dataset>
+        <title>Test</title>
+    </dataset>
+</eml:eml>'''
+        def eml = new XmlSlurper().parseText(emlText)
+        def dataResource = new DataResource(
+                uid: "dr-methods-2", name: "Test",
+                methodStepDescription: "Previous method",
+                qualityControlDescription: "Previous QC",
+                userLastModified: "testUser"
+        ).save(flush: true, failOnError: true)
+
+        when:
+        service.extractContactsFromEml(eml, dataResource)
+
+        then: "existing method descriptions are preserved"
+        dataResource.methodStepDescription == "Previous method"
+        dataResource.qualityControlDescription == "Previous QC"
+    }
+
+    void "test bounding coordinates are set when EML geographic coverage is present"() {
+        given: "EML with full bounding box"
+        def emlText = '''
+<eml:eml xmlns:eml="eml://ecoinformatics.org/eml-2.1.1" packageId="dr-bbox-1.1">
+    <dataset>
+        <title>Test</title>
+        <coverage>
+            <geographicCoverage>
+                <geographicDescription>New South Wales</geographicDescription>
+                <boundingCoordinates>
+                    <westBoundingCoordinate>140.99</westBoundingCoordinate>
+                    <eastBoundingCoordinate>153.64</eastBoundingCoordinate>
+                    <northBoundingCoordinate>-28.16</northBoundingCoordinate>
+                    <southBoundingCoordinate>-37.51</southBoundingCoordinate>
+                </boundingCoordinates>
+            </geographicCoverage>
+        </coverage>
+    </dataset>
+</eml:eml>'''
+        def eml = new XmlSlurper().parseText(emlText)
+        def dataResource = new DataResource(uid: "dr-bbox-1", name: "Test", userLastModified: "testUser")
+                .save(flush: true, failOnError: true)
+
+        when:
+        service.extractContactsFromEml(eml, dataResource)
+
+        then:
+        dataResource.westBoundingCoordinate == "140.99"
+        dataResource.eastBoundingCoordinate == "153.64"
+        dataResource.northBoundingCoordinate == "-28.16"
+        dataResource.southBoundingCoordinate == "-37.51"
+    }
+
+    void "test bounding coordinates are NOT overwritten when EML geographic coverage is absent"() {
+        given: "EML without coverage and a resource with existing bounding box"
+        def emlText = '''
+<eml:eml xmlns:eml="eml://ecoinformatics.org/eml-2.1.1" packageId="dr-bbox-2.1">
+    <dataset>
+        <title>Test</title>
+    </dataset>
+</eml:eml>'''
+        def eml = new XmlSlurper().parseText(emlText)
+        def dataResource = new DataResource(
+                uid: "dr-bbox-2", name: "Test",
+                westBoundingCoordinate: "110.0",
+                eastBoundingCoordinate: "155.0",
+                northBoundingCoordinate: "-10.0",
+                southBoundingCoordinate: "-45.0",
+                userLastModified: "testUser"
+        ).save(flush: true, failOnError: true)
+
+        when:
+        service.extractContactsFromEml(eml, dataResource)
+
+        then: "existing bounding coordinates are preserved"
+        dataResource.westBoundingCoordinate == "110.0"
+        dataResource.eastBoundingCoordinate == "155.0"
+        dataResource.northBoundingCoordinate == "-10.0"
+         dataResource.southBoundingCoordinate == "-45.0"
+     }
+
+    void "test pubDescription is extracted from abstract with para"() {
+        given: "EML with abstract containing para elements"
+        def eml = new XmlSlurper().parseText('''
+            <eml:eml xmlns:eml="https://eml.ecoinformatics.org/eml-2.2.0"
+                     packageId="test-uuid" system="http://gbif.org">
+                <dataset>
+                    <title>Test Dataset</title>
+                    <abstract>
+                        <para>First paragraph of the abstract.</para>
+                        <para>Second paragraph of the abstract.</para>
+                    </abstract>
+                </dataset>
+            </eml:eml>
+        ''')
+        def dataResource = new DataResource()
+
+        when:
+        service.extractContactsFromEml(eml, dataResource)
+
+        then:
+        dataResource.pubDescription == "First paragraph of the abstract. Second paragraph of the abstract."
+    }
+
+    void "test pubDescription is extracted from abstract without para (plain text)"() {
+        given: "EML with abstract containing plain text directly (no para elements)"
+        def eml = new XmlSlurper().parseText('''
+            <eml:eml xmlns:eml="https://eml.ecoinformatics.org/eml-2.2.0"
+                     packageId="test-uuid" system="http://gbif.org">
+                <dataset>
+                    <title>Test Dataset</title>
+                    <abstract>Plain text abstract without para elements.</abstract>
+                </dataset>
+            </eml:eml>
+        ''')
+        def dataResource = new DataResource()
+
+        when:
+        service.extractContactsFromEml(eml, dataResource)
+
+        then:
+        dataResource.pubDescription == "Plain text abstract without para elements."
+    }
+
 }
+

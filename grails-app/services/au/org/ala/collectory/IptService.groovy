@@ -103,14 +103,18 @@ class IptService {
             def existingResource = currentResources[update.resource.websiteUrl]
 
             if (existingResource) {
-                if (!check || existingResource.dataCurrency == null || update.resource.dataCurrency == null || update.resource.dataCurrency.after(existingResource.dataCurrency)) {
-                    DataResource.withTransaction {
-                        updateFields(existingResource, update, username)
-                        syncContacts(existingResource, update.contacts, update.primaryContacts, username, admin)
-                        activityLogService.log(username, admin, Action.EDIT_SAVE, "Updated IPT data resource ${existingResource.uid} from scan")
-                    }
+                // Always update EML metadata fields and contacts, regardless of dataCurrency.
+                // The dataCurrency check only determines whether this resource needs DwCA re-import
+                // (i.e. whether it appears in the returned list for the caller to act on).
+                DataResource.withTransaction {
+                    updateFields(existingResource, update.resource, username)
+                    syncContacts(existingResource, update.contacts, update.primaryContacts, username, admin)
+                    activityLogService.log(username, admin, Action.EDIT_SAVE, "Updated IPT data resource ${existingResource.uid} from scan")
                 }
-                mergedResources << existingResource
+                // Only include in the re-import list when data currency has increased (or check is disabled).
+                if (!check || existingResource.dataCurrency == null || update.resource.dataCurrency == null || update.resource.dataCurrency.after(existingResource.dataCurrency)) {
+                    mergedResources << existingResource
+                }
             } else {
                 if (create) {
                     createNewResource(provider, update, username, admin)
@@ -122,16 +126,13 @@ class IptService {
         mergedResources
     }
 
-    private void updateFields(DataResource existingResource, Map update, String username) {
-        def fieldsToUpdate = allFields() // Retrieves all fields that can be updated
-        log.info("Fields to update: ${fieldsToUpdate}")
-
-        fieldsToUpdate.each { fieldName ->
-            if (update.containsKey(fieldName)) {
-                def newValue = update[fieldName]
-                existingResource.setProperty(fieldName, newValue) // Update the field with the new value (even if it's null)
-            } else {
-                existingResource.setProperty(fieldName, null) // Clear the field if it doesn't exist in the update
+    private void updateFields(DataResource existingResource, DataResource newResource, String username) {
+        allFields().each { fieldName ->
+            def newValue = newResource.getProperty(fieldName)
+            // Skip null — means the RSS/EML did not supply this field at all.
+            // Empty string ("") is a legitimate value (field explicitly cleared) and should be applied.
+            if (newValue != null) {
+                existingResource.setProperty(fieldName, newValue)
             }
         }
 
