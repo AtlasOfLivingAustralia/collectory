@@ -129,11 +129,10 @@ class IptService {
     private void updateFields(DataResource existingResource, DataResource newResource, String username) {
         allFields().each { fieldName ->
             def newValue = newResource.getProperty(fieldName)
-            // Skip null — means the RSS/EML did not supply this field at all.
-            // Empty string ("") is a legitimate value (field explicitly cleared) and should be applied.
-            if (newValue != null) {
-                existingResource.setProperty(fieldName, newValue)
-            }
+            // EML is the source of truth: always apply, even if null/empty.
+            // rssFields that don't apply to an existing resource (e.g. dataCurrency not in RSS) will be null,
+            // but those are safe to apply — they clear stale values from the resource.
+            existingResource.setProperty(fieldName, newValue)
         }
 
         existingResource.userLastModified = username

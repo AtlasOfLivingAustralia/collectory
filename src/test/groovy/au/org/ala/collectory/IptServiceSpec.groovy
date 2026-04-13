@@ -485,7 +485,7 @@ class IptServiceSpec extends Specification implements ServiceUnitTest<IptService
         ContactFor.findAllByContact(sharedContact).size() == 2
     }
 
-    void "test updateFields preserves existing values when new value is null"() {
+    void "test updateFields clears existing values when IPT sends null (EML is source of truth)"() {
         given: "A provider with a resource that has existing values"
         def provider = new DataProvider(
                 uid: "dpUF1",
@@ -498,7 +498,7 @@ class IptServiceSpec extends Specification implements ServiceUnitTest<IptService
                 uid: "drUF1",
                 name: "Test Resource",
                 websiteUrl: "http://example.org/resource",
-                pubDescription: "Description that should be preserved",
+                pubDescription: "Description that should be cleared",
                 userLastModified: "testUser"
         ).save(flush: true, failOnError: true)
 
@@ -509,7 +509,7 @@ class IptServiceSpec extends Specification implements ServiceUnitTest<IptService
                 [
                         resource       : new DataResource(
                                 websiteUrl: "http://example.org/resource",
-                                pubDescription: null // IPT sends null - should NOT overwrite existing value
+                                pubDescription: null // IPT sends null - EML is source of truth, should clear
                         ),
                         contacts       : [],
                         primaryContacts: []
@@ -519,12 +519,12 @@ class IptServiceSpec extends Specification implements ServiceUnitTest<IptService
         when: "merge is called (which internally calls updateFields)"
         def result = service.merge(provider, updates, true, false, "testUser", true)
 
-        then: "The existing value is preserved when the new value is null"
+        then: "The existing value is cleared when the new value is null (EML is source of truth)"
         result.size() == 1
-        result[0].pubDescription == "Description that should be preserved"
+        result[0].pubDescription == null
     }
 
-    void "test updateFields updates non-null fields and preserves existing values for null fields"() {
+    void "test updateFields updates non-null fields and clears existing values for null fields"() {
         given: "A provider with a resource that has existing values"
         def provider = new DataProvider(
                 uid: "dpUF2",
@@ -551,7 +551,7 @@ class IptServiceSpec extends Specification implements ServiceUnitTest<IptService
                         resource       : new DataResource(
                                 websiteUrl: "http://example.org/resource2",
                                 name: "Updated Name",
-                                pubDescription: null, // null should NOT clear the existing value
+                                pubDescription: null, // null clears the existing value
                                 methodStepDescription: "Updated Set Description"
                         ),
                         contacts       : [],
@@ -564,10 +564,10 @@ class IptServiceSpec extends Specification implements ServiceUnitTest<IptService
         assert fieldsToUpdate.containsAll(["name", "pubDescription", "methodStepDescription"])
         def result = service.merge(provider, updates, true, false, "testUser", true)
 
-        then: "Non-null fields are updated; existing value is preserved when new value is null"
+        then: "Non-null fields are updated; null fields clear the existing value (EML is source of truth)"
         result.size() == 1
         result[0].name == "Updated Name"
-        result[0].pubDescription == "Original Description"
+        result[0].pubDescription == null
         result[0].methodStepDescription == "Updated Set Description"
         result[0].userLastModified == "testUser"
 
@@ -972,7 +972,7 @@ class IptServiceSpec extends Specification implements ServiceUnitTest<IptService
         result[0].pubDescription == "New full description extracted from EML abstract. Much longer and more detailed."
     }
 
-    void "test IPT preserves existing EML fields when update contains null values"() {
+    void "test IPT clears existing EML fields when update contains null values (EML is source of truth)"() {
         given: "A resource with existing metadata fields"
         def provider = new DataProvider(
                 uid: "dp2",
@@ -997,8 +997,8 @@ class IptServiceSpec extends Specification implements ServiceUnitTest<IptService
         def newResource = new DataResource(
                 websiteUrl: "http://example.org/dataset",
                 name: "Updated Name",
-                pubDescription: null,  // null should preserve existing value
-                rights: null,           // null should preserve existing value
+                pubDescription: null,  // null = EML absent → should clear existing value
+                rights: null,           // null = EML absent → should clear existing value
                 citation: "Updated Citation"
         )
 
@@ -1013,11 +1013,11 @@ class IptServiceSpec extends Specification implements ServiceUnitTest<IptService
         when: "merge is called"
         def result = service.merge(provider, updates, true, false, "testUser", true)
 
-        then: "Non-null fields are updated; null fields preserve the existing values"
+        then: "All fields from EML are applied; null fields clear existing values (EML is source of truth)"
         result.size() == 1
         result[0].name == "Updated Name"
-        result[0].pubDescription == "Original Description"
-        result[0].rights == "Original Rights"
+        result[0].pubDescription == null
+        result[0].rights == null
         result[0].citation == "Updated Citation"
     }
 
@@ -1134,7 +1134,7 @@ class IptServiceSpec extends Specification implements ServiceUnitTest<IptService
         result[0].citation.contains("2026")
     }
 
-    void "test IPT merge does NOT replace a full GBIF-format citation with an empty or null value"() {
+    void "test IPT merge DOES replace a full GBIF-format citation with null (EML is source of truth)"() {
         given: "A resource with a full GBIF-format citation and an IPT update where EML citation is absent"
         def provider = new DataProvider(
                 uid: "dpCitIPT2",
@@ -1159,7 +1159,7 @@ class IptServiceSpec extends Specification implements ServiceUnitTest<IptService
         def newResource = new DataResource(
                 websiteUrl: "http://ipt.example.org/resource?r=mycol",
                 name: "My Collection Updated",
-                citation: null   // null = EML had no <citation> element
+                citation: null   // null = EML had no <citation> element → should clear existing value
         )
 
         def updates = [
@@ -1173,9 +1173,9 @@ class IptServiceSpec extends Specification implements ServiceUnitTest<IptService
         when: "merge is called with a null citation (EML lacked the element)"
         def result = service.merge(provider, updates, true, false, "testUser", true)
 
-        then: "Existing full GBIF citation is preserved; other fields are updated normally"
+        then: "Null citation from EML clears existing citation (EML is source of truth); other fields are updated normally"
         result.size() == 1
-        result[0].citation == fullCitation
+        result[0].citation == null
         result[0].name == "My Collection Updated"
     }
 

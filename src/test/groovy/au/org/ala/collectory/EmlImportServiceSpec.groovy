@@ -1454,7 +1454,7 @@ class EmlImportServiceSpec extends Specification implements ServiceUnitTest<EmlI
         dataResource.citation == "Smith J (2024). Test dataset. Version 1.0. My Org. https://doi.org/10.1234/test"
     }
 
-    void "test existing citation is NOT overwritten when EML has no citation element"() {
+    void "test existing citation is cleared when EML has no citation element"() {
         given: "EML without additionalMetadata/gbif/citation and a resource with existing citation"
         def emlText = '''
 <eml:eml xmlns:eml="eml://ecoinformatics.org/eml-2.1.1"
@@ -1476,10 +1476,10 @@ class EmlImportServiceSpec extends Specification implements ServiceUnitTest<EmlI
         when: "EML without citation is extracted"
         service.extractContactsFromEml(eml, dataResource)
 
-        then: "Existing citation is preserved (not overwritten with empty string)"
-        dataResource.citation == "Original citation from publisher"
+        then: "Existing citation is cleared because EML is the source of truth"
+        dataResource.citation == ""
 
-        and: "Other fields that do have values are still updated"
+        and: "Other fields are still updated"
         dataResource.name == "Updated Title"
     }
 
@@ -1669,9 +1669,9 @@ class EmlImportServiceSpec extends Specification implements ServiceUnitTest<EmlI
     // -------------------------------------------------------------------------
     // Tests for emlFields accessor semantics (geographic, temporal, additional)
     //
-    // Each affected field follows three cases:
-    //   A) EML node present with value  → field is set
-    //   B) EML node absent              → existing value is preserved (null not applied)
+    // EML is the source of truth. Each affected field follows three cases:
+    //   A) EML node present with value  → field is set to that value
+    //   B) EML node absent              → existing value is cleared (set to "")
     //   C) EML node present but empty   → existing value is overwritten with ""
     // -------------------------------------------------------------------------
 
@@ -1699,7 +1699,7 @@ class EmlImportServiceSpec extends Specification implements ServiceUnitTest<EmlI
         dataResource.geographicDescription == "Australia"
     }
 
-    void "test geographicDescription is NOT overwritten when EML node is absent"() {
+    void "test geographicDescription is cleared when EML node is absent"() {
         given: "EML without geographicDescription and a resource with existing value"
         def emlText = '''
 <eml:eml xmlns:eml="eml://ecoinformatics.org/eml-2.1.1" packageId="dr-geo-2.1">
@@ -1717,8 +1717,8 @@ class EmlImportServiceSpec extends Specification implements ServiceUnitTest<EmlI
         when:
         service.extractContactsFromEml(eml, dataResource)
 
-        then: "existing geographicDescription is preserved"
-        dataResource.geographicDescription == "Existing description"
+        then: "existing geographicDescription is cleared (EML is source of truth)"
+        dataResource.geographicDescription == ""
     }
 
     void "test geographicDescription is overwritten when EML node is present but empty"() {
@@ -1776,7 +1776,7 @@ class EmlImportServiceSpec extends Specification implements ServiceUnitTest<EmlI
         dataResource.endDate == "2023-12-31"
     }
 
-    void "test beginDate and endDate are NOT overwritten when EML temporal coverage is absent"() {
+    void "test beginDate and endDate are cleared when EML temporal coverage is absent"() {
         given: "EML without temporalCoverage and a resource with existing dates"
         def emlText = '''
 <eml:eml xmlns:eml="eml://ecoinformatics.org/eml-2.1.1" packageId="dr-date-2.1">
@@ -1795,9 +1795,9 @@ class EmlImportServiceSpec extends Specification implements ServiceUnitTest<EmlI
         when:
         service.extractContactsFromEml(eml, dataResource)
 
-        then: "existing dates are preserved"
-        dataResource.beginDate == "1990-01-01"
-        dataResource.endDate == "2020-12-31"
+        then: "existing dates are cleared (EML is source of truth)"
+        dataResource.beginDate == ""
+        dataResource.endDate == ""
     }
 
     void "test purpose is set when EML node is present with value"() {
@@ -1820,7 +1820,7 @@ class EmlImportServiceSpec extends Specification implements ServiceUnitTest<EmlI
         dataResource.purpose == "Research and monitoring"
     }
 
-    void "test purpose is NOT overwritten when EML node is absent"() {
+    void "test purpose is cleared when EML node is absent"() {
         given: "EML without purpose and a resource with existing value"
         def emlText = '''
 <eml:eml xmlns:eml="eml://ecoinformatics.org/eml-2.1.1" packageId="dr-purpose-2.1">
@@ -1838,8 +1838,8 @@ class EmlImportServiceSpec extends Specification implements ServiceUnitTest<EmlI
         when:
         service.extractContactsFromEml(eml, dataResource)
 
-        then: "existing purpose is preserved"
-        dataResource.purpose == "Original purpose"
+        then: "existing purpose is cleared (EML is source of truth)"
+        dataResource.purpose == ""
     }
 
     void "test methodStepDescription and qualityControlDescription are set from EML"() {
@@ -1870,7 +1870,7 @@ class EmlImportServiceSpec extends Specification implements ServiceUnitTest<EmlI
         dataResource.qualityControlDescription == "Expert verification"
     }
 
-    void "test methodStepDescription is NOT overwritten when EML methods block is absent"() {
+    void "test methodStepDescription is cleared when EML methods block is absent"() {
         given: "EML without methods and a resource with existing method description"
         def emlText = '''
 <eml:eml xmlns:eml="eml://ecoinformatics.org/eml-2.1.1" packageId="dr-methods-2.1">
@@ -1889,9 +1889,9 @@ class EmlImportServiceSpec extends Specification implements ServiceUnitTest<EmlI
         when:
         service.extractContactsFromEml(eml, dataResource)
 
-        then: "existing method descriptions are preserved"
-        dataResource.methodStepDescription == "Previous method"
-        dataResource.qualityControlDescription == "Previous QC"
+        then: "existing method descriptions are cleared (EML is source of truth)"
+        dataResource.methodStepDescription == ""
+        dataResource.qualityControlDescription == ""
     }
 
     void "test bounding coordinates are set when EML geographic coverage is present"() {
@@ -1927,7 +1927,7 @@ class EmlImportServiceSpec extends Specification implements ServiceUnitTest<EmlI
         dataResource.southBoundingCoordinate == "-37.51"
     }
 
-    void "test bounding coordinates are NOT overwritten when EML geographic coverage is absent"() {
+    void "test bounding coordinates are cleared when EML geographic coverage is absent"() {
         given: "EML without coverage and a resource with existing bounding box"
         def emlText = '''
 <eml:eml xmlns:eml="eml://ecoinformatics.org/eml-2.1.1" packageId="dr-bbox-2.1">
@@ -1948,12 +1948,12 @@ class EmlImportServiceSpec extends Specification implements ServiceUnitTest<EmlI
         when:
         service.extractContactsFromEml(eml, dataResource)
 
-        then: "existing bounding coordinates are preserved"
-        dataResource.westBoundingCoordinate == "110.0"
-        dataResource.eastBoundingCoordinate == "155.0"
-        dataResource.northBoundingCoordinate == "-10.0"
-         dataResource.southBoundingCoordinate == "-45.0"
-     }
+        then: "existing bounding coordinates are cleared (EML is source of truth)"
+        dataResource.westBoundingCoordinate == ""
+        dataResource.eastBoundingCoordinate == ""
+        dataResource.northBoundingCoordinate == ""
+        dataResource.southBoundingCoordinate == ""
+    }
 
     void "test pubDescription is extracted from abstract with para"() {
         given: "EML with abstract containing para elements"
