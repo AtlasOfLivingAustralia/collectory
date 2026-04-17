@@ -51,9 +51,9 @@
                     <th><g:message code="manage.extloadr.label03"/></th>
                     <th><g:message code="manage.extloadr.label04"/></th>
                     <th><g:message code="manage.extloadr.label05"/></th>
-                    <th><g:message code="manage.extloadr.label06"/> <button type="btn btn-sm" onclick="invertColumn('.addResource'); return false"><span class="glyphicon glyphicon-check"></span></button></th>
-                    <th><g:message code="manage.extloadr.label07"/> <button type="btn btn-sm" onclick="invertColumn('.updateMetadata'); return false"><span class="glyphicon glyphicon-check"></span></button></th>
-                    <th><g:message code="manage.extloadr.label08"/> <button type="btn btn-sm" onclick="invertColumn('.updateConnection'); return false"><span class="glyphicon glyphicon-check"></span></button></th>
+                    <th><g:message code="manage.extloadr.label06"/> <button type="btn btn-sm" onclick="invertColumn('.addResource'); return false"><span class="fa fa-check"></span></button></th>
+                    <th><g:message code="manage.extloadr.label07"/> <button type="btn btn-sm" onclick="invertColumn('.updateMetadata'); return false"><span class="fa fa-check"></span></button></th>
+                    <th><g:message code="manage.extloadr.label08"/> <button type="btn btn-sm" onclick="invertColumn('.updateConnection'); return false"><span class="fa fa-check"></span></button></th>
                     <th><g:message code="manage.extloadr.label09"/></th>
                 </tr>
             </thead>
@@ -69,13 +69,13 @@
                     <g:hiddenField name="resources[${rs}].guid" value="${res.guid}"/>
                     <g:hiddenField name="resources[${rs}].source" value="${res.source}"/>
                     <g:hiddenField name="resources[${rs}].country" value="${configuration.country}"/>
-                    <g:textField class="resource-name col-xs-4" name="resources[${rs}].name" value="${res.name}" />
+                    <g:textField class="resource-name col-4" name="resources[${rs}].name" value="${res.name}" />
                 </td>
                 <td><span title="<g:message code="manage.extstatus.${res.status}.detail"/>"><g:message code="manage.extstatus.${res.status}"/></span></td>
                 <td class="resource-mapping"><span id="existing-${rs}"><g:if test="${res.uid}">
                     <g:link controller="dataResource" action="show" id="${res.uid}" target="_new"> <g:fieldValue field="uid" bean="${res}"/></g:link>
                     </g:if></span>
-                    &nbsp; &nbsp; <span class="btn btn-default btn-xs" onclick="existingDialog('#existing-${rs}', '#resources-${rs}-uid'); return false"><g:message code="manage.extloadr.button01" default="..."/></span> </td>
+                    &nbsp; &nbsp; <span class="btn btn-outline-dark btn-sm" onclick="existingDialog('#existing-${rs}', '#resources-${rs}-uid'); return false"><g:message code="manage.extloadr.button01" default="..."/></span> </td>
                 <td><g:formatDate type="datetime" date="${res.sourceUpdated}"/><g:if test="${res.existingChecked}">&nbsp;(<g:formatDate type="datetime" date="${res.existingChecked}"/>)</g:if></td>
                 <td><g:checkBox name="resources[${rs}].addResource" value="${res.addResource}"/></td>
                 <td><g:checkBox name="resources[${rs}].updateMetadata" value="${res.updateMetadata}"/></td>
@@ -93,7 +93,7 @@
         </div>
     </g:form>
 </div>
-<div class="hide">
+<div class="d-none">
 <div id="existing-dialog" title="<g:message code="manage.extloadr.title02" default="Find Data Resource"/>">
     <table id="existing-dataresources" class="table table-striped">
     <thead>
@@ -107,7 +107,7 @@
     </table>
     <div class="buttons">
         <span id="existing-ok-button" class="btn btn-success"><g:message code="manage.extloadr.button.ok" default="Ok"/></span>
-        <span id="existing-cancel-button" class="btn btn-default" onlcick="$('#existing-dialog').dialog('close')"><g:message code="manage.extloadr.button.cancel" default="Cancel"/></span>
+        <span id="existing-cancel-button" class="btn btn-outline-dark" onlcick="$('#existing-dialog').dialog('close')"><g:message code="manage.extloadr.button.cancel" default="Cancel"/></span>
     </div>
 </div>
 </div>

@@ -73,12 +73,12 @@
         <div class="col-md-8" id="map-list-col">
             <div class="tabbable">
                 <ul class="nav nav-tabs" id="home-tabs">
-                    <li class="active"><a href="#map" data-toggle="tab"><g:message code="public.map3.maplistcol.map" /></a></li>
-                    <li><a href="#list" data-toggle="tab"><g:message code="public.map3.maplistcol.list" /></a></li>
+                    <li class="nav-item"><a class="nav-link active" href="#map" data-bs-toggle="tab"><g:message code="public.map3.maplistcol.map" /></a></li>
+                    <li class="nav-item"><a class="nav-link" href="#list" data-bs-toggle="tab"><g:message code="public.map3.maplistcol.list" /></a></li>
                 </ul>
             </div>
             <div class="tab-content">
-              <div class="tab-pane active" id="map">
+              <div class="tab-pane show active" id="map">
               <div  class="map-column">
                 <div class="section">
                   <p style="width:100%;padding-bottom:8px;"><g:message code="public.map3.maplistcol.des01" />.</p>
