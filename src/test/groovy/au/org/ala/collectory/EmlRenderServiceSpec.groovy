@@ -16,4 +16,15 @@ class EmlRenderServiceSpec extends Specification implements ServiceUnitTest<EmlR
         xml.toString().contains('<taxonRankValue>plantae</taxonRankValue>')
         xml.toString().contains('<taxonRankValue>bacteria</taxonRankValue>')
     }
+
+    void "getTaxonomicCoverage tolerates missing range"() {
+        given:
+        def hints = "{coverage:[{kingdom:'plantae'}]}"
+
+        when:
+        def xml = service.getTaxonomicCoverage(hints)
+
+        then:
+        xml.toString().contains('<taxonRankValue>plantae</taxonRankValue>')
+    }
 }
