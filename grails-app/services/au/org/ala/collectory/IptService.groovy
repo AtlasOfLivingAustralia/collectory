@@ -106,13 +106,19 @@ class IptService {
                 // Always update EML metadata fields and contacts, regardless of dataCurrency.
                 // The dataCurrency check only determines whether this resource needs DwCA re-import
                 // (i.e. whether it appears in the returned list for the caller to act on).
+                //
+                // Snapshot dataCurrency BEFORE updateFields runs: dataCurrency is an RSS field, so
+                // updateFields overwrites existingResource.dataCurrency with the new value. Comparing
+                // after the update would compare the new value against itself and always be false.
+                Date previousDataCurrency = existingResource.dataCurrency
+                Date newDataCurrency = update.resource.dataCurrency
                 DataResource.withTransaction {
                     updateFields(existingResource, update.resource, username)
                     syncContacts(existingResource, update.contacts, update.primaryContacts, username, admin)
                     activityLogService.log(username, admin, Action.EDIT_SAVE, "Updated IPT data resource ${existingResource.uid} from scan")
                 }
                 // Only include in the re-import list when data currency has increased (or check is disabled).
-                if (!check || existingResource.dataCurrency == null || update.resource.dataCurrency == null || update.resource.dataCurrency.after(existingResource.dataCurrency)) {
+                if (!check || previousDataCurrency == null || newDataCurrency == null || newDataCurrency.after(previousDataCurrency)) {
                     mergedResources << existingResource
                 }
             } else {
@@ -129,9 +135,9 @@ class IptService {
     private void updateFields(DataResource existingResource, DataResource newResource, String username) {
         allFields().each { fieldName ->
             def newValue = newResource.getProperty(fieldName)
-            // EML is the source of truth: always apply, even if null/empty.
-            // rssFields that don't apply to an existing resource (e.g. dataCurrency not in RSS) will be null,
-            // but those are safe to apply — they clear stale values from the resource.
+            // EML (and the RSS feed) is the source of truth: always apply, even when null/empty.
+            // Optional fields the source omits resolve to null/empty and are applied as-is,
+            // intentionally clearing any stale value previously held by the resource.
             existingResource.setProperty(fieldName, newValue)
         }
 

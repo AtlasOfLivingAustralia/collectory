@@ -888,6 +888,67 @@ class IptServiceSpec extends Specification implements ServiceUnitTest<IptService
         result[0].pubDescription == "Field observations of bird species in Australian wetlands"
     }
 
+    void "test merge with check=true returns resource for re-import only when dataCurrency increased"() {
+        given: "An existing resource with a known dataCurrency"
+        def provider = new DataProvider(
+                uid: "dpCheck1",
+                name: "Test Provider",
+                gbifCountryToAttribute: "AU",
+                userLastModified: "testUser"
+        ).save(flush: true, failOnError: true)
+
+        def oldCurrency = Timestamp.valueOf("2020-01-01 00:00:00")
+        def existingResource = new DataResource(
+                uid: "drCheck1",
+                websiteUrl: "http://example.org/check-dataset",
+                name: "Old Dataset Name",
+                pubDescription: "Old description",
+                dataCurrency: oldCurrency,
+                userLastModified: "testUser"
+        ).save(flush: true, failOnError: true)
+
+        provider.addToResources(existingResource)
+        provider.save(flush: true, failOnError: true)
+
+        when: "merge runs with check=true and an increased dataCurrency"
+        def newerCurrency = Timestamp.valueOf("2025-06-01 00:00:00")
+        def updates = [[
+                resource       : new DataResource(
+                        websiteUrl: "http://example.org/check-dataset",
+                        name: "Updated Dataset Name",
+                        pubDescription: "New description",
+                        dataCurrency: newerCurrency
+                ),
+                contacts       : [],
+                primaryContacts: []
+        ]]
+        def result = service.merge(provider, updates, true, true, "testUser", true)
+
+        then: "the resource is returned for re-import and EML fields are updated"
+        result.size() == 1
+        result[0].uid == "drCheck1"
+        result[0].name == "Updated Dataset Name"
+        result[0].pubDescription == "New description"
+
+        when: "merge runs again with check=true and an unchanged (older) dataCurrency"
+        def updatesNoNewData = [[
+                resource       : new DataResource(
+                        websiteUrl: "http://example.org/check-dataset",
+                        name: "Even Newer Name",
+                        pubDescription: "Even newer description",
+                        dataCurrency: newerCurrency
+                ),
+                contacts       : [],
+                primaryContacts: []
+        ]]
+        def result2 = service.merge(provider, updatesNoNewData, true, true, "testUser", true)
+
+        then: "the resource is NOT returned for re-import, but EML metadata is still synced"
+        result2.isEmpty()
+        DataResource.findByUid("drCheck1").name == "Even Newer Name"
+        DataResource.findByUid("drCheck1").pubDescription == "Even newer description"
+    }
+
     void "test citation is updated when EML provides a new value (old citation is replaced)"() {
         given: "A resource with an existing citation and an update with a new citation"
         def provider = new DataProvider(
