@@ -158,15 +158,15 @@ class DataImportService {
             }
         }
 
-        dataResource.connectionParameters = (new JsonOutput()).toJson(connParams)
         DataResource.withTransaction {
+            dataResource.connectionParameters = (new JsonOutput()).toJson(connParams)
             dataResource.save(flush: true)
-        }
 
-        // Sync contacts - add new, update existing, remove obsolete
-        // This ensures the database always reflects the current EML state
-        if (contacts != null){
-            iptService.syncContacts(dataResource, contacts, primaryContacts, collectoryAuthService.username(), true)
+            // Sync contacts - add new, update existing, remove obsolete
+            // This ensures the database always reflects the current EML state
+            if (contacts != null){
+                iptService.syncContacts(dataResource, contacts, primaryContacts, collectoryAuthService.username(), true)
+            }
         }
     }
 
