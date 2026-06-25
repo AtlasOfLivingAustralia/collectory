@@ -15,6 +15,8 @@
 package au.org.ala.collectory
 
 import groovy.json.JsonSlurper
+import groovy.json.JsonException
+import groovy.json.JsonParserType
 import groovy.xml.StreamingMarkupBuilder
 import groovy.xml.XmlUtil
 import java.text.SimpleDateFormat
@@ -735,16 +737,23 @@ class EmlRenderService {
     }
 
     def getTaxonomicCoverage(String hints) {
-        def json = new JsonSlurper().parseText(hints)
+        def json
+        try {
+            json = new JsonSlurper(type: JsonParserType.LAX).parseText(hints)
+        } catch (JsonException ignored) {
+            json = new JsonSlurper().parseText(hints)
+        }
+        def range = json?.range ?: []
+        def coverage = json?.coverage ?: []
         def builder = new StreamingMarkupBuilder()
 
         return builder.bind {
             taxonomicCoverage {
                 generalTaxonomicCoverage {
                     // yield the joined string properly
-                    mkp.yield json.range.collect { it.replaceAll('"','').trim() }.join("; ")
+                    mkp.yield range.collect { it.replaceAll('"','').trim() }.join("; ")
                 }
-                json.coverage.each { entry ->
+                coverage.each { entry ->
                     entry.each { rank, value ->
                         taxonomicClassification {
                             taxonRankName(rank)
