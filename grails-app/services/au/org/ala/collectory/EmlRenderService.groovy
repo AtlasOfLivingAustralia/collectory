@@ -15,6 +15,7 @@
 package au.org.ala.collectory
 
 import groovy.json.JsonSlurper
+import groovy.json.JsonParserType
 import groovy.xml.StreamingMarkupBuilder
 import groovy.xml.XmlUtil
 import java.text.SimpleDateFormat
@@ -735,7 +736,12 @@ class EmlRenderService {
     }
 
     def getTaxonomicCoverage(String hints) {
-        def json = new JsonSlurper().parseText(hints)
+        def json
+        try {
+            json = new JsonSlurper(type: JsonParserType.LAX).parseText(hints)
+        } catch (Exception ignored) {
+            json = new JsonSlurper().parseText(hints)
+        }
         def builder = new StreamingMarkupBuilder()
 
         return builder.bind {
