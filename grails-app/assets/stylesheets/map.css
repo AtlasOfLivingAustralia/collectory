@@ -226,7 +226,13 @@ ul.facets {
 
 .dataAccess a {
     text-align: left;
-    max-width:80%;
+    width: fit-content;
+    max-width: 100%;
+    white-space: normal;
+}
+
+.dataAccess.btn-group-vertical {
+    align-items: flex-start;
 }
 
 .category { font-weight:bold; min-width: 120px; }
