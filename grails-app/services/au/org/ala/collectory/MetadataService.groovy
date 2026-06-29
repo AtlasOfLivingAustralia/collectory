@@ -78,8 +78,10 @@ class MetadataService {
         if (external.startsWith('http://') || external.startsWith('https://')) {
             def serverUri = new URI(grailsApplication.config.grails.serverURL.toString())
             def externalUri = new URI(external)
+            def basePath = (serverUri.path && serverUri.path != '/') ? serverUri.path : ''
             def uploadPath = externalUri.path.endsWith('/') ? externalUri.path : externalUri.path + '/'
-            return new URI(serverUri.scheme, serverUri.authority, uploadPath, externalUri.query, externalUri.fragment).toString()
+            def resolvedPath = (basePath.endsWith('/') ? basePath[0..-2] : basePath) + uploadPath
+            return new URI(serverUri.scheme, serverUri.authority, resolvedPath, externalUri.query, externalUri.fragment).toString()
         }
 
         return grailsApplication.config.grails.serverURL + (external.endsWith('/') ? external : external + '/')

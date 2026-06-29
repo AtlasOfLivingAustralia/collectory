@@ -65,7 +65,7 @@
                                 <div class="mb-3">
                                     <g:if test="${connectionParam.type == 'boolean'}">
                                         <label class="checkbox ${profile.name}">
-                                            <g:checkBox id="${connectionParam.paramName}" name="${connectionParam.paramName}" value="true" checked="${connectionParam.defaultValue?.toString()?.toBoolean()}"/>
+                                            <g:checkBox id="${connectionParam.paramName}" name="${connectionParam.paramName}" value="${connectionParam.defaultValue?.toString()?.toBoolean()}"/>
                                             ${connectionParam.display}
                                         </label>
                                     </g:if>
