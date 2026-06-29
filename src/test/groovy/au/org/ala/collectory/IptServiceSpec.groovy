@@ -508,6 +508,7 @@ class IptServiceSpec extends Specification implements ServiceUnitTest<IptService
         def updates = [
                 [
                         resource       : new DataResource(
+                                name: "Test Resource",
                                 websiteUrl: "http://example.org/resource",
                                 pubDescription: null // IPT sends null - EML is source of truth, should clear
                         ),

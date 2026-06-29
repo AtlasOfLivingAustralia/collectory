@@ -36,7 +36,7 @@ class EmlImportService {
         rights: { eml ->  this.collectParas(eml.dataset.intellectualRights?.para) ?: "" },
         citation: { eml ->
             def node = eml.additionalMetadata?.metadata?.gbif?.citation
-            node?.size() > 0 ? node.text() : "" },
+            node?.size() > 0 ? node.text().trim() : "" },
         state: { eml ->
 
             def state = ""
@@ -85,14 +85,11 @@ class EmlImportService {
 
         //additional fields
         purpose: { eml ->
-            def node = eml.dataset.purpose?.para
-            node?.size() > 0 ? node.text() : "" },
+            this.collectParas(eml.dataset.purpose?.para) ?: "" },
         methodStepDescription: { eml ->
-            def node = eml.dataset.methods?.methodStep?.description?.para
-            node?.size() > 0 ? node.text() : "" },
+            this.collectParas(eml.dataset.methods?.methodStep?.description?.para) ?: "" },
         qualityControlDescription: { eml ->
-            def node = eml.dataset.methods?.qualityControl?.description?.para
-            node?.size() > 0 ? node.text() : "" },
+            this.collectParas(eml.dataset.methods?.qualityControl?.description?.para) ?: "" },
 
         gbifDoi: { eml ->
             def gbifDoi = null
