@@ -85,10 +85,10 @@ class DataImportService {
 
             log.debug "Transferring file to directory...."
             if (filetoImport.metaClass.respondsTo(filetoImport, "transferTo")) {
-                newFile = new File(uploadDirPath + filetoImport.getOriginalFilename())
+                newFile = new File(uploadDirPath, filetoImport.getOriginalFilename())
                 filetoImport.transferTo(newFile)
             } else {
-                newFile = new File(uploadDirPath + filetoImport.getName())
+                newFile = new File(uploadDirPath, filetoImport.getName())
                 FileUtils.copyFile(filetoImport, newFile)
             }
             importDataFileForDataResource(dataResource, newFile, params)
