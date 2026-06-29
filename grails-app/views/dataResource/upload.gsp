@@ -65,8 +65,8 @@
                                 <div class="mb-3">
                                     <g:if test="${connectionParam.type == 'boolean'}">
                                         <label class="checkbox ${profile.name}">
-                                            <g:checkBox id="${connectionParam.paramName}" name="${connectionParam.paramName}" value="true" checked="${connectionParam.defaultValue?'true':'false'}"/>
-                                            ${connectionParam.display} (${connectionParam.defaultValue})
+                                            <g:checkBox id="${connectionParam.paramName}" name="${connectionParam.paramName}" value="true" checked="${connectionParam.defaultValue?.toString()?.toBoolean()}"/>
+                                            ${connectionParam.display}
                                         </label>
                                     </g:if>
                                     <g:else>
@@ -98,7 +98,8 @@
                var $submitBtn = $('#fileToUpload');
 
                function toggleSubmit(){
-                   $submitBtn.prop('disabled', !$fileInput[0].files || $fileInput[0].files.length === 0);
+                   var hasFile = ($fileInput[0].files && $fileInput[0].files.length > 0) || !!$fileInput.val();
+                   $submitBtn.prop('disabled', !hasFile);
                }
 
                $fileInput.on('change', toggleSubmit);
