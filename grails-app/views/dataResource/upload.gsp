@@ -34,12 +34,12 @@
                     </div>
 
                     <div class="mb-3">
-                        <label for="fileToUpload"><g:message code="dataresource.upload.label.file" /></label>
+                        <label for="fileToUpload"><g:message code="dataresource.upload.label.file" /> <span class="text-danger">*</span></label>
                         <div class="fileupload fileupload-new" data-provides="fileupload">
                             <span class="btn btn-primary btn-file">
                                 <span class="fileupload-new"><g:message code="dataresource.upload.label.selectfile" /></span>
                                 <span class="fileupload-exists"><g:message code="dataresource.upload.label.change" /></span>
-                                <g:field type="file" name="myFile" /></span>
+                                <g:field type="file" name="myFile" required="required" /></span>
                             <span class="fileupload-preview"></span>
                             <a href="#" class="close fileupload-exists" data-bs-dismiss="fileupload" style="float: none">×</a>
                         </div>
@@ -49,7 +49,7 @@
                     </div>
 
                     <div style="clear:both">
-                        <input type="submit" id="fileToUpload" class="btn fileupload-exists btn-primary" value="Upload"/>
+                        <input type="submit" id="fileToUpload" class="btn fileupload-exists btn-primary" value="Upload" disabled="disabled"/>
                         <g:link action="show" controller="dataResource" id="${instance.id}" class="btn btn-outline-dark">
                             <g:message code="dataresource.upload.label.cancel" />
                         </g:link>
@@ -65,7 +65,7 @@
                                 <div class="mb-3">
                                     <g:if test="${connectionParam.type == 'boolean'}">
                                         <label class="checkbox ${profile.name}">
-                                            <g:checkBox id="${connectionParam.paramName}" name="${connectionParam.paramName}"/>
+                                            <g:checkBox id="${connectionParam.paramName}" name="${connectionParam.paramName}" value="true" checked="${connectionParam.defaultValue?.toString()?.toBoolean()}"/>
                                             ${connectionParam.display}
                                         </label>
                                     </g:if>
@@ -94,6 +94,17 @@
             }
 
             $(function(){
+               var $fileInput = $('#myFile');
+               var $submitBtn = $('#fileToUpload');
+
+               function toggleSubmit(){
+                   var hasFile = ($fileInput[0].files && $fileInput[0].files.length > 0) || !!$fileInput.val();
+                   $submitBtn.prop('disabled', !hasFile);
+               }
+
+               $fileInput.on('change', toggleSubmit);
+               toggleSubmit();
+
                $('#protocol').change(function(){
                    loadConnParams();
                });
