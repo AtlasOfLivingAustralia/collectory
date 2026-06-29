@@ -405,9 +405,25 @@ class DataController {
         def idx = request.forwardURI.lastIndexOf(dirpath) + dirpath.length()
         def fullFileName = request.forwardURI.substring(idx)
         def file = new File(grailsApplication.config.uploadFilePath + File.separator + params.directory, fullFileName)
+        
+        // Fallback to old path format for backwards compatibility
         if (!file.exists()) {
             file = new File(grailsApplication.config.uploadFilePath + File.separator + params.directory, URLDecoder.decode(fullFileName, "UTF-8"))
         }
+        
+        // If still not found and params.directory contains a slash (new format), try old format (last segment only)
+        // This handles the case where a new format path (uid/fileId) is requested but the file was created with old format (fileId only)
+        if (!file.exists() && params.directory.contains(File.separator)) {
+            def oldDirectory = params.directory.split(File.separator)[-1]  // Extract fileId from uid/fileId
+            file = new File(grailsApplication.config.uploadFilePath + File.separator + oldDirectory, fullFileName)
+        }
+        
+        // Try URL decoded version of old format
+        if (!file.exists() && params.directory.contains(File.separator)) {
+            def oldDirectory = params.directory.split(File.separator)[-1]
+            file = new File(grailsApplication.config.uploadFilePath + File.separator + oldDirectory, URLDecoder.decode(fullFileName, "UTF-8"))
+        }
+        
         if (file.exists()) {
             //set the content type
             response.setContentType("application/octet-stream")

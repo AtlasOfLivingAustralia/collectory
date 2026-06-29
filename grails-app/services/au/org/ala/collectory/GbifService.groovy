@@ -148,8 +148,9 @@ class GbifService {
     def applyDwCA(File file, DataResource dr){
         try {
             log.debug("Copying DwCA to staging and associated the file to the data resource")
-            def fileId = System.currentTimeMillis()
-            String targetFileName = grailsApplication.config.uploadFilePath + fileId  + File.separator + file.getName()
+            def fileId = System.currentTimeMillis().toString()
+            def uid = UploadPathHelper.extractUid(dr)
+            String targetFileName = UploadPathHelper.getUploadFilePath(grailsApplication.config.uploadFilePath, uid, fileId, file.getName())
             File targetFile = new File(targetFileName)
             FileUtils.forceMkdir(targetFile.getParentFile())
             file.renameTo(targetFile)
