@@ -51,10 +51,11 @@ class UploadPathHelper {
      * @return The full file path
      */
     static String getUploadFilePath(String baseUploadPath, String uid, String fileId, String filename) {
-        if (!filename) {
-            throw new IllegalArgumentException("filename must not be null or empty")
+        def safeFilename = filename?.tokenize('/\\')?.last()
+        if (!safeFilename || safeFilename.contains('..')) {
+            throw new IllegalArgumentException("filename must be a simple file name without path segments")
         }
-        getUploadDirectory(baseUploadPath, uid, fileId) + filename
+        getUploadDirectory(baseUploadPath, uid, fileId) + safeFilename
     }
     
     /**
@@ -84,10 +85,11 @@ class UploadPathHelper {
      * @return The full temp file path
      */
     static String getTempFilePath(String baseUploadPath, String uid, String tempId, String filename) {
-        if (!filename) {
-            throw new IllegalArgumentException("filename must not be null or empty")
+        def safeFilename = filename?.tokenize('/\\')?.last()
+        if (!safeFilename || safeFilename.contains('..')) {
+            throw new IllegalArgumentException("filename must be a simple file name without path segments")
         }
-        getTempDirectory(baseUploadPath, uid, tempId) + filename
+        getTempDirectory(baseUploadPath, uid, tempId) + safeFilename
     }
     
     /**
@@ -123,7 +125,7 @@ class UploadPathHelper {
         if (!uid || !fileId) {
             throw new IllegalArgumentException("uid and fileId must not be null or empty")
         }
-        uid + File.separator + fileId
+        uid + "/" + fileId
     }
     
     /**

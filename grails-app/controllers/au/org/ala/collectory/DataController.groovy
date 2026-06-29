@@ -413,14 +413,14 @@ class DataController {
         
         // If still not found and params.directory contains a slash (new format), try old format (last segment only)
         // This handles the case where a new format path (uid/fileId) is requested but the file was created with old format (fileId only)
-        if (!file.exists() && params.directory.contains(File.separator)) {
-            def oldDirectory = params.directory.split(File.separator)[-1]  // Extract fileId from uid/fileId
+        if (!file.exists() && params.directory.contains('/')) {
+            def oldDirectory = params.directory.tokenize('/').last()  // Extract fileId from uid/fileId
             file = new File(grailsApplication.config.uploadFilePath + File.separator + oldDirectory, fullFileName)
         }
         
         // Try URL decoded version of old format
-        if (!file.exists() && params.directory.contains(File.separator)) {
-            def oldDirectory = params.directory.split(File.separator)[-1]
+        if (!file.exists() && params.directory.contains('/')) {
+            def oldDirectory = params.directory.tokenize('/').last()
             file = new File(grailsApplication.config.uploadFilePath + File.separator + oldDirectory, URLDecoder.decode(fullFileName, "UTF-8"))
         }
         
