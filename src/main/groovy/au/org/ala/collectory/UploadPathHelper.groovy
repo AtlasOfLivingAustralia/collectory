@@ -107,8 +107,12 @@ class UploadPathHelper {
         if (!externalUrlPath || !uid || !fileId || !filename) {
             throw new IllegalArgumentException("externalUrlPath, uid, fileId, and filename must not be null or empty")
         }
-        ensureTrailingSlash(externalUrlPath) + uid + "/" + fileId + "/" + filename
-    }
+        def safeFilename = filename?.tokenize('/\\')?.last()
+        if (!safeFilename || safeFilename.contains('..')) {
+            throw new IllegalArgumentException("filename must be a simple file name without path segments")
+        }
+        def base = externalUrlPath.endsWith('/') ? externalUrlPath : externalUrlPath + '/'
+        base + uid + "/" + fileId + "/" + safeFilename
     
     /**
      * Construct a combined directory parameter for URL routing.
