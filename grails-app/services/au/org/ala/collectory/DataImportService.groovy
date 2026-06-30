@@ -85,10 +85,12 @@ class DataImportService {
 
             log.debug "Transferring file to directory...."
             if (filetoImport.metaClass.respondsTo(filetoImport, "transferTo")) {
-                newFile = new File(uploadDirPath, filetoImport.getOriginalFilename())
+                def sanitizedFilename = UploadPathHelper.sanitizeFilename(filetoImport.getOriginalFilename())
+                newFile = new File(uploadDirPath, sanitizedFilename)
                 filetoImport.transferTo(newFile)
             } else {
-                newFile = new File(uploadDirPath, filetoImport.getName())
+                def sanitizedFilename = UploadPathHelper.sanitizeFilename(filetoImport.getName())
+                newFile = new File(uploadDirPath, sanitizedFilename)
                 FileUtils.copyFile(filetoImport, newFile)
             }
             importDataFileForDataResource(dataResource, newFile, params)

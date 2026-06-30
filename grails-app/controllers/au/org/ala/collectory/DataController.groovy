@@ -452,18 +452,23 @@ class DataController {
             file = new File(grailsApplication.config.uploadFilePath + File.separator + oldDirectory, URLDecoder.decode(fullFileName, "UTF-8"))
         }
         
-        // Final verification and serve file
-        if (file.canonicalPath.startsWith(uploadBase + File.separator) && file.exists()) {
-            //set the content type
-            response.setContentType("application/octet-stream")
-            response.setHeader("Content-disposition", "attachment;filename=" + file.getName())
-            file.withInputStream { response.outputStream << it }
-        } else if (!file.exists()) {
-            response.status = 404
-        } else {
-            log.warn("Rejected file download request: resolved path outside upload directory: ${file.canonicalPath}")
-            response.status = 400
-        }
+         // Final verification and serve file
+         try {
+             if (file.canonicalPath.startsWith(uploadBase + File.separator) && file.exists()) {
+                 //set the content type
+                 response.setContentType("application/octet-stream")
+                 response.setHeader("Content-disposition", "attachment;filename=" + file.getName())
+                 file.withInputStream { response.outputStream << it }
+             } else if (!file.exists()) {
+                 response.status = 404
+             } else {
+                 log.warn("Rejected file download request: resolved path outside upload directory: ${file.canonicalPath}")
+                 response.status = 400
+             }
+         } catch (IOException ex) {
+             log.warn("Rejected file download request: unable to resolve canonical path", ex)
+             response.status = 400
+         }
     }
 
     /**

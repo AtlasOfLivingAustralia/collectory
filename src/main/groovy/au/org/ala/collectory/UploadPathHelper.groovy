@@ -16,6 +16,31 @@ package au.org.ala.collectory
 class UploadPathHelper {
     
     /**
+     * Sanitize a filename by removing any path segments.
+     * 
+     * This is critical for security when processing filenames from multipart uploads,
+     * which can contain malicious path traversal attempts (e.g., "../x" or "C:\path\x").
+     * 
+     * @param filename The filename to sanitize (may contain path segments)
+     * @return The sanitized filename with all path segments removed, or null if input is null
+     * @throws IllegalArgumentException if the filename contains ".." after sanitization
+     */
+    static String sanitizeFilename(String filename) {
+        if (!filename) return null
+        
+        // Remove all path separators (both forward and backward slashes)
+        // tokenize splits on both / and \ and returns a list, .last() gets the rightmost component
+        def safeFilename = filename.tokenize('/\\')?.last()
+        
+        // Additional check to reject any remaining ".." sequences
+        if (safeFilename?.contains('..')) {
+            throw new IllegalArgumentException("filename must not contain '..' path segments")
+        }
+        
+        return safeFilename
+    }
+    
+    /**
      * Extract UID from a resource object (DataResource, DataProvider, or Collection).
      * 
      * @param resource The resource object to extract UID from
@@ -51,9 +76,9 @@ class UploadPathHelper {
      * @return The full file path
      */
     static String getUploadFilePath(String baseUploadPath, String uid, String fileId, String filename) {
-        def safeFilename = filename?.tokenize('/\\')?.last()
-        if (!safeFilename || safeFilename.contains('..')) {
-            throw new IllegalArgumentException("filename must be a simple file name without path segments")
+        def safeFilename = sanitizeFilename(filename)
+        if (!safeFilename) {
+            throw new IllegalArgumentException("filename must not be null or empty after sanitization")
         }
         getUploadDirectory(baseUploadPath, uid, fileId) + safeFilename
     }
@@ -85,9 +110,9 @@ class UploadPathHelper {
      * @return The full temp file path
      */
     static String getTempFilePath(String baseUploadPath, String uid, String tempId, String filename) {
-        def safeFilename = filename?.tokenize('/\\')?.last()
-        if (!safeFilename || safeFilename.contains('..')) {
-            throw new IllegalArgumentException("filename must be a simple file name without path segments")
+        def safeFilename = sanitizeFilename(filename)
+        if (!safeFilename) {
+            throw new IllegalArgumentException("filename must not be null or empty after sanitization")
         }
         getTempDirectory(baseUploadPath, uid, tempId) + safeFilename
     }
@@ -107,15 +132,16 @@ class UploadPathHelper {
         if (!externalUrlPath || !uid || !fileId || !filename) {
             throw new IllegalArgumentException("externalUrlPath, uid, fileId, and filename must not be null or empty")
         }
-        def safeFilename = filename?.tokenize('/\\')?.last()
-        if (!safeFilename || safeFilename.contains('..')) {
-            throw new IllegalArgumentException("filename must be a simple file name without path segments")
-        }
-        def base = externalUrlPath.endsWith('/') ? externalUrlPath : externalUrlPath + '/'
-        base + uid + "/" + fileId + "/" + safeFilename
-    
-    /**
-     * Construct a combined directory parameter for URL routing.
+         def safeFilename = sanitizeFilename(filename)
+         if (!safeFilename) {
+             throw new IllegalArgumentException("filename must not be null or empty after sanitization")
+         }
+         def base = externalUrlPath.endsWith('/') ? externalUrlPath : externalUrlPath + '/'
+         base + uid + "/" + fileId + "/" + safeFilename
+     }
+     
+     /**
+      * Construct a combined directory parameter for URL routing.
      * 
      * This is used to combine uid and fileId into a single parameter that can be passed
      * through URL mappings as the $directory parameter. This allows the file download
