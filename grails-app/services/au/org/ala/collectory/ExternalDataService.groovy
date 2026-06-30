@@ -234,7 +234,6 @@ class ExternalDataService {
             File uploadFileName = null
             if (adaptor.isDownloadable()) {
                 resource.phase = TaskPhase.DOWNLOADING
-                File uploadDir = new File(grailsApplication.config.uploadFilePath as String)
                 File uploadTmpDir = new File(UploadPathHelper.getTempDirectory(grailsApplication.config.uploadFilePath, dr.uid, resource.occurrenceId))
                 FileUtils.forceMkdir(uploadTmpDir)
                 File tmpFileName = new File(uploadTmpDir, resource.occurrenceId)
