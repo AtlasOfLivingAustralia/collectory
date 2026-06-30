@@ -74,8 +74,9 @@ class DataImportService {
     def importDataFileForDataResource(dataResource, filetoImport, params, migrate) {
 
         if(migrate) {
-            def fileId = System.currentTimeMillis()
-            def uploadDirPath = grailsApplication.config.uploadFilePath + fileId
+            def fileId = System.currentTimeMillis().toString()
+            def uid = UploadPathHelper.extractUid(dataResource)
+            def uploadDirPath = UploadPathHelper.getUploadDirectory(grailsApplication.config.uploadFilePath, uid, fileId)
             log.debug "Creating upload directory " + uploadDirPath
             def uploadDir = new File(uploadDirPath)
             FileUtils.forceMkdir(uploadDir)
@@ -84,10 +85,12 @@ class DataImportService {
 
             log.debug "Transferring file to directory...."
             if (filetoImport.metaClass.respondsTo(filetoImport, "transferTo")) {
-                newFile = new File(uploadDirPath + File.separatorChar + filetoImport.getOriginalFilename())
+                def sanitizedFilename = UploadPathHelper.sanitizeFilename(filetoImport.getOriginalFilename())
+                newFile = new File(uploadDirPath, sanitizedFilename)
                 filetoImport.transferTo(newFile)
             } else {
-                newFile = new File(uploadDirPath + File.separatorChar + filetoImport.getName())
+                def sanitizedFilename = UploadPathHelper.sanitizeFilename(filetoImport.getName())
+                newFile = new File(uploadDirPath, sanitizedFilename)
                 FileUtils.copyFile(filetoImport, newFile)
             }
             importDataFileForDataResource(dataResource, newFile, params)

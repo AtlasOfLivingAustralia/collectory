@@ -25,13 +25,13 @@ class UrlMappings {
             }
         }
 
-        "/upload/$directory/$file" {
+        "/upload/$directory**/$file" {
             controller = 'data'
             action = 'fileDownload'
             constraints {}
         }
 
-        "/ws/upload/$directory/$file" {
+        "/ws/upload/$directory**/$file" {
             controller = 'data'
             action = 'fileDownload'
             constraints {}

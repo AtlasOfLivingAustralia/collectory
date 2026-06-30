@@ -401,21 +401,74 @@ class DataController {
     }
 
     def fileDownload = {
+        // Early validation: reject paths containing traversal sequences or backslashes
+        if (params.directory?.contains('..') || params.directory?.contains('\\')) {
+            log.warn("Rejected file download request with path traversal attempt: params.directory=${params.directory}")
+            response.status = 400
+            return
+        }
+        
+        // Extract filename from request URI
         def dirpath = "/" + params.directory + "/"
         def idx = request.forwardURI.lastIndexOf(dirpath) + dirpath.length()
         def fullFileName = request.forwardURI.substring(idx)
+        
+        // Validate filename to prevent path traversal
+        if (fullFileName?.contains('..') || fullFileName?.contains('\\')) {
+            log.warn("Rejected file download request with path traversal attempt: fullFileName=${fullFileName}")
+            response.status = 400
+            return
+        }
+        
+        // Get canonical upload base path for verification
+        def uploadBase
+        try {
+            uploadBase = new File(grailsApplication.config.uploadFilePath as String).canonicalPath
+        } catch (IOException ex) {
+            log.warn("Rejected file download request: unable to resolve upload base path", ex)
+            response.status = 400
+            return
+        }
+
+        // Try new path format first (uid/fileId/filename)
         def file = new File(grailsApplication.config.uploadFilePath + File.separator + params.directory, fullFileName)
+        
+        // Fallback to old path format for backwards compatibility
         if (!file.exists()) {
             file = new File(grailsApplication.config.uploadFilePath + File.separator + params.directory, URLDecoder.decode(fullFileName, "UTF-8"))
         }
-        if (file.exists()) {
-            //set the content type
-            response.setContentType("application/octet-stream")
-            response.setHeader("Content-disposition", "attachment;filename=" + file.getName())
-            file.withInputStream { response.outputStream << it }
-        } else {
-            response.status = 404
+        
+        // If still not found and params.directory contains a forward slash (new format), 
+        // try old format (last segment only)
+        // This handles the case where a new format path (uid/fileId) is requested but the file was created with old format (fileId only)
+        if (!file.exists() && params.directory.contains('/')) {
+            def oldDirectory = params.directory.tokenize('/')[-1]  // Extract fileId from uid/fileId
+            file = new File(grailsApplication.config.uploadFilePath + File.separator + oldDirectory, fullFileName)
         }
+        
+        // Try URL decoded version of old format
+        if (!file.exists() && params.directory.contains('/')) {
+            def oldDirectory = params.directory.tokenize('/')[-1]
+            file = new File(grailsApplication.config.uploadFilePath + File.separator + oldDirectory, URLDecoder.decode(fullFileName, "UTF-8"))
+        }
+        
+         // Final verification and serve file
+         try {
+             if (file.canonicalPath.startsWith(uploadBase + File.separator) && file.exists()) {
+                 //set the content type
+                 response.setContentType("application/octet-stream")
+                 response.setHeader("Content-disposition", "attachment;filename=" + file.getName())
+                 file.withInputStream { response.outputStream << it }
+             } else if (!file.exists()) {
+                 response.status = 404
+             } else {
+                 log.warn("Rejected file download request: resolved path outside upload directory: ${file.canonicalPath}")
+                 response.status = 400
+             }
+         } catch (IOException ex) {
+             log.warn("Rejected file download request: unable to resolve canonical path", ex)
+             response.status = 400
+         }
     }
 
     /**
