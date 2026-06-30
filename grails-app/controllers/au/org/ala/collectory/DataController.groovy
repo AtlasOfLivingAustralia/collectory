@@ -421,17 +421,17 @@ class DataController {
         }
         
         // Get canonical upload base path for verification
-        def uploadBase = new File(grailsApplication.config.uploadFilePath).canonicalPath
-        
-        // Try new path format first (uid/fileId/filename)
-        def file = new File(grailsApplication.config.uploadFilePath + File.separator + params.directory, fullFileName)
-        
-        // Verify resolved file is within upload directory before proceeding
-        if (!file.canonicalPath.startsWith(uploadBase + File.separator)) {
-            log.warn("Rejected file download request: resolved path outside upload directory: ${file.canonicalPath}")
+        def uploadBase
+        try {
+            uploadBase = new File(grailsApplication.config.uploadFilePath as String).canonicalPath
+        } catch (IOException ex) {
+            log.warn("Rejected file download request: unable to resolve upload base path", ex)
             response.status = 400
             return
         }
+
+        // Try new path format first (uid/fileId/filename)
+        def file = new File(grailsApplication.config.uploadFilePath + File.separator + params.directory, fullFileName)
         
         // Fallback to old path format for backwards compatibility
         if (!file.exists()) {
