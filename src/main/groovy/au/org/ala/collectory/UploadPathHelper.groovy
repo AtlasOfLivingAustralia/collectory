@@ -136,6 +136,6 @@ class UploadPathHelper {
      */
     private static String ensureTrailingSlash(String path) {
         if (!path) return path
-        path.endsWith(File.separator) ? path : path + File.separator
+        (path.endsWith('/') || path.endsWith('\\')) ? path : path + File.separator
     }
 }
