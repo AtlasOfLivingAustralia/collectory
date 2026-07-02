@@ -13,11 +13,11 @@
             <g:if test="${message}">
             <div class="alert alert-info">${message}</div>
             </g:if>
-            <g:hasErrors bean="${command}">
-            <div class="errors">
-                <g:renderErrors bean="${command}" as="list" />
-            </div>
-            </g:hasErrors>
+             <g:hasErrors bean="${command}">
+             <div class="alert alert-danger">
+                 <g:renderErrors bean="${command}" as="list" />
+             </div>
+             </g:hasErrors>
             <g:form method="post" name="baseForm" action="base">
                 <g:hiddenField name="id" value="${command?.id}" />
                 <g:hiddenField name="uid" value="${command?.uid}" />
@@ -26,7 +26,7 @@
                         <!-- public short description -->
                         <div class="mb-3">
                                 <label for="pubShortDescription"><g:message code="providerGroup.pubShortDescription.label" default="Public Short Description" /><cl:helpText code="providerGroup.pubShortDescription"/></label>
-                                 <g:textArea name="pubShortDescription" class="form-control"  rows="${cl.textAreaHeight(text:command.pubShortDescription)}" value="${command.pubShortDescription}" />
+                                 <g:textArea name="pubShortDescription" class="form-control" maxlength="100" rows="${cl.textAreaHeight(text:command.pubShortDescription)}" value="${command.pubShortDescription}" />
                         </div>
 
                         <!-- public description -->
