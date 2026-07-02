@@ -16,11 +16,11 @@
             <g:if test="${message}">
             <div class="alert alert-info">${message}</div>
             </g:if>
-             <g:hasErrors bean="${command}">
-             <div class="alert alert-danger">
-                 <g:renderErrors bean="${command}" as="list" />
-             </div>
-             </g:hasErrors>
+            <g:hasErrors bean="${cf}">
+            <div class="alert alert-danger">
+                <g:renderErrors bean="${cf}" as="list" />
+            </div>
+            </g:hasErrors>
             <g:form method="post" name="baseForm" action="base">
                 <g:hiddenField name="id" value="${command?.id}" />
                 <g:hiddenField name="version" value="${command.version}" />
