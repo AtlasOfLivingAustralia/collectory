@@ -253,43 +253,45 @@ abstract class ProviderGroupController {
     /**
      * Update base attributes
      */
-    def updateBase = { //BaseCommand cmd ->
+     def updateBase = { //BaseCommand cmd ->
 
-        BaseCommand cmd = new BaseCommand()
-        bindData(cmd, params)
+         BaseCommand cmd = new BaseCommand()
+         bindData(cmd, params)
 
-        def result = providerGroupService.updateBase(params)
-        def pg = result.pg
+         def result = providerGroupService.updateBase(params)
+         def pg = result.pg
 
-        if (pg && result.success) {
-            flash.message =
-                "${message(code: 'default.updated.message', args: [message(code: "${pg.urlForm()}.label", default: pg.entityType()), pg.uid])}"
-            redirect(action: "show", id: pg.uid)
-        } else {
-            render(view: "/shared/base", model: [command: pg])
-        }
-    }
+         if (pg && result.success) {
+             flash.message =
+                 "${message(code: 'default.updated.message', args: [message(code: "${pg.urlForm()}.label", default: pg.entityType()), pg.uid])}"
+             redirect(action: "show", id: pg.uid)
+         } else {
+             def suitableFor = providerGroupService.getSuitableFor()
+             render(view: "/shared/base", model: [command: pg, target: params.target, suitableFor: suitableFor])
+         }
+     }
 
     /**
      * Update descriptive attributes
      */
-    def updateDescription = {
-        def result = providerGroupService.updateDescription(params)
-        def pg = result.pg
-        if (pg) {
-            if (result.success){
-                flash.message =
-                        "${message(code: 'default.updated.message', args: [message(code: "${pg.urlForm()}.label", default: pg.entityType()), pg.uid])}"
-                redirect(action: "show", id: pg.uid)
-            } else {
-                render(view: "description", model: [command: pg])
-            }
-        } else {
-            flash.message =
-                    "${message(code: 'default.not.found.message', args: [message(code: "${entityNameLower}.label", default: entityNameLower), params.id])}"
-            redirect(action: "show", id: params.id)
-        }
-    }
+     def updateDescription = {
+         def result = providerGroupService.updateDescription(params)
+         def pg = result.pg
+         if (pg) {
+             if (result.success){
+                 flash.message =
+                         "${message(code: 'default.updated.message', args: [message(code: "${pg.urlForm()}.label", default: pg.entityType()), pg.uid])}"
+                 redirect(action: "show", id: pg.uid)
+             } else {
+                 def suitableFor = providerGroupService.getSuitableFor()
+                 render(view: "description", model: [command: pg, suitableFor: suitableFor])
+             }
+         } else {
+             flash.message =
+                     "${message(code: 'default.not.found.message', args: [message(code: "${entityNameLower}.label", default: entityNameLower), params.id])}"
+             redirect(action: "show", id: params.id)
+         }
+     }
 
     def entitySpecificDescriptionProcessing(pg, params) {
         // default is to do nothing
@@ -458,26 +460,26 @@ abstract class ProviderGroupController {
 
     }
 
-    def updateContactRole = {
-        def contactFor = ContactFor.get(params.contactForId)
-        if (contactFor) {
-            contactFor.properties = params
-            contactFor.userLastModified = collectoryAuthService?.username()
-            if (!contactFor.hasErrors()) {
-                ContactFor.withTransaction {
-                    contactFor.save(flush: true)
-                }
-                flash.message = "${message(code: 'contactRole.updated.message')}"
-                redirect(action: "edit", id: params.id, params: [page: '/shared/showContacts'])
-            } else {
-                render(view: '/shared/contactRole', model: [command: providerGroupService._get(params.id), cf: contactFor])
-            }
+     def updateContactRole = {
+         def contactFor = ContactFor.get(params.contactForId)
+         if (contactFor) {
+             contactFor.properties = params
+             contactFor.userLastModified = collectoryAuthService?.username()
+             if (!contactFor.hasErrors()) {
+                 ContactFor.withTransaction {
+                     contactFor.save(flush: true)
+                 }
+                 flash.message = "${message(code: 'contactRole.updated.message')}"
+                 redirect(action: "edit", id: params.id, params: [page: '/shared/showContacts'])
+             } else {
+                 render(view: '/shared/contactRole', model: [command: providerGroupService._get(params.id), cf: contactFor, returnTo: params.returnTo])
+             }
 
-        } else {
-            flash.message = "${message(code: 'default.not.found.message', args: [message(code: 'contactFor.label', default: "Contact for ${entityNameLower}", args: [entityNameLower]), params.contactForId])}"
-            redirect(action: "show", id: params.id)
-        }
-    }
+         } else {
+             flash.message = "${message(code: 'default.not.found.message', args: [message(code: 'contactFor.label', default: "Contact for ${entityNameLower}", args: [entityNameLower]), params.contactForId])}"
+             redirect(action: "show", id: params.id)
+         }
+     }
 
     def addContact = {
         def pg = get(params.id)
@@ -795,20 +797,21 @@ abstract class ProviderGroupController {
                 pg.removeAttribution 'at3'
             }
 
-            if (pg.isDirty()) {
-                pg.userLastModified = collectoryAuthService?.username()
-                Contact.withTransaction {
-                    if (!pg.hasErrors() && pg.save(flush: true)) {
-                        flash.message =
-                                "${message(code: 'default.updated.message', args: [message(code: "${pg.urlForm()}.label", default: pg.entityType()), pg.uid])}"
-                        redirect(action: "show", id: pg.uid)
-                    } else {
-                        render(view: "description", model: [command: pg])
-                    }
-                }
-            } else {
-                redirect(action: "show", id: pg.uid)
-            }
+             if (pg.isDirty()) {
+                 pg.userLastModified = collectoryAuthService?.username()
+                 Contact.withTransaction {
+                     if (!pg.hasErrors() && pg.save(flush: true)) {
+                         flash.message =
+                                 "${message(code: 'default.updated.message', args: [message(code: "${pg.urlForm()}.label", default: pg.entityType()), pg.uid])}"
+                         redirect(action: "show", id: pg.uid)
+                     } else {
+                         def suitableFor = providerGroupService.getSuitableFor()
+                         render(view: "description", model: [command: pg, suitableFor: suitableFor])
+                     }
+                 }
+             } else {
+                 redirect(action: "show", id: pg.uid)
+             }
         } else {
             flash.message =
                 "${message(code: 'default.not.found.message', args: [message(code: "${entityNameLower}.label", default: entityNameLower), params.id])}"

@@ -31,7 +31,11 @@ class DataHub implements ProviderGroup, Serializable {
         longitude(nullable:true)
         altitude(nullable:true)
         state(nullable:true, maxSize:45)
-        websiteUrl(nullable:true, maxSize:256)
+         websiteUrl(nullable:true, maxSize:256, validator: { val, obj ->
+             if (val && !val.toString().startsWith('http://') && !val.toString().startsWith('https://')) {
+                 return 'providerGroup.websiteUrl.invalid'
+             }
+         })
         logoRef(nullable:true)
         imageRef(nullable:true)
         email(nullable:true, maxSize:256)
