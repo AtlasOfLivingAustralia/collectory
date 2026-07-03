@@ -166,8 +166,7 @@ class EmlRenderService {
     def organisation(builder, tag, ProviderGroup pg, role, ProviderGroup contactSourcePg = null) {
         builder."${tag}"() {
             def source = contactSourcePg ?: pg
-            def primaryContact = source.inheritPrimaryContact()
-            if (primaryContact?.contact?.firstName?.trim() || primaryContact?.contact?.lastName?.trim()) {
+            def primaryContact = source.inheritPrimaryPublicContact()
                 builder.individualName {
                     if(primaryContact.contact.firstName?.trim() && primaryContact.contact.lastName?.trim()){
                         builder.givenName(primaryContact.contact.firstName.trim())
@@ -179,10 +178,10 @@ class EmlRenderService {
                     }
                 }
             }
-            if (primaryContact?.contact?.organizationName?.trim()) {
+            if (pg.name?.trim()) {
+                builder.organizationName(pg.name.trim())
+            } else if (primaryContact?.contact?.organizationName?.trim()) {
                 builder.organizationName(primaryContact.contact.organizationName.trim())
-            } else if (pg.name?.trim()) { 
-                builder.organizationName(pg.name.trim()) 
             }
             
             if (primaryContact?.contact?.positionName?.trim()) {
@@ -596,7 +595,7 @@ class EmlRenderService {
                             }
                             mkp.yield pg.citation?:''
                             if (licence) {
-                                def lic = licence.first()
+                                def lic = licence.sort { it.id }.first()
                                 mkp.yield " "
                                 ulink(url: lic.url) {
                                     citetitle() {
@@ -626,16 +625,18 @@ class EmlRenderService {
 
                 if ((pg.geographicDescription && pg.westBoundingCoordinate) || (pg.beginDate && pg.endDate) || pg.taxonomyHints) {
                     coverage {
-                        if (pg.geographicDescription && pg.westBoundingCoordinate) {
+                        def west = pg.westBoundingCoordinate?.trim()
+                        def east = pg.eastBoundingCoordinate?.trim()
+                        def north = pg.northBoundingCoordinate?.trim()
+                        def south = pg.southBoundingCoordinate?.trim()
+                        if (pg.geographicDescription?.trim() && west && east && north && south) {
                             geographicCoverage {
-                                geographicDescription pg.geographicDescription
-                                if(pg.westBoundingCoordinate) {
-                                    boundingCoordinates {
-                                        westBoundingCoordinate pg.westBoundingCoordinate
-                                        eastBoundingCoordinate pg.eastBoundingCoordinate
-                                        northBoundingCoordinate pg.northBoundingCoordinate
-                                        southBoundingCoordinate pg.southBoundingCoordinate
-                                    }
+                                geographicDescription pg.geographicDescription.trim()
+                                boundingCoordinates {
+                                    westBoundingCoordinate west
+                                    eastBoundingCoordinate east
+                                    northBoundingCoordinate north
+                                    southBoundingCoordinate south
                                 }
                             }
                         }
