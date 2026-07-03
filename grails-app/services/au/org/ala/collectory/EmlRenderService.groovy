@@ -167,6 +167,7 @@ class EmlRenderService {
         builder."${tag}"() {
             def source = contactSourcePg ?: pg
             def primaryContact = source.inheritPrimaryPublicContact()
+            if (primaryContact?.contact?.firstName?.trim() || primaryContact?.contact?.lastName?.trim()) {
                 builder.individualName {
                     if(primaryContact.contact.firstName?.trim() && primaryContact.contact.lastName?.trim()){
                         builder.givenName(primaryContact.contact.firstName.trim())
