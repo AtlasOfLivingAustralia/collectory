@@ -102,11 +102,11 @@ class EmlRenderService {
 
         /* creator */
         def crt = pg.createdBy()
-        organisation(builder, 'creator', crt, null)
+        organisation(builder, 'creator', crt, null, pg)
 
         /* metadata provider */
         // always the same as creator
-        organisation(builder, 'metadataProvider', crt, null)
+        organisation(builder, 'metadataProvider', crt, null, pg)
 
         /* associated parties */
         builder.associatedParty(ala(true))
@@ -163,25 +163,76 @@ class EmlRenderService {
         }
     }
 
-    def organisation(builder, tag, ProviderGroup pg, role) {
+    def organisation(builder, tag, ProviderGroup pg, role, ProviderGroup contactSourcePg = null) {
         builder."${tag}"() {
-            builder.organizationName(pg.name)
-            def address = providerGroupService.resolveAddress(pg)
+            def source = contactSourcePg ?: pg
+            def primaryContact = source.inheritPrimaryContact()
+            if (primaryContact?.contact?.firstName?.trim() || primaryContact?.contact?.lastName?.trim()) {
+                builder.individualName {
+                    if(primaryContact.contact.firstName?.trim() && primaryContact.contact.lastName?.trim()){
+                        builder.givenName(primaryContact.contact.firstName.trim())
+                        builder.surName(primaryContact.contact.lastName.trim())
+                    } else if (primaryContact.contact.lastName?.trim()) {
+                        builder.surName(primaryContact.contact.lastName.trim())
+                    } else {
+                        builder.surName(primaryContact.contact.firstName.trim())
+                    }
+                }
+            }
+            if (primaryContact?.contact?.organizationName?.trim()) {
+                builder.organizationName(primaryContact.contact.organizationName.trim())
+            } else if (pg.name?.trim()) { 
+                builder.organizationName(pg.name.trim()) 
+            }
+            
+            if (primaryContact?.contact?.positionName?.trim()) {
+                builder.positionName(primaryContact.contact.positionName.trim())
+            } else if (primaryContact?.role?.trim()) { 
+                builder.positionName(primaryContact.role.trim()) 
+            }
+
+            def address = providerGroupService.resolveAddress(pg) ?: providerGroupService.resolveAddress(source)
             if (address && !address.isEmpty()) {
                 builder.address {
-                    addIf(address.street, 'deliveryPoint' )
-                    addIf(address.city, 'city' )
-                    addIf(address.state, 'administrativeArea' )
-                    addIf(address.postcode, 'postalCode' )
-                    addIf(address.country, 'country' )
+                    if (address.street?.trim()) { deliveryPoint address.street.trim() }
+                    if (address.city?.trim()) { city address.city.trim() }
+                    if (address.state?.trim()) { administrativeArea address.state.trim() }
+                    if (address.postcode?.trim()) { postalCode address.postcode.trim() }
+                    if (address.country?.trim()) { country address.country.trim() }
                 }
 
             }
-            addIf(pg.phone, 'phone' )
-            addIf(pg.email, 'electronicMailAddress')
-            addIf(pg.websiteUrl, 'onlineUrl')
-            if (role) {
-                builder.role role
+            if (primaryContact?.contact?.phone?.trim()) {
+                builder.phone(primaryContact.contact.phone.trim())
+            } else if (pg.phone?.trim()) { 
+                builder.phone(pg.phone.trim()) 
+            }
+            
+            if (primaryContact?.contact?.email?.trim()) {
+                builder.electronicMailAddress(primaryContact.contact.email.trim())
+            } else if (pg.email?.trim()) { 
+                builder.electronicMailAddress(pg.email.trim()) 
+            }
+
+            if (primaryContact?.contact?.userId?.trim()) {
+                def uId = primaryContact.contact.userId.trim()
+                if (uId.startsWith("http")) {
+                    // Extract directory from URL if it exists, otherwise use a default
+                    int lastSlash = uId.lastIndexOf('/')
+                    if (lastSlash > 0) {
+                        builder.userId(directory: uId.substring(0, lastSlash + 1), uId.substring(lastSlash + 1))
+                    } else {
+                        builder.userId(uId)
+                    }
+                } else {
+                    builder.userId(directory: "https://orcid.org/", uId)
+                }
+            }
+
+            if (pg.websiteUrl?.trim()) { builder.onlineUrl(pg.websiteUrl.trim()) }
+            
+            if (role?.trim()) {
+                builder.role role.trim()
             }
         }
     }
@@ -196,19 +247,52 @@ class EmlRenderService {
         def cnt = pg.inheritPrimaryContact()
         if (cnt) {
             builder.contact {
-                if (cnt.contact.firstName || cnt.contact.lastName) {
+                if (cnt.contact.firstName?.trim() || cnt.contact.lastName?.trim()) {
                     builder.individualName {
-                        if(cnt.contact.firstName && cnt.contact.lastName){
-                            builder.givenName(cnt.contact.firstName?:'')
-                            builder.surName(cnt.contact.lastName?:'')
+                        if(cnt.contact.firstName?.trim() && cnt.contact.lastName?.trim()){
+                            builder.givenName(cnt.contact.firstName.trim())
+                            builder.surName(cnt.contact.lastName.trim())
+                        } else if (cnt.contact.lastName?.trim()) {
+                            builder.surName(cnt.contact.lastName.trim())
                         } else {
-                            builder.surName(cnt.contact.firstName?:' ')
+                            builder.surName(cnt.contact.firstName.trim())
                         }
                     }
                 }
-                cnt.role ? builder.positionName(cnt.role) : ""
-                cnt.contact.phone ? builder.phone(cnt.contact.phone) : ""
-                cnt.contact.email ? builder.electronicMailAddress(cnt.contact.email) : ""
+                if (cnt.contact.organizationName?.trim()) { builder.organizationName(cnt.contact.organizationName.trim()) }
+                if (cnt.contact.positionName?.trim()) { 
+                    builder.positionName(cnt.contact.positionName.trim()) 
+                } else if (cnt.role?.trim()) { 
+                    builder.positionName(cnt.role.trim()) 
+                }
+                
+                def address = providerGroupService.resolveAddress(pg)
+                if (address && !address.isEmpty()) {
+                    builder.address {
+                        if (address.street?.trim()) { deliveryPoint address.street.trim() }
+                        if (address.city?.trim()) { city address.city.trim() }
+                        if (address.state?.trim()) { administrativeArea address.state.trim() }
+                        if (address.postcode?.trim()) { postalCode address.postcode.trim() }
+                        if (address.country?.trim()) { country address.country.trim() }
+                    }
+                }
+
+                if (cnt.contact.phone?.trim()) { builder.phone(cnt.contact.phone.trim()) }
+                if (cnt.contact.email?.trim()) { builder.electronicMailAddress(cnt.contact.email.trim()) }
+                
+                if (cnt.contact.userId?.trim()) {
+                    def uId = cnt.contact.userId.trim()
+                    if (uId.startsWith("http")) {
+                        int lastSlash = uId.lastIndexOf('/')
+                        if (lastSlash > 0) {
+                            builder.userId(directory: uId.substring(0, lastSlash + 1), uId.substring(lastSlash + 1))
+                        } else {
+                            builder.userId(uId)
+                        }
+                    } else {
+                        builder.userId(directory: "https://orcid.org/", uId)
+                    }
+                }
             }
         } else {
             // last resort
@@ -237,7 +321,7 @@ class EmlRenderService {
         def nsToUse = [:]
         nsToUse << namespaces
         nsToUse << [packageId: packageId]
-        return [id:id, packageId: packageId, altId:altId, uuid: uuid, ns: namespaces]
+        return [id:id, packageId: packageId, altId:altId, uuid: uuid, ns: nsToUse]
     }
 
     /**
@@ -503,15 +587,16 @@ class EmlRenderService {
                 }
 
                 /* intellectual rights */
-                intellectualRights {
-                    if (pg.rights || pg.citation || licence) {
+                if (pg.rights || pg.citation || licence) {
+                    intellectualRights {
                         para (){
                             mkp.yield pg.rights?:''
                             if (pg.rights && pg.citation){
                                 mkp.yield " "
                             }
                             mkp.yield pg.citation?:''
-                            licence.each { Licence lic ->
+                            if (licence) {
+                                def lic = licence.first()
                                 mkp.yield " "
                                 ulink(url: lic.url) {
                                     citetitle() {
@@ -530,7 +615,7 @@ class EmlRenderService {
                             }
                         }
                     }
-                 }
+                }
 
                 /* distribution */
                 distribution {
@@ -539,35 +624,37 @@ class EmlRenderService {
                     }
                 }
 
-                coverage {
-                    if (pg.geographicDescription && pg.westBoundingCoordinate) {
-                        geographicCoverage {
-                            geographicDescription pg.geographicDescription
-                            if(pg.westBoundingCoordinate) {
-                                boundingCoordinates {
-                                    westBoundingCoordinate pg.westBoundingCoordinate
-                                    eastBoundingCoordinate pg.eastBoundingCoordinate
-                                    northBoundingCoordinate pg.northBoundingCoordinate
-                                    southBoundingCoordinate pg.southBoundingCoordinate
+                if ((pg.geographicDescription && pg.westBoundingCoordinate) || (pg.beginDate && pg.endDate) || pg.taxonomyHints) {
+                    coverage {
+                        if (pg.geographicDescription && pg.westBoundingCoordinate) {
+                            geographicCoverage {
+                                geographicDescription pg.geographicDescription
+                                if(pg.westBoundingCoordinate) {
+                                    boundingCoordinates {
+                                        westBoundingCoordinate pg.westBoundingCoordinate
+                                        eastBoundingCoordinate pg.eastBoundingCoordinate
+                                        northBoundingCoordinate pg.northBoundingCoordinate
+                                        southBoundingCoordinate pg.southBoundingCoordinate
+                                    }
                                 }
                             }
                         }
-                    }
-                    if (pg.beginDate && pg.endDate) {
-                        temporalCoverage {
-                            rangeOfDates {
-                                beginDate {
-                                    calendarDate pg.beginDate
-                                }
-                                endDate {
-                                    calendarDate pg.endDate
+                        if (pg.beginDate && pg.endDate) {
+                            temporalCoverage {
+                                rangeOfDates {
+                                    beginDate {
+                                        calendarDate pg.beginDate
+                                    }
+                                    endDate {
+                                        calendarDate pg.endDate
+                                    }
                                 }
                             }
                         }
-                    }
 
-                    if (pg.taxonomyHints) {
-                        mkp.yieldUnescaped getTaxonomicCoverage(pg.taxonomyHints)
+                        if (pg.taxonomyHints) {
+                            mkp.yieldUnescaped getTaxonomicCoverage(pg.taxonomyHints)
+                        }
                     }
                 }
 
@@ -577,18 +664,20 @@ class EmlRenderService {
 
                 contacts xml, pg
 
-                methods {
-                    if (pg.methodStepDescription) {
-                        methodStep {
-                            description {
-                                para pg.methodStepDescription?:''
+                if (pg.methodStepDescription || pg.qualityControlDescription) {
+                    methods {
+                        if (pg.methodStepDescription) {
+                            methodStep {
+                                description {
+                                    para pg.methodStepDescription?:''
+                                }
                             }
                         }
-                    }
-                    if (pg.qualityControlDescription) {
-                        qualityControl {
-                            description {
-                                para pg.qualityControlDescription?:''
+                        if (pg.qualityControlDescription) {
+                            qualityControl {
+                                description {
+                                    para pg.qualityControlDescription?:''
+                                }
                             }
                         }
                     }
@@ -600,8 +689,7 @@ class EmlRenderService {
                     gbif() {
                         /* dateStamp, metadataLanguage, hierarchyLevel, resourceLogoUrl */
                         commonElements2 xml, pg
-                        citation pg.citation?:''
-                        rights  pg.rights?:''
+                        if (pg.citation?.trim()) { citation pg.citation.trim() }
                     }
                 }
             }
@@ -634,15 +722,22 @@ class EmlRenderService {
      */
     def ala = { withRole ->
         { it ->
-            organizationName grailsApplication.config.eml.organizationName
+            def orgName = grailsApplication.config.eml.organizationName?.toString()?.trim()
+            if (orgName) { organizationName orgName }
             address {
-                deliveryPoint grailsApplication.config.eml.deliveryPoint
-                city grailsApplication.config.eml.city
-                administrativeArea grailsApplication.config.eml.administrativeArea
-                postalCode grailsApplication.config.eml.postalCode
-                country grailsApplication.config.eml.country
+                def dp = grailsApplication.config.eml.deliveryPoint?.toString()?.trim()
+                if (dp) { deliveryPoint dp }
+                def cty = grailsApplication.config.eml.city?.toString()?.trim()
+                if (cty) { city cty }
+                def aa = grailsApplication.config.eml.administrativeArea?.toString()?.trim()
+                if (aa) { administrativeArea aa }
+                def pc = grailsApplication.config.eml.postalCode?.toString()?.trim()
+                if (pc) { postalCode pc }
+                def ctr = grailsApplication.config.eml.country?.toString()?.trim()
+                if (ctr) { country ctr }
             }
-            electronicMailAddress grailsApplication.config.eml.electronicMailAddress
+            def email = grailsApplication.config.eml.electronicMailAddress?.toString()?.trim()
+            if (email) { electronicMailAddress email }
             if (withRole) {
                 role "distributor"
             }
