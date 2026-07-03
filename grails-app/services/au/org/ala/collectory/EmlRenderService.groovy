@@ -244,7 +244,7 @@ class EmlRenderService {
      * @param pg the entity
      */
     def contacts(builder, pg) {
-        def cnt = pg.inheritPrimaryContact()
+        def cnt = pg.inheritPrimaryPublicContact()
         if (cnt) {
             builder.contact {
                 if (cnt.contact.firstName?.trim() || cnt.contact.lastName?.trim()) {
