@@ -26,11 +26,17 @@ class EmlImportService {
     public emlFields = [
 
         guid:  { eml -> eml.@packageId.toString() },
-        pubDescription: { eml -> this.collectParas(eml.dataset.abstract?.para) },
+        pubDescription: { eml ->
+            def paras = this.collectParas(eml.dataset.abstract?.para)
+            // Fallback: if no <para> children, use the <abstract> text directly.
+            (paras != null && !paras.isEmpty()) ? paras : (eml.dataset.abstract?.text()?.trim() ?: "")
+        },
         name: { eml -> eml.dataset.title.toString() },
-        email: { eml ->  eml.dataset.contact.size() > 0 ? eml.dataset.contact[0]?.electronicMailAddress?.text(): null },
-        rights: { eml ->  this.collectParas(eml.dataset.intellectualRights?.para) },
-        citation: { eml ->  eml.additionalMetadata?.metadata?.gbif?.citation?.text() },
+        email: { eml ->  eml.dataset.contact.size() > 0 ? (eml.dataset.contact[0]?.electronicMailAddress?.text() ?: "") : "" },
+        rights: { eml ->  this.collectParas(eml.dataset.intellectualRights?.para) ?: "" },
+        citation: { eml ->
+            def node = eml.additionalMetadata?.metadata?.gbif?.citation
+            node?.size() > 0 ? node.text().trim() : "" },
         state: { eml ->
 
             def state = ""
@@ -38,34 +44,52 @@ class EmlImportService {
             def administrativeAreas = eml.dataset.contact.size() > 0 ? eml.dataset.contact[0]?.address?.administrativeArea: null
             if (administrativeAreas){
 
+                def stateText = ""
                 if (administrativeAreas.size() > 1){
-                    state = administrativeAreas.first().text()
+                    stateText = administrativeAreas.first().text()
                 } else {
-                    state = administrativeAreas.text()
+                    stateText = administrativeAreas.text()
                 }
-                if (state) {
-                    state = this.dataLoaderService.massageState(state)
+                if (stateText) {
+                    state = this.dataLoaderService.massageState(stateText) ?: ""
                 }
             }
             state
         },
-        phone: { eml ->  eml.dataset.contact.size() > 0 ? eml.dataset.contact[0]?.phone?.text(): null },
+        phone: { eml ->  eml.dataset.contact.size() > 0 ? (eml.dataset.contact[0]?.phone?.text() ?: "") : "" },
 
         //geographic coverage
-        geographicDescription: { eml -> eml.dataset.coverage?.geographicCoverage?.geographicDescription?:'' },
-        northBoundingCoordinate: { eml -> eml.dataset.coverage?.geographicCoverage?.boundingCoordinates?.northBoundingCoordinate?:''},
-        southBoundingCoordinate: { eml -> eml.dataset.coverage?.geographicCoverage?.boundingCoordinates?.southBoundingCoordinate?:''},
-        eastBoundingCoordinate : { eml -> eml.dataset.coverage?.geographicCoverage?.boundingCoordinates?.eastBoundingCoordinate?:''},
-        westBoundingCoordinate: { eml -> eml.dataset.coverage?.geographicCoverage?.boundingCoordinates?.westBoundingCoordinate?:''},
+        geographicDescription: { eml ->
+            def node = eml.dataset.coverage?.geographicCoverage?.geographicDescription
+            node?.size() > 0 ? node.text() : "" },
+        northBoundingCoordinate: { eml ->
+            def node = eml.dataset.coverage?.geographicCoverage?.boundingCoordinates?.northBoundingCoordinate
+            node?.size() > 0 ? node.text() : "" },
+        southBoundingCoordinate: { eml ->
+            def node = eml.dataset.coverage?.geographicCoverage?.boundingCoordinates?.southBoundingCoordinate
+            node?.size() > 0 ? node.text() : "" },
+        eastBoundingCoordinate : { eml ->
+            def node = eml.dataset.coverage?.geographicCoverage?.boundingCoordinates?.eastBoundingCoordinate
+            node?.size() > 0 ? node.text() : "" },
+        westBoundingCoordinate: { eml ->
+            def node = eml.dataset.coverage?.geographicCoverage?.boundingCoordinates?.westBoundingCoordinate
+            node?.size() > 0 ? node.text() : "" },
 
         //temporal
-        beginDate: { eml -> eml.dataset.coverage?.temporalCoverage?.rangeOfDates?.beginDate?.calendarDate?:''},
-        endDate: { eml -> eml.dataset.coverage?.temporalCoverage?.rangeOfDates?.endDate?.calendarDate?:''},
+        beginDate: { eml ->
+            def node = eml.dataset.coverage?.temporalCoverage?.rangeOfDates?.beginDate?.calendarDate
+            node?.size() > 0 ? node.text() : "" },
+        endDate: { eml ->
+            def node = eml.dataset.coverage?.temporalCoverage?.rangeOfDates?.endDate?.calendarDate
+            node?.size() > 0 ? node.text() : "" },
 
         //additional fields
-        purpose: { eml -> eml.dataset.purpose?.para?:''},
-        methodStepDescription: { eml -> eml.dataset.methods?.methodStep?.description?.para?:''},
-        qualityControlDescription: { eml -> eml.dataset.methods?.qualityControl?.description?.para?:''},
+        purpose: { eml ->
+            this.collectParas(eml.dataset.purpose?.para) ?: "" },
+        methodStepDescription: { eml ->
+            this.collectParas(eml.dataset.methods?.methodStep?.description?.para) ?: "" },
+        qualityControlDescription: { eml ->
+            this.collectParas(eml.dataset.methods?.qualityControl?.description?.para) ?: "" },
 
         gbifDoi: { eml ->
             def gbifDoi = null
@@ -144,9 +168,9 @@ class EmlImportService {
 
         emlFields.each { name, accessor ->
             def val = accessor(eml)
-            if (val != null) {
-                dataResource.setProperty(name, val)
-            }
+            // EML is the source of truth: always apply the value, even if empty.
+            // Absent nodes return "" (not null), so existing data is cleared when the field is not in the EML.
+            dataResource.setProperty(name, val)
         }
 
         def addContact = { provider ->
