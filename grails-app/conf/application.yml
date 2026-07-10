@@ -12,10 +12,6 @@ grails:
             - file:/data/collectory/config/collectory-config.groovy
     cors:
         enabled: true
-        mappings:
-            '/**':
-                allowedOrigins: [ '*' ]
-                allowedHeaders: [ 'Authorization', 'Content-Type' ]
     gorm:
         reactor:
             # Whether to translate GORM events into Reactor events
