@@ -1,7 +1,7 @@
 <g:if test="${instance.resourceType == 'species-list'}">
     <section class="public-metadata">
         <g:if test="${showHeaders}">
-            <h4><g:message code="public.sdr.content.label12" /></h4>
+            <h4><g:message code="public.website" /></h4>
         </g:if>
         <div class="webSite">
             <a class='external_icon' target="_blank"
