@@ -19,11 +19,11 @@
   <g:if test="${instance.gbifRegistryKey}">
     <p>
       <span class="category">GBIF Link:</span>
-      <a href="${grailsApplication.config.gbifWebsite}/publisher/${instance.gbifRegistryKey}">View details on GBIF.org</a>
+      <a href="${grailsApplication.config.gbifWebsite}publisher/${instance.gbifRegistryKey}">View details on GBIF.org</a>
     </p>
     <p>
       <span class="category">GBIF webservices Link:</span>
-      <a href="${grailsApplication.config.gbifApiUrl}/organization/${instance.gbifRegistryKey}">View details on GBIF.org</a>
+      <a href="${grailsApplication.config.gbifApiUrl}organization/${instance.gbifRegistryKey}">View details on GBIF.org</a>
     </p>
   </g:if>
 

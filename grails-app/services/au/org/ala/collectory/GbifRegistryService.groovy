@@ -354,7 +354,7 @@ class GbifRegistryService {
             } else {
                 log.warn("Need to add syncing of resources for institution....via datalinks...")
                 if (dp instanceof Collection || dp instanceof Institution) {
-                    dp.providerDataResource.each { DataResource dr ->
+                    dp.providerDataResources.each { DataResource dr ->
                         syncDataResource(dr, dp.gbifRegistryKey)
                     }
                 }

@@ -111,15 +111,15 @@ uploadFilePath: /data/collectory/upload/
 uploadExternalUrlPath: http://localhost/upload
 gbifApiUrl: 'https://api.gbif.org/v1/'
 gbifUniqueKeyTerm: "http://rs.gbif.org/terms/1.0/gbifID"
-gbifWebsite: "https://www.gbif-uat.org/"
+gbifWebsite: "https://www.gbif-test.org/"
 
 # country 3 digit ISO code. Non-empty value required at startup
 gbifDefaultEntityCountry:
 
 gbif:
     citations:
-        lookup: "https://www.gbif.org/api/resource/search?contentType=literature&gbifDatasetKey="
-        search: "https://www.gbif.org/resource/search?contentType=literature&gbifDatasetKey="
+        lookup: "${gbifApiUrl}literature/search?contentType=literature&gbifDatasetKey="
+        search: "${gbifWebsite}resource/search?contentType=literature&gbifDatasetKey="
         enabled: true
 
 # GBIF Registration enables the Collectory to create and update organisations and datasets
