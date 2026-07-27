@@ -553,7 +553,7 @@ class PublicController {
             def instName = (inst && inst.name.size() > 36 && inst.acronym) ? inst.acronym : inst?.name
             [name: it.name, resourceType: it.resourceType, licenseType: it.licenseType,
              uid: it.uid, status: it.status, websiteUrl: it.websiteUrl, contentTypes: it.contentTypes,
-             institution: instName, lastUpdated: it.lastUpdated]
+             institution: instName, lastUpdated: it.lastUpdated, dateCreated: it.dateCreated]
         }
         render drs as JSON
     }

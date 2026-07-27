@@ -131,11 +131,14 @@ function appendResource(value) {
     var $rowB = $('<p class="rowB"></p>').appendTo($div);
     var $rowC = $('<div class="rowC" style="display:none;">').appendTo($div);  // starts hidden
 
-    function formatLastUpdated() {
+    function formatDate(dateValue) {
+        if (dateValue == null || dateValue === '') {
+            return '';
+        }
         if (COLLECTORY_CONF.showExtraInfoInDataSetsViewRelativeTime) {
-            return moment(value.lastUpdated).locale(COLLECTORY_CONF.locale).fromNow();
+            return moment(dateValue).locale(COLLECTORY_CONF.locale).fromNow();
         } else {
-            return moment(value.lastUpdated).locale(COLLECTORY_CONF.locale).format("LL");
+            return moment(dateValue).locale(COLLECTORY_CONF.locale).format("LL");
         }
     }
 
@@ -147,9 +150,10 @@ function appendResource(value) {
     // row B
     $rowB.append('<span><strong class="resultsLabelFirst">'+ jQuery.i18n.prop('datasets.js.appendresource06') +': </strong>' + jQuery.i18n.prop('dataset.result.'+ value.resourceType) + '</span>');  // resource type
     $rowB.append('<span><strong class="resultsLabel">'+ jQuery.i18n.prop('datasets.js.appendresource07') +': </strong>' + (value.licenseType == null ? '' : value.licenseType) + '</span>'); // license type
+    $rowB.append('<span><strong class="dateCreatedDrView">'+ jQuery.i18n.prop('datasets.js.dateCreated') +': </strong>' + formatDate(value.dateCreated) + '</span>'); // date created
+    $rowB.append('<span><strong class="lastUpdatedDrView">'+ jQuery.i18n.prop('datasets.js.lastUpdated') +': </strong>' + formatDate(value.lastUpdated) + '</span>'); // last updated
 
     if (COLLECTORY_CONF.showExtraInfoInDataSetsView && (value.resourceType == 'records' || value.resourceType == 'events')) {
-        $rowB.append('<span><strong class="lastUpdatedDrView">'+ jQuery.i18n.prop('datasets.js.lastUpdated') +': </strong>' + formatLastUpdated() + '</span>'); // last updated
         var numRecords = drCount(value.uid);
         if (numRecords >= 0) {
             $rowB.append('<span><strong class="drNumRecordsDrView">' + jQuery.i18n.prop('datasets.js.numRecords') + ': </strong><a title="' + jQuery.i18n.prop('datasets.js.appendresource03') + '" href="' + biocacheUrl + '/occurrences/search?q=data_resource_uid:' + value.uid + '">' + numRecords + '</a></span>'); // recors link with numbers
@@ -449,7 +453,23 @@ function onDirChange() {
 function comparator(a, b) {
     var va, vb;
     var sortBy = $('select#sort').val();
-    switch ($('select#sort').val()) {
+    var sortDir = $('select#dir').val();
+    var ascending = sortDir == 'ascending';
+
+    // date-based sorts are handled separately so we can compare numeric timestamps
+    if (sortBy == 'lastUpdated' || sortBy == 'dateCreated') {
+        va = a[sortBy];
+        vb = b[sortBy];
+        // when equal or both missing, fall back to name
+        if (va == vb) {
+            va = a.name;
+            vb = b.name;
+            return compareText(va, vb, true);
+        }
+        return compareDates(va, vb, ascending);
+    }
+
+    switch (sortBy) {
         case 'name':
             va = a.name;
             vb = b.name;
@@ -471,16 +491,54 @@ function comparator(a, b) {
         va = a.name;
         vb = b.name;
     }
-    // use lowercase
+    return compareText(va, vb, ascending);
+}
+
+/* compare two strings case-insensitively; null/undefined treated as empty */
+function compareText(va, vb, ascending) {
     va = va == null ? "" : va.toLowerCase();
     vb = vb == null ? "" : vb.toLowerCase();
 
-    if ($('select#dir').val() == 'ascending') {
+    if (ascending) {
         return (va < vb ? -1 : (va > vb ? 1 : 0));
     }
     else {
         return (vb < va ? -1 : (vb > va ? 1 : 0));
     }
+}
+
+/* compare two date values; null/undefined/invalid values sort last */
+function compareDates(va, vb, ascending) {
+    var ta = toTimestamp(va);
+    var tb = toTimestamp(vb);
+    var aNull = ta == null;
+    var bNull = tb == null;
+
+    if (aNull && bNull) {
+        return 0;
+    }
+    if (aNull) {
+        return 1; // null last
+    }
+    if (bNull) {
+        return -1; // null last
+    }
+
+    if (ascending) {
+        return ta < tb ? -1 : (ta > tb ? 1 : 0);
+    }
+    else {
+        return tb < ta ? -1 : (tb > ta ? 1 : 0);
+    }
+}
+
+/* convert a date string or Date object to a numeric timestamp, or null if invalid */
+function toTimestamp(value) {
+    if (value == null || value === '') {
+        return null;
+    }
+    var m = moment(value);
+    return m.isValid() ? m.valueOf() : null;
 }
 
 /*************************************************\
@@ -724,9 +782,13 @@ function setStateFromHash() {
     }
     if (hash.sort) {
         $('select#sort').val(hash.sort);
+    } else {
+        $('select#sort').val('lastUpdated');
     }
     if (hash.dir) {
         $('select#dir').val(hash.dir);
+    } else {
+        $('select#dir').val('descending');
     }
     if (hash.filters) {
         deserialiseFilters(hash.filters);
@@ -763,8 +825,8 @@ function reset() {
     resources = allResources;
     offset = 0;
     $('select#per-page').val(20);
-    $('select#sort').val('name');
-    $('select#dir').val('ascending');
+    $('select#sort').val('lastUpdated');
+    $('select#dir').val('descending');
     $.bbq.removeState();
     resources.sort(comparator);
     updateTotal();
