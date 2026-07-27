@@ -533,8 +533,8 @@ function toTimestamp(value) {
     if (value == null || value === '') {
         return null;
     }
-    var ts = new Date(value).getTime();
-    return isNaN(ts) ? null : ts;
+    var m = moment(value);
+    return m.isValid() ? m.valueOf() : null;
 }
 
 /*************************************************\
