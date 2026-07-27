@@ -85,7 +85,7 @@
                       </div>
                       <div class="col-md-4 d-flex align-items-center gap-2">
                           <label for="sort"><g:message code="public.datasets.sortwidgets.sb" /></label>
-                          <g:select class="form-select form-select-sm" id="sort" name="sort" valueMessagePrefix="datasets.sort" from="${['name','type','license']}"/>
+                          <g:select class="form-select form-select-sm" id="sort" name="sort" valueMessagePrefix="datasets.sort" from="${['name','type','license','lastUpdated','dateCreated']}" value="lastUpdated"/>
                       </div>
                       <div class="col-md-4 d-flex align-items-center gap-2">
                           <label for="dir"><g:message code="public.datasets.sortwidgets.so" /></label>

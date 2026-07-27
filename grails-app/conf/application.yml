@@ -211,7 +211,7 @@ repository:
     location:
         images: /data/collectory/data
 
-loggerURL: https://logger-test.ala.org.au/service
+loggerURL: https://logger.test.ala.org.au/service
 alertsUrl: https://alerts-test.ala.org.au
 alertResourceName: 'Alerts'
 speciesListToolUrl: https://lists-test.ala.org.au/speciesListItem/list/

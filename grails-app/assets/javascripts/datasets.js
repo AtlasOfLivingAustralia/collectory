@@ -449,7 +449,23 @@ function onDirChange() {
 function comparator(a, b) {
     var va, vb;
     var sortBy = $('select#sort').val();
-    switch ($('select#sort').val()) {
+    var sortDir = $('select#dir').val();
+    var ascending = sortDir == 'ascending';
+
+    // date-based sorts are handled separately so we can compare numeric timestamps
+    if (sortBy == 'lastUpdated' || sortBy == 'dateCreated') {
+        va = a[sortBy];
+        vb = b[sortBy];
+        // when equal or both missing, fall back to name
+        if (va == vb) {
+            va = a.name;
+            vb = b.name;
+            return compareText(va, vb, true);
+        }
+        return compareDates(va, vb, ascending);
+    }
+
+    switch (sortBy) {
         case 'name':
             va = a.name;
             vb = b.name;
@@ -471,16 +487,54 @@ function comparator(a, b) {
         va = a.name;
         vb = b.name;
     }
-    // use lowercase
+    return compareText(va, vb, ascending);
+}
+
+/* compare two strings case-insensitively; null/undefined treated as empty */
+function compareText(va, vb, ascending) {
     va = va == null ? "" : va.toLowerCase();
     vb = vb == null ? "" : vb.toLowerCase();
 
-    if ($('select#dir').val() == 'ascending') {
+    if (ascending) {
         return (va < vb ? -1 : (va > vb ? 1 : 0));
     }
     else {
         return (vb < va ? -1 : (vb > va ? 1 : 0));
     }
+}
+
+/* compare two date values; null/undefined/invalid values sort last */
+function compareDates(va, vb, ascending) {
+    var ta = toTimestamp(va);
+    var tb = toTimestamp(vb);
+    var aNull = ta == null;
+    var bNull = tb == null;
+
+    if (aNull && bNull) {
+        return 0;
+    }
+    if (aNull) {
+        return 1; // null last
+    }
+    if (bNull) {
+        return -1; // null last
+    }
+
+    if (ascending) {
+        return ta < tb ? -1 : (ta > tb ? 1 : 0);
+    }
+    else {
+        return tb < ta ? -1 : (tb > ta ? 1 : 0);
+    }
+}
+
+/* convert a date string or Date object to a numeric timestamp, or null if invalid */
+function toTimestamp(value) {
+    if (value == null || value === '') {
+        return null;
+    }
+    var ts = new Date(value).getTime();
+    return isNaN(ts) ? null : ts;
 }
 
 /*************************************************\
@@ -724,9 +778,13 @@ function setStateFromHash() {
     }
     if (hash.sort) {
         $('select#sort').val(hash.sort);
+    } else {
+        $('select#sort').val('lastUpdated');
     }
     if (hash.dir) {
         $('select#dir').val(hash.dir);
+    } else {
+        $('select#dir').val('descending');
     }
     if (hash.filters) {
         deserialiseFilters(hash.filters);
@@ -763,8 +821,8 @@ function reset() {
     resources = allResources;
     offset = 0;
     $('select#per-page').val(20);
-    $('select#sort').val('name');
-    $('select#dir').val('ascending');
+    $('select#sort').val('lastUpdated');
+    $('select#dir').val('descending');
     $.bbq.removeState();
     resources.sort(comparator);
     updateTotal();
