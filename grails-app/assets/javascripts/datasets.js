@@ -131,11 +131,14 @@ function appendResource(value) {
     var $rowB = $('<p class="rowB"></p>').appendTo($div);
     var $rowC = $('<div class="rowC" style="display:none;">').appendTo($div);  // starts hidden
 
-    function formatLastUpdated() {
+    function formatDate(dateValue) {
+        if (dateValue == null || dateValue === '') {
+            return '';
+        }
         if (COLLECTORY_CONF.showExtraInfoInDataSetsViewRelativeTime) {
-            return moment(value.lastUpdated).locale(COLLECTORY_CONF.locale).fromNow();
+            return moment(dateValue).locale(COLLECTORY_CONF.locale).fromNow();
         } else {
-            return moment(value.lastUpdated).locale(COLLECTORY_CONF.locale).format("LL");
+            return moment(dateValue).locale(COLLECTORY_CONF.locale).format("LL");
         }
     }
 
@@ -147,9 +150,10 @@ function appendResource(value) {
     // row B
     $rowB.append('<span><strong class="resultsLabelFirst">'+ jQuery.i18n.prop('datasets.js.appendresource06') +': </strong>' + jQuery.i18n.prop('dataset.result.'+ value.resourceType) + '</span>');  // resource type
     $rowB.append('<span><strong class="resultsLabel">'+ jQuery.i18n.prop('datasets.js.appendresource07') +': </strong>' + (value.licenseType == null ? '' : value.licenseType) + '</span>'); // license type
+    $rowB.append('<span><strong class="dateCreatedDrView">'+ jQuery.i18n.prop('datasets.js.dateCreated') +': </strong>' + formatDate(value.dateCreated) + '</span>'); // date created
+    $rowB.append('<span><strong class="lastUpdatedDrView">'+ jQuery.i18n.prop('datasets.js.lastUpdated') +': </strong>' + formatDate(value.lastUpdated) + '</span>'); // last updated
 
     if (COLLECTORY_CONF.showExtraInfoInDataSetsView && (value.resourceType == 'records' || value.resourceType == 'events')) {
-        $rowB.append('<span><strong class="lastUpdatedDrView">'+ jQuery.i18n.prop('datasets.js.lastUpdated') +': </strong>' + formatLastUpdated() + '</span>'); // last updated
         var numRecords = drCount(value.uid);
         if (numRecords >= 0) {
             $rowB.append('<span><strong class="drNumRecordsDrView">' + jQuery.i18n.prop('datasets.js.numRecords') + ': </strong><a title="' + jQuery.i18n.prop('datasets.js.appendresource03') + '" href="' + biocacheUrl + '/occurrences/search?q=data_resource_uid:' + value.uid + '">' + numRecords + '</a></span>'); // recors link with numbers

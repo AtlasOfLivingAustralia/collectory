@@ -47,7 +47,7 @@
     vertical-align: middle;
 }
 
-.resultsLabel, .lastUpdatedDrView, .drNumRecordsDrView { margin-left:10px; }
+.resultsLabel, .dateCreatedDrView, .lastUpdatedDrView, .drNumRecordsDrView { margin-left:10px; }
 
 /* BS5 migration: .well had margin-bottom:20px; .card does not — restore spacing */
 .show-section {
