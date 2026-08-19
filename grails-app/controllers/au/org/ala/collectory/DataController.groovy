@@ -1333,7 +1333,10 @@ class DataController {
      * @param uid the entity instance
      */
     def contactsForEntity = {
-        check(params)
+        def ok = check(params)
+        if (!ok) {
+            return
+        }
         def contactList = params.pg.getContacts().collect {
             // public contacts only
             if (it.contact.publish) {
@@ -1365,7 +1368,10 @@ class DataController {
      * @param id the database id of the contact relationship (contactFor)
      */
     def contactForEntity = {
-        check(params)
+        def ok = check(params)
+        if (!ok) {
+            return
+        }
 
         if (params.id) {
             Contact contact = Contact.get(params.id)
