@@ -1,18 +1,20 @@
 package au.org.ala.collectory
 
+import au.org.ala.PermissionRequired
 import au.org.ala.collectory.resources.PP
 import grails.converters.JSON
 import org.springframework.dao.DataIntegrityViolationException
-import org.springframework.web.context.request.RequestContextHolder
 import org.springframework.web.multipart.MultipartFile
 import java.text.NumberFormat
 import java.text.ParseException
 import org.springframework.web.context.request.ServletRequestAttributes
+
 /**
  * This is a base class for all provider group entities types.
  *
  * It provides common code for shared attributes like contacts.
  */
+//@PermissionRequired(roles=['ROLE_EDITOR', 'ROLE_ADMIN'])
 abstract class ProviderGroupController {
 
     String entityName = "ProviderGroup"
@@ -35,6 +37,7 @@ abstract class ProviderGroupController {
     }
 
     protected isAdmin () {
+        //It requires AlaServices annotation to inject info to user profile
         collectoryAuthService?.userInRole(grailsApplication.config.ROLE_ADMIN) ?: false
     }
     /*
@@ -250,44 +253,45 @@ abstract class ProviderGroupController {
     /**
      * Update base attributes
      */
-    def updateBase = { //BaseCommand cmd ->
+     def updateBase = { //BaseCommand cmd ->
 
-        BaseCommand cmd = new BaseCommand()
-        bindData(cmd, params)
+         BaseCommand cmd = new BaseCommand()
+         bindData(cmd, params)
 
-        def result = providerGroupService.updateBase(params)
-        def pg = result.pg
+         def result = providerGroupService.updateBase(params)
+         def pg = result.pg
 
-        if (pg && result.success) {
-            flash.message =
-                "${message(code: 'default.updated.message', args: [message(code: "${pg.urlForm()}.label", default: pg.entityType()), pg.uid])}"
-            redirect(action: "show", id: pg.uid)
-        } else {
-            render(view: "/shared/base", model: [command: pg])
-        }
-    }
+         if (pg && result.success) {
+             flash.message =
+                 "${message(code: 'default.updated.message', args: [message(code: "${pg.urlForm()}.label", default: pg.entityType()), pg.uid])}"
+             redirect(action: "show", id: pg.uid)
+         } else {
+             def suitableFor = providerGroupService.getSuitableFor()
+             render(view: "/shared/base", model: [command: pg, target: params.target, suitableFor: suitableFor])
+         }
+     }
 
     /**
      * Update descriptive attributes
      */
-    def updateDescription = {
-
-        def result = providerGroupService.updateDescription(params)
-        def pg = result.pg
-        if (pg) {
-            if (result.success){
-                flash.message =
-                        "${message(code: 'default.updated.message', args: [message(code: "${pg.urlForm()}.label", default: pg.entityType()), pg.uid])}"
-                redirect(action: "show", id: pg.uid)
-            } else {
-                render(view: "description", model: [command: pg])
-            }
-        } else {
-            flash.message =
-                    "${message(code: 'default.not.found.message', args: [message(code: "${entityNameLower}.label", default: entityNameLower), params.id])}"
-            redirect(action: "show", id: params.id)
-        }
-    }
+     def updateDescription = {
+         def result = providerGroupService.updateDescription(params)
+         def pg = result.pg
+         if (pg) {
+             if (result.success){
+                 flash.message =
+                         "${message(code: 'default.updated.message', args: [message(code: "${pg.urlForm()}.label", default: pg.entityType()), pg.uid])}"
+                 redirect(action: "show", id: pg.uid)
+             } else {
+                 def suitableFor = providerGroupService.getSuitableFor()
+                 render(view: "description", model: [command: pg, suitableFor: suitableFor])
+             }
+         } else {
+             flash.message =
+                     "${message(code: 'default.not.found.message', args: [message(code: "${entityNameLower}.label", default: entityNameLower), params.id])}"
+             redirect(action: "show", id: params.id)
+         }
+     }
 
     def entitySpecificDescriptionProcessing(pg, params) {
         // default is to do nothing
@@ -303,19 +307,9 @@ abstract class ProviderGroupController {
         if (pg) {
             if (checkLocking(pg,'/shared/location')) { return }
 
-            Locale userLocale = (RequestContextHolder.currentRequestAttributes() as ServletRequestAttributes).request.locale
-            NumberFormat numberFormat = NumberFormat.getNumberInstance(userLocale)
-
-            double latitude
-            double longitude
-
-            try {
-                latitude = params.latitude ? numberFormat.parse(params.latitude).doubleValue() : -1
-                longitude = params.longitude ? numberFormat.parse(params.longitude).doubleValue() : -1
-            } catch (ParseException e) {
-                latitude = -1
-                longitude = -1
-            }
+            // special handling for lat & long
+            def latitude = parseCoordinate(params.latitude)
+            def longitude = parseCoordinate(params.longitude)
 
             // special handling for embedded address - need to create address obj if none exists and we have data
             if (!pg.address && [params.address?.street, params.address?.postBox, params.address?.city,
@@ -324,7 +318,7 @@ abstract class ProviderGroupController {
             }
 
             pg.properties = params
-            pg.latitude  = latitude
+            pg.latitude = latitude
             pg.longitude = longitude
             pg.userLastModified = collectoryAuthService?.username()
 
@@ -466,26 +460,26 @@ abstract class ProviderGroupController {
 
     }
 
-    def updateContactRole = {
-        def contactFor = ContactFor.get(params.contactForId)
-        if (contactFor) {
-            contactFor.properties = params
-            contactFor.userLastModified = collectoryAuthService?.username()
-            if (!contactFor.hasErrors()) {
-                ContactFor.withTransaction {
-                    contactFor.save(flush: true)
-                }
-                flash.message = "${message(code: 'contactRole.updated.message')}"
-                redirect(action: "edit", id: params.id, params: [page: '/shared/showContacts'])
-            } else {
-                render(view: '/shared/contactRole', model: [command: providerGroupService._get(params.id), cf: contactFor])
-            }
+     def updateContactRole = {
+         def contactFor = ContactFor.get(params.contactForId)
+         if (contactFor) {
+             contactFor.properties = params
+             contactFor.userLastModified = collectoryAuthService?.username()
+             if (!contactFor.hasErrors()) {
+                 ContactFor.withTransaction {
+                     contactFor.save(flush: true)
+                 }
+                 flash.message = "${message(code: 'contactRole.updated.message')}"
+                 redirect(action: "edit", id: params.id, params: [page: '/shared/showContacts'])
+             } else {
+                 render(view: '/shared/contactRole', model: [command: providerGroupService._get(params.id), cf: contactFor, returnTo: params.returnTo])
+             }
 
-        } else {
-            flash.message = "${message(code: 'default.not.found.message', args: [message(code: 'contactFor.label', default: "Contact for ${entityNameLower}", args: [entityNameLower]), params.contactForId])}"
-            redirect(action: "show", id: params.id)
-        }
-    }
+         } else {
+             flash.message = "${message(code: 'default.not.found.message', args: [message(code: 'contactFor.label', default: "Contact for ${entityNameLower}", args: [entityNameLower]), params.contactForId])}"
+             redirect(action: "show", id: params.id)
+         }
+     }
 
     def addContact = {
         def pg = get(params.id)
@@ -541,7 +535,7 @@ abstract class ProviderGroupController {
                 ContactFor cf = ContactFor.get(params.idToRemove)
                 if (cf) {
                     ContactFor.withTransaction {
-                        cf.delete()
+                        cf.delete(flush: true)
                     }
                     redirect(action: "edit", params: [page:"/shared/showContacts"], id: params.id)
                 }
@@ -551,6 +545,7 @@ abstract class ProviderGroupController {
             }
         }
     }
+
 
     def editRole = {
         def contactFor = ContactFor.get(params.id)
@@ -583,6 +578,7 @@ abstract class ProviderGroupController {
     /**
      * Uploads the supplied GBIF file creating a new data resource based on the supplied EML details
      */
+
     def downloadGBIFFile = {
 
         log.info("Downloading file: " + params.url)
@@ -658,6 +654,7 @@ abstract class ProviderGroupController {
         }
     }
 
+
     def uploadDataFile = {
 
         //get the UID
@@ -706,7 +703,8 @@ abstract class ProviderGroupController {
             if (file?.size) {  // will only have size if a file was selected
                 // save the chosen file
                 if (file.size < 200000) {   // limit file to 200Kb
-                    def filename = file.getOriginalFilename()
+                    //sanitize filename
+                    def filename = file.getOriginalFilename().replaceAll('[^\\u0020-\\u00FF]', '_')
                     log.debug "filename=${filename}"
 
                     // update filename
@@ -718,7 +716,7 @@ abstract class ProviderGroupController {
                     File f = new File(colDir, filename)
                     log.debug "saving ${filename} to ${f.absoluteFile}"
                     file.transferTo(f)
-                    activityLogService.log collectoryAuthService?.username(), collectoryAuthService?.userInRole(grailsApplication.config.ROLE_ADMIN), Action.UPLOAD_IMAGE, filename
+                    activityLogService.log(collectoryAuthService?.username(), collectoryAuthService?.userInRole(grailsApplication.config.ROLE_ADMIN), Action.UPLOAD_IMAGE, filename)
                 } else {
                     pg.errors.rejectValue('imageRef', 'image.too.big', message(code: "provider.group.controller.13", default: "The image you selected is too large. Images are limited to 200KB."))
                     render(view: "/shared/images", model: [command: pg, target: target])
@@ -741,6 +739,7 @@ abstract class ProviderGroupController {
             redirect(action: "show", id: params.id)
         }
     }
+
 
     def removeImage = {
         def pg = get(params.id)
@@ -773,6 +772,7 @@ abstract class ProviderGroupController {
         }
     }
 
+
     def updateAttributions = {
         def pg = get(params.id)
         if (pg) {
@@ -797,26 +797,28 @@ abstract class ProviderGroupController {
                 pg.removeAttribution 'at3'
             }
 
-            if (pg.isDirty()) {
-                pg.userLastModified = collectoryAuthService?.username()
-                Contact.withTransaction {
-                    if (!pg.hasErrors() && pg.save(flush: true)) {
-                        flash.message =
-                                "${message(code: 'default.updated.message', args: [message(code: "${pg.urlForm()}.label", default: pg.entityType()), pg.uid])}"
-                        redirect(action: "show", id: pg.uid)
-                    } else {
-                        render(view: "description", model: [command: pg])
-                    }
-                }
-            } else {
-                redirect(action: "show", id: pg.uid)
-            }
+             if (pg.isDirty()) {
+                 pg.userLastModified = collectoryAuthService?.username()
+                 Contact.withTransaction {
+                     if (!pg.hasErrors() && pg.save(flush: true)) {
+                         flash.message =
+                                 "${message(code: 'default.updated.message', args: [message(code: "${pg.urlForm()}.label", default: pg.entityType()), pg.uid])}"
+                         redirect(action: "show", id: pg.uid)
+                     } else {
+                         def suitableFor = providerGroupService.getSuitableFor()
+                         render(view: "description", model: [command: pg, suitableFor: suitableFor])
+                     }
+                 }
+             } else {
+                 redirect(action: "show", id: pg.uid)
+             }
         } else {
             flash.message =
                 "${message(code: 'default.not.found.message', args: [message(code: "${entityNameLower}.label", default: entityNameLower), params.id])}"
             redirect(action: "show", id: params.id)
         }
     }
+
 
     def delete = {
         def pg = get(params.id)
@@ -830,7 +832,7 @@ abstract class ProviderGroupController {
                         // remove contact links (does not remove the contact)
                         ContactFor.findAllByEntityUid(pg.uid).each {
                             log.info "Removing link to contact " + it.contact?.buildName()
-                            it.delete()
+                            it.delete(flush: true)
                         }
                         // delete
                         pg.delete(flush: true)
@@ -850,6 +852,7 @@ abstract class ProviderGroupController {
             redirect(action: "list")
         }
     }
+
 
     def showChanges = {
         def instance = get(params.id)
@@ -927,4 +930,14 @@ abstract class ProviderGroupController {
         }
         return false
     }
+
+    private Double parseCoordinate(Object value) {
+        if (value == null || value.toString().trim().isEmpty()) return -1
+        try {
+            return Double.parseDouble(value.toString().replace(",", "."))
+        } catch (NumberFormatException e) {
+            return -1
+        }
+    }
 }
+

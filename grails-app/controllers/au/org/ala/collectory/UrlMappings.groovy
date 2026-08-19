@@ -25,13 +25,13 @@ class UrlMappings {
             }
         }
 
-        "/upload/$directory/$file" {
+        "/upload/$directory**/$file" {
             controller = 'data'
             action = 'fileDownload'
             constraints {}
         }
 
-        "/ws/upload/$directory/$file" {
+        "/ws/upload/$directory**/$file" {
             controller = 'data'
             action = 'fileDownload'
             constraints {}
@@ -212,7 +212,6 @@ class UrlMappings {
         "/sitemap($idx)?.xml"(controller: "sitemap", action: "index")
 
         "/"(controller: 'public', action: 'map')
-
         "/error"(view: '/error')
         "401"(view: '/error')
         "403"(view: '/error')

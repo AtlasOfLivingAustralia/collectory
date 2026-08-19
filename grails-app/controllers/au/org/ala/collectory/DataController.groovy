@@ -1,5 +1,6 @@
 package au.org.ala.collectory
 
+import au.org.ala.PermissionRequired
 import au.org.ala.plugins.openapi.Path
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import grails.converters.JSON
@@ -12,7 +13,6 @@ import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.headers.Header
 import io.swagger.v3.oas.annotations.media.ArraySchema
 import io.swagger.v3.oas.annotations.media.Content
-import io.swagger.v3.oas.annotations.media.ExampleObject
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.parameters.RequestBody
 import io.swagger.v3.oas.annotations.responses.ApiResponse
@@ -25,11 +25,7 @@ import javax.xml.transform.stream.StreamSource
 import javax.xml.validation.SchemaFactory
 import java.text.DateFormat
 import java.text.SimpleDateFormat
-
-import static io.swagger.v3.oas.annotations.enums.ParameterIn.HEADER
 import static io.swagger.v3.oas.annotations.enums.ParameterIn.PATH
-import static io.swagger.v3.oas.annotations.enums.ParameterIn.QUERY
-import static io.swagger.v3.oas.annotations.enums.ParameterIn.QUERY
 import static io.swagger.v3.oas.annotations.enums.ParameterIn.QUERY
 
 class DataController {
@@ -53,7 +49,6 @@ class DataController {
                     return false
                 }
             } else {
-
                 if (params.entity) {
                     params.pg = providerGroupService._get(params.uid, params.entity)
                 }
@@ -185,10 +180,6 @@ class DataController {
         render(status: 403, text: 'You are not authorised to use this service')
     }
 
-    def noApiKey = {
-        // using the 'forbidden' response code here as 401 causes the client to ask for a log in
-        render(status: 400, text: 'This service requires API key')
-    }
 
     /**
      * Should be added for any uri that returns multiple formats based on content negotiation.
@@ -225,6 +216,7 @@ class DataController {
      * @param pg - optional instance specified by uid (added in beforeInterceptor)
      * @param json - the body of the request
      */
+    @SecurityRequirement(name="JWT")
     @Operation(
             method = "POST",
             tags = "collection, institution, dataProvider, dataResource, tempDataResource, dataHub",
@@ -278,8 +270,11 @@ class DataController {
             ],
             security = [@SecurityRequirement(name = 'openIdConnect')]
     )
+
+
     @Path("/ws/{entity}/{uid}")
     @Produces("application/json")
+    @PermissionRequired(roles = ['ROLE_EDITOR', 'ROLE_ADMIN'], scopes = ['REQUIRED_SCOPES'])
     def saveEntity() {
 
         def ok = check(params)
@@ -315,6 +310,7 @@ class DataController {
         }
     }
 
+    @SecurityRequirement(name="JWT")
     @Operation(
             method = "POST",
             tags = "collection, institution, dataProvider, dataResource, tempDataResource, dataHub",
@@ -405,21 +401,74 @@ class DataController {
     }
 
     def fileDownload = {
+        // Early validation: reject paths containing traversal sequences or backslashes
+        if (params.directory?.contains('..') || params.directory?.contains('\\')) {
+            log.warn("Rejected file download request with path traversal attempt: params.directory=${params.directory}")
+            response.status = 400
+            return
+        }
+        
+        // Extract filename from request URI
         def dirpath = "/" + params.directory + "/"
         def idx = request.forwardURI.lastIndexOf(dirpath) + dirpath.length()
         def fullFileName = request.forwardURI.substring(idx)
+        
+        // Validate filename to prevent path traversal
+        if (fullFileName?.contains('..') || fullFileName?.contains('\\')) {
+            log.warn("Rejected file download request with path traversal attempt: fullFileName=${fullFileName}")
+            response.status = 400
+            return
+        }
+        
+        // Get canonical upload base path for verification
+        def uploadBase
+        try {
+            uploadBase = new File(grailsApplication.config.uploadFilePath as String).canonicalPath
+        } catch (IOException ex) {
+            log.warn("Rejected file download request: unable to resolve upload base path", ex)
+            response.status = 400
+            return
+        }
+
+        // Try new path format first (uid/fileId/filename)
         def file = new File(grailsApplication.config.uploadFilePath + File.separator + params.directory, fullFileName)
+        
+        // Fallback to old path format for backwards compatibility
         if (!file.exists()) {
             file = new File(grailsApplication.config.uploadFilePath + File.separator + params.directory, URLDecoder.decode(fullFileName, "UTF-8"))
         }
-        if (file.exists()) {
-            //set the content type
-            response.setContentType("application/octet-stream")
-            response.setHeader("Content-disposition", "attachment;filename=" + file.getName())
-            file.withInputStream { response.outputStream << it }
-        } else {
-            response.status = 404
+        
+        // If still not found and params.directory contains a forward slash (new format), 
+        // try old format (last segment only)
+        // This handles the case where a new format path (uid/fileId) is requested but the file was created with old format (fileId only)
+        if (!file.exists() && params.directory.contains('/')) {
+            def oldDirectory = params.directory.tokenize('/')[-1]  // Extract fileId from uid/fileId
+            file = new File(grailsApplication.config.uploadFilePath + File.separator + oldDirectory, fullFileName)
         }
+        
+        // Try URL decoded version of old format
+        if (!file.exists() && params.directory.contains('/')) {
+            def oldDirectory = params.directory.tokenize('/')[-1]
+            file = new File(grailsApplication.config.uploadFilePath + File.separator + oldDirectory, URLDecoder.decode(fullFileName, "UTF-8"))
+        }
+        
+         // Final verification and serve file
+         try {
+             if (file.canonicalPath.startsWith(uploadBase + File.separator) && file.exists()) {
+                 //set the content type
+                 response.setContentType("application/octet-stream")
+                 response.setHeader("Content-disposition", "attachment;filename=" + file.getName())
+                 file.withInputStream { response.outputStream << it }
+             } else if (!file.exists()) {
+                 response.status = 404
+             } else {
+                 log.warn("Rejected file download request: resolved path outside upload directory: ${file.canonicalPath}")
+                 response.status = 400
+             }
+         } catch (IOException ex) {
+             log.warn("Rejected file download request: unable to resolve canonical path", ex)
+             response.status = 400
+         }
     }
 
     /**
@@ -430,7 +479,6 @@ class DataController {
      * @param uid - optional uid of an instance of entity
      * @param pg - optional instance specified by uid (added in beforeInterceptor)
      * @param summary - any non-null value will cause a richer summary to be returned for entity lists
-     * @param api_key - optional param for displaying any sensitive data
      */
 
     // since  this method provides response for all entity types and optionally specific instance of an entity type with the optional {uid} path param,  the specs for api gateway will are to be specified with a special proxy character e.g. /ws/{entity+} to support the optional {uid} param.
@@ -457,13 +505,6 @@ class DataController {
                             schema = @Schema(implementation = String),
                             example = "co43",
                             required = true
-                    ),
-                    @Parameter(
-                            name = "apikey",
-                            in = HEADER,
-                            description = "authorisation for dataResource connection details",
-                            schema = @Schema(implementation = String),
-                            required = false
                     )
             ],
             responses = [
@@ -482,8 +523,7 @@ class DataController {
                                     @Header(name = 'Access-Control-Allow-Origin', description = "CORS header", schema = @Schema(type = "string"))
                             ]
                     )
-            ],
-            security = []
+            ]
     )
     @Path("/ws/{entity}/{uid}")
     @Produces("application/json")
@@ -491,7 +531,6 @@ class DataController {
      * THE method is not a protected API method but there is a minor functionality within it which calls crudService and behaves differently based on whether a the request has a API key.
      * The functionality described above has been preserved to maintain backwards compatibility but should be removed in the future once the legacy API key access is deprecated
      */
-
     def getEntity() {
         check(params)
         if (params.entity == 'tempDataResource') {
@@ -506,9 +545,10 @@ class DataController {
                 def entityInJson
                 if (clazz == 'DataResource') {
                     // this auth check (JWT or API key) is a special case handling to support backwards compatibility(which used to check for API key).
-                    String requiredRoles = grailsApplication.config.ROLE_ADMIN
-                    def authCheck = collectoryAuthService.isAuthorisedWsRequest(getParams(), request, response, requiredRoles, null)
-                    entityInJson = crudService."read${clazz}"(params.pg, authCheck)
+                    String[] requiredRoles = [grailsApplication.config.ROLE_ADMIN]
+                    String[] requiredScopes = [grailsApplication.config.REQUIRED_SCOPES]
+                    boolean isAuthed = collectoryAuthService.isAuthorised(requiredRoles,requiredScopes)
+                    entityInJson = crudService.readDataResource(params.pg, isAuthed)
                 } else {
                     entityInJson = crudService."read${clazz}"(params.pg)
                 }
@@ -551,13 +591,6 @@ class DataController {
                             schema = @Schema(implementation = String),
                             example = "collection",
                             required = true
-                    ),
-                    @Parameter(
-                            name = "apikey",
-                            in = HEADER,
-                            description = "authorisation for dataResource connection details",
-                            schema = @Schema(implementation = String),
-                            required = false
                     )
             ],
             requestBody = @RequestBody(
@@ -593,9 +626,10 @@ class DataController {
 
         def authCheck = false
         if (params.entity == 'dataResource') {
-            // this auth check (JWT or API key) is a special case handling to support backwards compatibility(which used to check for API key).
-            String requiredRoles = grailsApplication.config.ROLE_ADMIN
-            authCheck = collectoryAuthService.isAuthorisedWsRequest(getParams(), request, response, requiredRoles, null)
+            // this auth check (JWT or user roles).
+            String[] requiredRoles = [grailsApplication.config.ROLE_ADMIN]
+            String[] requiredScopes = [grailsApplication.config.REQUIRED_SCOPES]
+            authCheck =  collectoryAuthService.isAuthorised(requiredRoles,requiredScopes)
         }
 
         def clazz = capitalise(params.entity)
@@ -718,6 +752,7 @@ class DataController {
         renderAsJson results, last, ""
     }
 
+    @SecurityRequirement(name="JWT")
     @Operation(
             method = "GET",
             tags = "gbif",
@@ -744,6 +779,7 @@ class DataController {
     )
     @Path("/ws/syncGBIF")
     @Produces("application/json")
+    @PermissionRequired(roles = ['gbifRegistrationRole','ROLE_ADMIN'], scopes = ['REQUIRED_SCOPES'])
     def syncGBIF() {
         asyncGbifRegistryService.updateAllResources()
                 .onComplete {
@@ -853,7 +889,8 @@ class DataController {
     /********* delete **************************
      *
      */
-    def delete = {
+    @Transactional
+    def delete() {
         if (grailsApplication.config.deletesForbidden) {
             render(status: 405, text: 'delete is currently unavailable')
             return
@@ -865,7 +902,7 @@ class DataController {
                     providerGroupService._get(params.uid)
             if (pg) {
                 def name = pg.name
-                pg.delete()
+                pg.delete(flush: true)
                 def message = ['message': "deleted ${name}"]
                 render message as JSON
             } else {
@@ -951,9 +988,11 @@ class DataController {
                     render error
                 } else {
                     //render xml
-                    response.setContentType("text/xml")
-                    response.setCharacterEncoding("UTF-8")
+                    //todo - disturbed by layout
+                    response.contentType = 'application/xml'
+                    response.characterEncoding = 'UTF-8'
                     cacheAwareRender xml, pg.lastUpdated, xml.toString().encodeAsMD5()
+
                 }
             } else {
                 notFound 'no such entity ' + params.id
@@ -1047,6 +1086,7 @@ class DataController {
      * URI form: /ws/contacts/{id}
      * @param id the database id of the contact
      */
+    @SecurityRequirement(name="JWT")
     @Operation(
             method = "GET",
             tags = "contacts",
@@ -1090,8 +1130,10 @@ class DataController {
             ],
             security = [@SecurityRequirement(name = 'openIdConnect')]
     )
+
     @Path("/ws/contacts/{id}")
     @Produces("application/json")
+    @PermissionRequired(roles = ['ROLE_EDITOR', 'ROLE_ADMIN'], scopes = ['REQUIRED_SCOPES'])
     def contacts() {
         if (params.id) {
             def c = Contact.get(params.id)
@@ -1156,6 +1198,7 @@ class DataController {
     }
 
     /************* contact update services **********/
+    @SecurityRequirement(name="JWT")
     @Operation(
             method = "POST",
             tags = "contacts",
@@ -1203,6 +1246,7 @@ class DataController {
     )
     @Path("/ws/contacts/{id}")
     @Produces("application/json")
+    @PermissionRequired(roles = ['ROLE_EDITOR','ROLE_ADMIN'], scopes = ['REQUIRED_SCOPES'])
     def updateContact() {
         def ok = check(params)
         if (!ok) {
@@ -1289,7 +1333,10 @@ class DataController {
      * @param uid the entity instance
      */
     def contactsForEntity = {
-        check(params)
+        def ok = check(params)
+        if (!ok) {
+            return
+        }
         def contactList = params.pg.getContacts().collect {
             // public contacts only
             if (it.contact.publish) {
@@ -1321,7 +1368,10 @@ class DataController {
      * @param id the database id of the contact relationship (contactFor)
      */
     def contactForEntity = {
-        check(params)
+        def ok = check(params)
+        if (!ok) {
+            return
+        }
 
         if (params.id) {
             Contact contact = Contact.get(params.id)
@@ -1458,6 +1508,7 @@ class DataController {
      * @param uid the entity instance
      * @param id the contact id
      */
+    @SecurityRequirement(name="JWT")
     @Operation(
             method = "POST",
             tags = "contacts",
@@ -1536,6 +1587,7 @@ class DataController {
     )
     @Path("/ws/{entity}/{uid}/contacts/{id}")
     @Produces("application/json")
+    @PermissionRequired(roles = ['ROLE_EDITOR','ROLE_ADMIN'], scopes = ['REQUIRED_SCOPES'])
     def updateContactFor() {
         def ok = check(params)
         if (!ok) {

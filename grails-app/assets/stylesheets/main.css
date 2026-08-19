@@ -47,5 +47,56 @@
     vertical-align: middle;
 }
 
-.resultsLabel, .lastUpdatedDrView, .drNumRecordsDrView { margin-left:10px; }
+.resultsLabel, .dateCreatedDrView, .lastUpdatedDrView, .drNumRecordsDrView { margin-left:10px; }
+
+/* BS5 migration: .well had margin-bottom:20px; .card does not — restore spacing */
+.show-section {
+    margin-bottom: 1rem;
+}
+
+/* Ensure buttons row at the bottom of forms has breathing room from the container border */
+div.buttons {
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+/* Fix typo in existing public-metadata rule (marign-top → margin-top) */
+.public-metadata {
+    margin-top: 1em;
+    margin-bottom: 1em;
+}
+
+/* Datasets page spacing */
+#header {
+    padding: 1rem 0;
+}
+
+.collectory-content {
+    margin-top: 1rem;
+}
+
+#sidebarBox {
+    margin-bottom: 1rem;
+}
+
+#sortWidgets {
+    padding: 0.5rem 0;
+}
+
+#sortWidgets .col-md-4 {
+    gap: 0.5rem;
+    align-items: center;
+}
+
+#results {
+    margin-top: 0.5rem;
+}
+
+.result {
+    padding: 0.5rem 0;
+}
+
+#searchNavBar {
+    margin-top: 1rem;
+}
 
