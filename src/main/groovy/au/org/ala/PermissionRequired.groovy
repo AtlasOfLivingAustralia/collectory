@@ -3,10 +3,12 @@ package au.org.ala
 import java.lang.annotation.*
 
 /**
+ * Annotation to validate user login info (roles) and JWT/M2M tokens (scopes) in the request.
  *
- * Annotation to validate the token and user login info in the request
- *
- * If scopes are empty, it only requires a valid token.
+ * For JWT authentication:
+ * - If scopes are empty, token authentication is denied.
+ * - If scopes contain "*", any valid token is accepted.
+ * - Otherwise, the token must contain one of the specified scopes.
  */
 @Target([ElementType.TYPE, ElementType.METHOD, ElementType.FIELD])
 @Retention(RetentionPolicy.RUNTIME)
