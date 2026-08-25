@@ -358,6 +358,7 @@ class DataController {
     )
     @Path("/ws/{entity}")
     @Produces("application/json")
+    @PermissionRequired(roles = ['ROLE_EDITOR', 'ROLE_ADMIN'], scopes = ['REQUIRED_SCOPES'])
     def createEntity() {
         saveEntity()
     }
@@ -890,6 +891,7 @@ class DataController {
      *
      */
     @Transactional
+    @PermissionRequired(roles = ['ROLE_EDITOR', 'ROLE_ADMIN'], scopes = ['REQUIRED_SCOPES'])
     def delete() {
         if (grailsApplication.config.deletesForbidden) {
             render(status: 405, text: 'delete is currently unavailable')
@@ -1305,6 +1307,7 @@ class DataController {
     }
 
     @Transactional
+    @PermissionRequired(roles = ['ROLE_EDITOR', 'ROLE_ADMIN'], scopes = ['REQUIRED_SCOPES'])
     def deleteContact() {
         if (params.id) {
             // update
@@ -1620,6 +1623,7 @@ class DataController {
         }
     }
 
+    @PermissionRequired(roles = ['ROLE_EDITOR', 'ROLE_ADMIN'], scopes = ['REQUIRED_SCOPES'])
     def deleteContactFor() {
         def ok = check(params)
         if (!ok) {
