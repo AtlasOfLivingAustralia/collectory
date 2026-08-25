@@ -64,18 +64,71 @@ class IpWhitelistHelperSpec extends Specification {
         "2001:db9::1"          | "2001:db8::/32" | false
     }
 
-    def "test extractClientIps from MockHttpServletRequest"() {
-        given:
+    def "test extractClientIp rejects spoofed headers from untrusted direct connection"() {
+        given: "Direct connection from an untrusted remote IP attempting to spoof X-Forwarded-For"
         def request = new MockHttpServletRequest()
-        request.remoteAddr = "10.0.0.1"
-        request.addHeader("X-Forwarded-For", "203.0.113.195, 70.41.3.18, 150.172.238.178")
-        request.addHeader("X-Real-IP", "203.0.113.195")
+        request.remoteAddr = "203.0.113.50"
+        request.addHeader("X-Forwarded-For", "127.0.0.1")
+        request.addHeader("X-Real-IP", "127.0.0.1")
+
+        when: "Extracting client IP with default trusted proxies (127.0.0.1, ::1)"
+        def clientIp = IpWhitelistHelper.extractClientIp(request)
+
+        then: "Spoofed headers are ignored and remoteAddr is returned"
+        clientIp == "203.0.113.50"
+    }
+
+    def "test extractClientIp accepts X-Forwarded-For from trusted proxy"() {
+        given: "Request from trusted localhost reverse proxy"
+        def request = new MockHttpServletRequest()
+        request.remoteAddr = "127.0.0.1"
+        request.addHeader("X-Forwarded-For", "192.168.1.50")
 
         when:
-        def ips = IpWhitelistHelper.extractClientIps(request)
+        def clientIp = IpWhitelistHelper.extractClientIp(request)
 
         then:
-        ips == ["203.0.113.195", "70.41.3.18", "150.172.238.178", "10.0.0.1"]
+        clientIp == "192.168.1.50"
+    }
+
+    def "test extractClientIp evaluates right-to-left across proxy chain"() {
+        given: "Attacker sending spoofed header through trusted Nginx proxy on localhost"
+        def request = new MockHttpServletRequest()
+        request.remoteAddr = "127.0.0.1"
+        // In this chain, attacker sent 127.0.0.1, and Nginx appended 203.0.113.50
+        request.addHeader("X-Forwarded-For", "127.0.0.1, 203.0.113.50")
+
+        when:
+        def clientIp = IpWhitelistHelper.extractClientIp(request)
+
+        then: "The rightmost untrusted hop is returned, preventing spoofing"
+        clientIp == "203.0.113.50"
+    }
+
+    def "test extractClientIp with multiple trusted upstream proxies"() {
+        given: "Request through two trusted proxies in 10.0.0.0/8"
+        def request = new MockHttpServletRequest()
+        request.remoteAddr = "10.0.0.1"
+        request.addHeader("X-Forwarded-For", "192.168.1.50, 10.0.0.2")
+
+        when:
+        def clientIp = IpWhitelistHelper.extractClientIp(request, ["10.0.0.0/8"])
+
+        then:
+        clientIp == "192.168.1.50"
+    }
+
+    def "test extractClientIp with X-Real-IP from trusted proxy"() {
+        given: "Request from trusted localhost reverse proxy using X-Real-IP"
+        def request = new MockHttpServletRequest()
+        request.remoteAddr = "127.0.0.1"
+        request.addHeader("X-Real-IP", "192.168.1.50")
+
+        when:
+        def clientIp = IpWhitelistHelper.extractClientIp(request)
+
+        then:
+        clientIp == "192.168.1.50"
     }
 
     def "test isIpWhitelisted with various whitelist formats"() {

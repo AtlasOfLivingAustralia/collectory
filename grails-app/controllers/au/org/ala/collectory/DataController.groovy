@@ -410,8 +410,7 @@ class DataController {
         }
 
         // 2. Check API key if configured
-        def configuredApiKey = (grailsApplication?.config?.getProperty('security.upload.apiKey', String) ?:
-                               grailsApplication?.config?.security?.upload?.apiKey) as String
+        def configuredApiKey = grailsApplication?.config?.getProperty('security.upload.apiKey', String)
         if (configuredApiKey && configuredApiKey.trim()) {
             def requestApiKey = (request.getHeader("X-API-Key") ?: request.getHeader("apiKey") ?: params.apiKey)?.trim()
             if (requestApiKey && requestApiKey == configuredApiKey.trim()) {
@@ -422,14 +421,13 @@ class DataController {
         // 3. Check IP / CIDR whitelist
         def ipWhitelist = grailsApplication?.config?.getProperty('security.upload.ipWhitelist') ?:
                           grailsApplication?.config?.getProperty('security.upload.whitelist') ?:
-                          grailsApplication?.config?.getProperty('security.upload.allowedIps') ?:
-                          grailsApplication?.config?.security?.upload?.ipWhitelist ?:
-                          grailsApplication?.config?.security?.upload?.whitelist ?:
-                          grailsApplication?.config?.security?.upload?.allowedIps
+                          grailsApplication?.config?.getProperty('security.upload.allowedIps')
 
         if (ipWhitelist) {
-            def clientIps = IpWhitelistHelper.extractClientIps(request)
-            if (IpWhitelistHelper.isIpWhitelisted(clientIps, ipWhitelist)) {
+            def trustedProxies = grailsApplication?.config?.getProperty('security.upload.trustedProxies') ?:
+                                 IpWhitelistHelper.DEFAULT_TRUSTED_PROXIES
+            def clientIp = IpWhitelistHelper.extractClientIp(request, trustedProxies)
+            if (IpWhitelistHelper.isIpWhitelisted(clientIp, ipWhitelist)) {
                 return true
             }
         }

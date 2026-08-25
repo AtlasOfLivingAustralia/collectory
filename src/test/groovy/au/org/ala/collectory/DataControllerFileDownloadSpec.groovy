@@ -31,6 +31,35 @@ class DataControllerFileDownloadSpec extends Specification implements Controller
         response.text.contains("Access denied")
     }
 
+    def "unauthorized request with non-whitelisted IP attempting to spoof X-Forwarded-For is rejected with 403"() {
+        given:
+        request.remoteAddr = "203.0.113.50"
+        request.addHeader("X-Forwarded-For", "127.0.0.1")
+        params.directory = "dr123/12345"
+        request.forwardURI = "/upload/dr123/12345/test.csv"
+
+        when:
+        controller.fileDownload()
+
+        then:
+        response.status == 403
+        response.text.contains("Access denied")
+    }
+
+    def "request from whitelisted client IP through trusted reverse proxy is authorized"() {
+        given:
+        request.remoteAddr = "127.0.0.1"
+        request.addHeader("X-Forwarded-For", "10.1.2.3")
+        params.directory = "dr123/12345"
+        request.forwardURI = "/upload/dr123/12345/test.csv"
+
+        when:
+        boolean authorized = controller.isFileDownloadAuthorized()
+
+        then:
+        authorized
+    }
+
     def "unauthenticated request with whitelisted IP is authorized"() {
         given:
         request.remoteAddr = "10.1.2.3"

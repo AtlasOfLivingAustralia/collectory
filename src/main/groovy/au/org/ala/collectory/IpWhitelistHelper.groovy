@@ -5,37 +5,69 @@ import javax.servlet.http.HttpServletRequest
 import java.net.InetAddress
 
 /**
- * Helper class for IP address extraction and CIDR / whitelist matching.
+ * Helper class for IP address extraction, trusted proxy verification, and CIDR / whitelist matching.
  */
 @Slf4j
 class IpWhitelistHelper {
 
-    /**
-     * Extracts candidate client IP addresses from the request, checking headers
-     * (X-Forwarded-For, X-Real-IP) and request.remoteAddr.
-     */
-    static List<String> extractClientIps(HttpServletRequest request) {
-        if (!request) return []
-        Set<String> ips = new LinkedHashSet<>()
+    public static final List<String> DEFAULT_TRUSTED_PROXIES = [
+            "127.0.0.1",
+            "::1",
+            "0:0:0:0:0:0:0:1"
+    ].asImmutable()
 
+    /**
+     * Resolves the true client IP address from the request.
+     *
+     * Security rule:
+     * - X-Forwarded-For and X-Real-IP headers are ONLY trusted if request.remoteAddr
+     *   originates from a trusted proxy (e.g. localhost reverse proxy or configured trusted proxies).
+     * - If request.remoteAddr is NOT a trusted proxy, headers are ignored to prevent spoofing.
+     * - When traversing X-Forwarded-For, it is evaluated right-to-left across the trusted proxy chain
+     *   to find the first untrusted upstream IP.
+     */
+    static String extractClientIp(HttpServletRequest request, Object trustedProxies = DEFAULT_TRUSTED_PROXIES) {
+        if (!request) return null
+
+        String remoteAddr = request.remoteAddr?.trim()
+        if (!remoteAddr) return null
+
+        // If direct connection is NOT from a trusted proxy, do NOT trust any headers
+        if (!isIpWhitelisted(remoteAddr, trustedProxies ?: DEFAULT_TRUSTED_PROXIES)) {
+            return remoteAddr
+        }
+
+        // Direct connection IS from a trusted proxy; inspect X-Forwarded-For
         String xForwardedFor = request.getHeader("X-Forwarded-For")
-        if (xForwardedFor) {
-            xForwardedFor.split(',').each {
-                def trimmed = it.trim()
-                if (trimmed) ips.add(trimmed)
+        if (xForwardedFor && xForwardedFor.trim()) {
+            List<String> rawChain = xForwardedFor.split(',').collect { it.trim() }.findAll { it }
+            if (!rawChain.isEmpty()) {
+                // Traverse right-to-left across the proxy chain
+                for (int i = rawChain.size() - 1; i >= 0; i--) {
+                    String ip = rawChain[i]
+                    if (!isIpWhitelisted(ip, trustedProxies ?: DEFAULT_TRUSTED_PROXIES)) {
+                        return ip
+                    }
+                }
+                // If every IP in the chain is a trusted proxy, return the leftmost (original caller)
+                return rawChain[0]
             }
         }
 
-        String xRealIp = request.getHeader("X-Real-IP")
-        if (xRealIp && xRealIp.trim()) {
-            ips.add(xRealIp.trim())
+        String xRealIp = request.getHeader("X-Real-IP")?.trim()
+        if (xRealIp) {
+            return xRealIp
         }
 
-        if (request.remoteAddr && request.remoteAddr.trim()) {
-            ips.add(request.remoteAddr.trim())
-        }
+        return remoteAddr
+    }
 
-        return ips.toList()
+    /**
+     * Checks if a single client IP matches any entry in the whitelist.
+     */
+    static boolean isIpWhitelisted(String clientIp, Object whitelist) {
+        if (!clientIp || !whitelist) return false
+        return isIpWhitelisted([clientIp], whitelist)
     }
 
     /**
@@ -145,3 +177,4 @@ class IpWhitelistHelper {
         return true
     }
 }
+
