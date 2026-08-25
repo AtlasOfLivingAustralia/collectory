@@ -8,7 +8,7 @@ import java.lang.annotation.*
  *
  * If scopes are empty, it only requires a valid token.
  */
-@Target([ElementType.TYPE, ElementType.METHOD])
+@Target([ElementType.TYPE, ElementType.METHOD, ElementType.FIELD])
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @interface PermissionRequired {
