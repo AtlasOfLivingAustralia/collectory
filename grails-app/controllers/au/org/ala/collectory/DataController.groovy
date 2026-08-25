@@ -404,7 +404,7 @@ class DataController {
     protected boolean isFileDownloadAuthorized() {
         // 1. Check user login or M2M JWT token (ROLE_EDITOR, ROLE_ADMIN, or valid M2M token)
         if (request.getUserPrincipal()) {
-            if (collectoryAuthService?.isAuthorised(['ROLE_EDITOR', 'ROLE_ADMIN'] as String[], ['*'] as String[])) {
+            if (collectoryAuthService?.isAuthorised(['ROLE_EDITOR', 'ROLE_ADMIN'] as String[], ['REQUIRED_SCOPES'] as String[])) {
                 return true
             }
         }
