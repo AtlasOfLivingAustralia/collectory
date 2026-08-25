@@ -54,10 +54,13 @@ class IpWhitelistHelper {
             }
         }
 
-        String xRealIp = request.getHeader("X-Real-IP")?.trim()
-        if (xRealIp) {
-            return xRealIp
-        }
+String xRealIp = request.getHeader("X-Real-IP")?.trim()
+if (xRealIp) {
+    String candidate = xRealIp.split(',')[0].trim()
+    if (candidate && (candidate ==~ /^[0-9a-fA-F:.]+$/)) {
+        return candidate
+    }
+}
 
         return remoteAddr
     }
