@@ -84,7 +84,7 @@ class DataControllerFileDownloadSpec extends Specification implements Controller
         given:
         request.remoteAddr = "203.0.113.50"
         request.userPrincipal = Mock(Principal)
-        controller.collectoryAuthService.isAuthorised(['ROLE_EDITOR', 'ROLE_ADMIN'] as String[], ['*'] as String[]) >> true
+        controller.collectoryAuthService.isAuthorised(_ as String[], _ as String[]) >> true
 
         when:
         boolean authorized = controller.isFileDownloadAuthorized()
