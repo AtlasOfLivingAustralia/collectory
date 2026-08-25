@@ -413,7 +413,7 @@ class DataController {
         def configuredApiKey = (grailsApplication?.config?.getProperty('security.upload.apiKey', String) ?:
                                grailsApplication?.config?.security?.upload?.apiKey) as String
         if (configuredApiKey && configuredApiKey.trim()) {
-            def requestApiKey = request.getHeader("X-API-Key") ?: request.getHeader("apiKey") ?: params.apiKey
+            def requestApiKey = (request.getHeader("X-API-Key") ?: request.getHeader("apiKey") ?: params.apiKey)?.trim()
             if (requestApiKey && requestApiKey == configuredApiKey.trim()) {
                 return true
             }
