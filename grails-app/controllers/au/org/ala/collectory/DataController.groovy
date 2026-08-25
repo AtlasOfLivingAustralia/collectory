@@ -401,7 +401,49 @@ class DataController {
         }
     }
 
+    protected boolean isFileDownloadAuthorized() {
+        // 1. Check user login or M2M JWT token (ROLE_EDITOR, ROLE_ADMIN, or valid M2M token)
+        if (request.getUserPrincipal()) {
+            if (collectoryAuthService?.isAuthorised(['ROLE_EDITOR', 'ROLE_ADMIN'] as String[], ['*'] as String[])) {
+                return true
+            }
+        }
+
+        // 2. Check API key if configured
+        def configuredApiKey = (grailsApplication?.config?.getProperty('security.upload.apiKey', String) ?:
+                               grailsApplication?.config?.security?.upload?.apiKey) as String
+        if (configuredApiKey && configuredApiKey.trim()) {
+            def requestApiKey = request.getHeader("X-API-Key") ?: request.getHeader("apiKey") ?: params.apiKey
+            if (requestApiKey && requestApiKey == configuredApiKey.trim()) {
+                return true
+            }
+        }
+
+        // 3. Check IP / CIDR whitelist
+        def ipWhitelist = grailsApplication?.config?.getProperty('security.upload.ipWhitelist') ?:
+                          grailsApplication?.config?.getProperty('security.upload.whitelist') ?:
+                          grailsApplication?.config?.getProperty('security.upload.allowedIps') ?:
+                          grailsApplication?.config?.security?.upload?.ipWhitelist ?:
+                          grailsApplication?.config?.security?.upload?.whitelist ?:
+                          grailsApplication?.config?.security?.upload?.allowedIps
+
+        if (ipWhitelist) {
+            def clientIps = IpWhitelistHelper.extractClientIps(request)
+            if (IpWhitelistHelper.isIpWhitelisted(clientIps, ipWhitelist)) {
+                return true
+            }
+        }
+
+        return false
+    }
+
     def fileDownload = {
+        if (!isFileDownloadAuthorized()) {
+            log.warn("Rejected unauthorized file download request: directory=${params.directory}, ip=${request.remoteAddr}")
+            render(status: 403, contentType: 'application/json', text: '{"error": "Access denied. File download requires authentication, a valid API key, or an allowed IP address."}')
+            return
+        }
+
         // Early validation: reject paths containing traversal sequences or backslashes
         if (params.directory?.contains('..') || params.directory?.contains('\\')) {
             log.warn("Rejected file download request with path traversal attempt: params.directory=${params.directory}")
