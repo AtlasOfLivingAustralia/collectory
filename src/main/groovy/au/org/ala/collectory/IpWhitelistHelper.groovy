@@ -80,6 +80,7 @@ class IpWhitelistHelper {
         clientIp = clientIp.trim()
         whitelistEntry = whitelistEntry.trim()
 
+        if (!(clientIp ==~ /^[0-9a-fA-F:.]+$/)) return false
         if (clientIp.equalsIgnoreCase(whitelistEntry)) {
             return true
         }
