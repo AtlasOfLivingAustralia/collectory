@@ -15,10 +15,12 @@
 
 package au.org.ala.collectory
 
+import au.org.ala.PermissionRequired
 import grails.converters.JSON
 import grails.web.http.HttpHeaders
 import org.grails.datastore.mapping.query.api.Criteria
 
+@PermissionRequired(roles = ['ROLE_EDITOR', 'ROLE_ADMIN'])
 class TempDataResourceController {
 
     def crudService, collectoryAuthService

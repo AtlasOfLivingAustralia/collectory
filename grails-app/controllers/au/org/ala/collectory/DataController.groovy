@@ -358,6 +358,7 @@ class DataController {
     )
     @Path("/ws/{entity}")
     @Produces("application/json")
+    @PermissionRequired(roles = ['ROLE_EDITOR', 'ROLE_ADMIN'], scopes = ['REQUIRED_SCOPES'])
     def createEntity() {
         saveEntity()
     }
@@ -400,7 +401,47 @@ class DataController {
         }
     }
 
+    protected boolean isFileDownloadAuthorized() {
+        // 1. Check user login or M2M JWT token (ROLE_EDITOR, ROLE_ADMIN, or valid M2M token)
+        if (request.getUserPrincipal()) {
+            if (collectoryAuthService?.isAuthorised(['ROLE_EDITOR', 'ROLE_ADMIN'] as String[], ['REQUIRED_SCOPES'] as String[])) {
+                return true
+            }
+        }
+
+        // 2. Check API key if configured
+        def configuredApiKey = grailsApplication?.config?.getProperty('security.upload.apiKey', String)
+        if (configuredApiKey && configuredApiKey.trim()) {
+            def requestApiKey = (request.getHeader("X-API-Key") ?: request.getHeader("apiKey") ?: params.apiKey)?.trim()
+            if (requestApiKey && requestApiKey == configuredApiKey.trim()) {
+                return true
+            }
+        }
+
+        // 3. Check IP / CIDR whitelist
+        def ipWhitelist = grailsApplication?.config?.getProperty('security.upload.ipWhitelist') ?:
+                          grailsApplication?.config?.getProperty('security.upload.whitelist') ?:
+                          grailsApplication?.config?.getProperty('security.upload.allowedIps')
+
+        if (ipWhitelist) {
+            def trustedProxies = grailsApplication?.config?.getProperty('security.upload.trustedProxies') ?:
+                                 IpWhitelistHelper.DEFAULT_TRUSTED_PROXIES
+            def clientIp = IpWhitelistHelper.extractClientIp(request, trustedProxies)
+            if (IpWhitelistHelper.isIpWhitelisted(clientIp, ipWhitelist)) {
+                return true
+            }
+        }
+
+        return false
+    }
+
     def fileDownload = {
+        if (!isFileDownloadAuthorized()) {
+            log.warn("Rejected unauthorized file download request: directory=${params.directory}, ip=${request.remoteAddr}")
+            render(status: 403, contentType: 'application/json', text: '{"error": "Access denied. File download requires authentication, a valid API key, or an allowed IP address."}')
+            return
+        }
+
         // Early validation: reject paths containing traversal sequences or backslashes
         if (params.directory?.contains('..') || params.directory?.contains('\\')) {
             log.warn("Rejected file download request with path traversal attempt: params.directory=${params.directory}")
@@ -890,6 +931,7 @@ class DataController {
      *
      */
     @Transactional
+    @PermissionRequired(roles = ['ROLE_EDITOR', 'ROLE_ADMIN'], scopes = ['REQUIRED_SCOPES'])
     def delete() {
         if (grailsApplication.config.deletesForbidden) {
             render(status: 405, text: 'delete is currently unavailable')
@@ -1305,6 +1347,7 @@ class DataController {
     }
 
     @Transactional
+    @PermissionRequired(roles = ['ROLE_EDITOR', 'ROLE_ADMIN'], scopes = ['REQUIRED_SCOPES'])
     def deleteContact() {
         if (params.id) {
             // update
@@ -1620,6 +1663,7 @@ class DataController {
         }
     }
 
+    @PermissionRequired(roles = ['ROLE_EDITOR', 'ROLE_ADMIN'], scopes = ['REQUIRED_SCOPES'])
     def deleteContactFor() {
         def ok = check(params)
         if (!ok) {
