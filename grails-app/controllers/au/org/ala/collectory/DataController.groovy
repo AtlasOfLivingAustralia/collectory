@@ -198,11 +198,9 @@ class DataController {
     }
 
     private capitalise(word) {
-        switch (word?.size()) {
-            case 0: return ""
-            case 1: return word[0].toUpperCase()
-            default: return word[0].toUpperCase() + word[1..-1]
-        }
+        // replace hand-generated code that threw RTE due to poor null handling
+        // with Groovy built-in string method
+        return word?.capitalize() ?: ""
     }
 
     /**
