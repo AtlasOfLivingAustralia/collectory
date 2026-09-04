@@ -51,4 +51,7 @@ jobs:
 
       - name: Publish
         if: github.event_name == 'push'
+        env:
+          TRAVIS_DEPLOY_USERNAME: ${{ secrets.NEXUS_DEPLOY_USERNAME }}
+          TRAVIS_DEPLOY_PASSWORD: ${{ secrets.NEXUS_DEPLOY_PASSWORD }}
         run: ./gradlew publish
