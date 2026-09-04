@@ -16,6 +16,7 @@
 package au.org.ala.collectory
 
 import au.org.ala.PermissionRequired
+import au.org.ala.SkipPermissionCheck
 import grails.converters.JSON
 import grails.web.http.HttpHeaders
 import org.grails.datastore.mapping.query.api.Criteria
@@ -115,6 +116,7 @@ class TempDataResourceController {
      * @param alaId - optional for all drts with this alaId
      * @param summary - any non-null value will cause a richer summary to be returned for entity lists
      */
+    @SkipPermissionCheck
     def getEntity () {
         if (params.drt) {
             addContentLocation "/ws/tempDataResource/${params.drt.uid}"
