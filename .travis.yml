@@ -1,3 +1,5 @@
+# disable in ALA org, as GH Actions now used
+if: repo != AtlasOfLivingAustralia/collectory
 language: groovy
 dist: focal
 jdk:
