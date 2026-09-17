@@ -17,7 +17,8 @@ class AdminController {
 
     def home = { }
 
-    def reloadConfig = {
+    @PermissionRequired(roles = ['ROLE_ADMIN'])
+    def reloadConfig() {
         def resolver = new PathMatchingResourcePatternResolver()
         def configurationResource = resolver.getResource(grailsApplication.config.reloadable.cfgs[0])
         //new ConfigurationResourceListener().onResourceUpdate(configurationResource)
@@ -38,7 +39,8 @@ class AdminController {
         render res + "</ul>"
     }
 
-    def showConfig = {
+    @PermissionRequired(roles = ['ROLE_ADMIN'])
+    def showConfig() {
         def target = params.scope ? grailsApplication.config[params.scope] : grailsApplication.config
         if (target instanceof ConfigObject) {
             String res = "<ul>"
@@ -133,7 +135,8 @@ class AdminController {
         }
     }
 
-    def importJson = {
+    @PermissionRequired(roles = ['ROLE_ADMIN'])
+    def importJson() {
         dataLoaderService.importJson()
         // some tests
         if (Institution.findByName("Tasmanian Museum and Art Gallery")?.getContacts()?.size() == 1) {
@@ -166,7 +169,8 @@ class AdminController {
         render resp
     }
 
-    def importDataProviders = {
+    @PermissionRequired(roles = ['ROLE_ADMIN'])
+    def importDataProviders() {
         int beforeCount = DataProvider.count()
         def result = dataLoaderService.importDataProviders("/data/collectory/bootstrap/data_providers.txt")
         int afterCount = DataProvider.count()
@@ -182,7 +186,8 @@ class AdminController {
         ${afterCount} providers after"""
     }
 
-    def importDataResources = {
+    @PermissionRequired(roles = ['ROLE_ADMIN'])
+    def importDataResources() {
         int beforeCount = DataResource.count()
         def result = dataLoaderService.importDataResources("/data/collectory/bootstrap/data_resources.txt")
         int afterCount = DataResource.count()
@@ -197,7 +202,8 @@ class AdminController {
         ${afterCount} resources after"""
     }
 
-    def importBriefDataResources = {
+    @PermissionRequired(roles = ['ROLE_ADMIN'])
+    def importBriefDataResources() {
         CSVReader reader = new CSVReader(new FileReader("/data/collectory/bootstrap/infosource.csv"),',' as char)
         String [] nextLine;
         int count = 0
@@ -247,7 +253,8 @@ class AdminController {
         url[url.lastIndexOf('/') + 1..url.size() - 1]
     }
 
-    def speciesGroupLoader = {
+    @PermissionRequired(roles = ['ROLE_ADMIN'])
+    def speciesGroupLoader() {
         def f = new FileInputStream('/data/collectory/bootstrap/groups.xml').text
         def xml = new XmlSlurper().parseText(f)
 
@@ -301,6 +308,7 @@ class AdminController {
         return g
     }
 
+    @PermissionRequired(roles = ['ROLE_ADMIN'])
     def buildSitemap() {
         sitemapService.build()
 

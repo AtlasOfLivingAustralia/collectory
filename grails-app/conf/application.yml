@@ -206,6 +206,16 @@ security:
         rolesFromAccessToken: true
         userIdClaim: username
         roleClaims: cognito:groups
+    upload:
+        ipWhitelist:
+            - "127.0.0.1"
+            - "::1"
+            - "0:0:0:0:0:0:0:1"
+        apiKey: ""
+        trustedProxies:
+            - "127.0.0.1"
+            - "::1"
+            - "0:0:0:0:0:0:0:1"
 
 repository:
     location:

@@ -122,12 +122,13 @@ class GbifController {
         gbifRegistryService.writeCSVReportForGBIF(response.outputStream)
     }
 
+    @PermissionRequired(roles = ['gbifRegistrationRole', 'ROLE_ADMIN'], scopes = ['REQUIRED_SCOPES'])
     def syncAllResources(){
         log.info("Starting all sync resources...checking user has role ${grailsApplication.config.gbifRegistrationRole}")
         def errorMessage = ""
 
         try {
-            if (collectoryAuthService.isAuthorised([grailsApplication.config.gbifRegistrationRol] as String[])) {
+            if (collectoryAuthService.isAuthorised([grailsApplication.config.gbifRegistrationRole] as String[])) {
                 asyncGbifRegistryService.updateAllResources()
                         .onComplete {
                             log.info "Sync complete"

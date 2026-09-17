@@ -166,6 +166,7 @@ class IptController {
         }
     }
 
+    @PermissionRequired(roles = ['ROLE_ADMIN', 'ROLE_EDITOR'], scopes = ['REQUIRED_SCOPES'])
     def syncReport(){
 
         response.setContentType("text/csv")

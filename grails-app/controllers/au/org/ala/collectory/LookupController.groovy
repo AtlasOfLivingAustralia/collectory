@@ -1,5 +1,6 @@
 package au.org.ala.collectory
 
+import au.org.ala.PermissionRequired
 import au.org.ala.plugins.openapi.Path
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import io.swagger.v3.oas.annotations.Operation
@@ -630,27 +631,32 @@ class LookupController {
         return Collection.findByAcronym(id)
     }
 
-    def generateCollectionUid = {
+    @PermissionRequired(roles = ['ROLE_EDITOR', 'ROLE_ADMIN'], scopes = ['REQUIRED_SCOPES'])
+    def generateCollectionUid() {
         def resultMap = ['uid':idGeneratorService.getNextCollectionId()]
         render resultMap as JSON
     }
 
-    def generateInstitutionUid = {
+    @PermissionRequired(roles = ['ROLE_EDITOR', 'ROLE_ADMIN'], scopes = ['REQUIRED_SCOPES'])
+    def generateInstitutionUid() {
         def resultMap = ['uid':idGeneratorService.getNextInstitutionId()]
         render resultMap as JSON
     }
 
-    def generateDataProviderUid = {
+    @PermissionRequired(roles = ['ROLE_EDITOR', 'ROLE_ADMIN'], scopes = ['REQUIRED_SCOPES'])
+    def generateDataProviderUid() {
         def resultMap = ['uid':idGeneratorService.getNextDataProviderId()]
         render resultMap as JSON
     }
 
-    def generateDataResourceUid = {
+    @PermissionRequired(roles = ['ROLE_EDITOR', 'ROLE_ADMIN'], scopes = ['REQUIRED_SCOPES'])
+    def generateDataResourceUid() {
         def resultMap = ['uid':idGeneratorService.getNextDataResourceId()]
         render resultMap as JSON
     }
 
-    def generateDataHubUid = {
+    @PermissionRequired(roles = ['ROLE_EDITOR', 'ROLE_ADMIN'], scopes = ['REQUIRED_SCOPES'])
+    def generateDataHubUid() {
         def resultMap = ['uid':idGeneratorService.getNextDataHubId()]
         render resultMap as JSON
     }
