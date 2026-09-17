@@ -1,3 +1,5 @@
+# disable in ALA org, as GH Actions now used
+if: repo != AtlasOfLivingAustralia/collectory
 language: groovy
 dist: focal
 jdk:
@@ -10,7 +12,7 @@ branches:
   only:
     - master
     - develop
-    - execjar
+    - /^\d+-/ # GH generated issue branches
 before_cache:
   - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
   - rm -fr $HOME/.gradle/caches/*/plugin-resolution/

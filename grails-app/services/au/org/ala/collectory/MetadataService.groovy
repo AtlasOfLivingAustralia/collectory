@@ -45,7 +45,7 @@ class MetadataService {
 
     def convertAnyLocalPaths(obj){
         def oldPath = "file:///" + grailsApplication.config.uploadFilePath
-        def newPath = grailsApplication.config.grails.serverURL + grailsApplication.config.uploadExternalUrlPath
+        def newPath = resolveUploadExternalUrl()
         if(obj in String){
             obj.replaceAll(oldPath, newPath)
         } else if(obj in JSON){
@@ -55,8 +55,36 @@ class MetadataService {
 
     def convertPath(obj){
         def oldPath = "file:///" + grailsApplication.config.uploadFilePath
-        def newPath = grailsApplication.config.grails.serverURL + grailsApplication.config.uploadExternalUrlPath
+        def newPath = resolveUploadExternalUrl()
         obj.replaceAll(oldPath,newPath)
+    }
+
+    /**
+     * Resolves the external base URL used for uploaded files.
+     *
+     * If `uploadExternalUrlPath` is not configured, the application `serverURL`
+     * is returned. If an absolute HTTP(S) URL is configured, its path is combined
+     * with the scheme and authority from `serverURL`. Otherwise, the configured
+     * relative path is appended to `serverURL`.
+     *
+     * @return the resolved external upload URL
+     */
+    private String resolveUploadExternalUrl() {
+        def external = grailsApplication.config.uploadExternalUrlPath?.toString()
+        if (!external) {
+            return grailsApplication.config.grails.serverURL
+        }
+
+        if (external.startsWith('http://') || external.startsWith('https://')) {
+            def serverUri = new URI(grailsApplication.config.grails.serverURL.toString())
+            def externalUri = new URI(external)
+            def basePath = (serverUri.path && serverUri.path != '/') ? serverUri.path : ''
+            def uploadPath = externalUri.path.endsWith('/') ? externalUri.path : externalUri.path + '/'
+            def resolvedPath = (basePath.endsWith('/') ? basePath[0..-2] : basePath) + uploadPath
+            return new URI(serverUri.scheme, serverUri.authority, resolvedPath, externalUri.query, externalUri.fragment).toString()
+        }
+
+        return grailsApplication.config.grails.serverURL + (external.endsWith('/') ? external : external + '/')
     }
 
     def getConnectionProfiles() {
