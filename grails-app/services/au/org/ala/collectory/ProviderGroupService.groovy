@@ -226,6 +226,7 @@ class ProviderGroupService {
 
             pg.properties = params
             pg.userLastModified = collectoryAuthService?.username()
+            pg.address?.cleanAddress()
             if (!pg.hasErrors() && pg.save(flush: true)) {
                 [success: true, pg:pg]
             } else {

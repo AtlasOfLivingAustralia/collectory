@@ -22,6 +22,49 @@ class Address {
         country(nullable:true)
     }
 
+    static String clean(String s) {
+        if (!s) {
+            return null
+        }
+        String cleaned = s.replaceAll(/[\r\n\f\u000B\u0085\u2028\u2029\u200B\uFEFF]+/, ' ')
+                          .replaceAll(/[\s\u00A0]+/, ' ')
+                          .trim()
+        return cleaned.isEmpty() ? null : cleaned
+    }
+
+    void setStreet(String street) {
+        this.street = clean(street)
+    }
+
+    void setPostBox(String postBox) {
+        this.postBox = clean(postBox)
+    }
+
+    void setCity(String city) {
+        this.city = clean(city)
+    }
+
+    void setState(String state) {
+        this.state = clean(state)
+    }
+
+    void setPostcode(String postcode) {
+        this.postcode = clean(postcode)
+    }
+
+    void setCountry(String country) {
+        this.country = clean(country)
+    }
+
+    void cleanAddress() {
+        this.street = clean(this.street)
+        this.postBox = clean(this.postBox)
+        this.city = clean(this.city)
+        this.state = clean(this.state)
+        this.postcode = clean(this.postcode)
+        this.country = clean(this.country)
+    }
+
     def isEmpty() {
         return [street, postBox, city, state, postcode, country].every {!it}
         //return !(street || postBox || city || state || postcode || country)

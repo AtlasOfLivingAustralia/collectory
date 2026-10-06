@@ -321,6 +321,7 @@ abstract class ProviderGroupController {
             pg.latitude = latitude
             pg.longitude = longitude
             pg.userLastModified = collectoryAuthService?.username()
+            pg.address?.cleanAddress()
 
             if (!pg.hasErrors() ) {
                 DataResource.withTransaction {
