@@ -44,10 +44,12 @@ class AddressSpec extends Specification {
         where:
         input                                              | expected
         "PO Box 1749 \u2028Margaret River WA. 6285"        | "PO Box 1749 Margaret River WA. 6285"
-        "PO Box 1749 ?Margaret River WA. 6285"             | "PO Box 1749 Margaret River WA. 6285"
-        "PO Box 1749 ? Margaret River WA. 6285"            | "PO Box 1749 Margaret River WA. 6285"
-        "PO Box 1749\uFFFDMargaret River WA. 6285"         | "PO Box 1749 Margaret River WA. 6285"
+        "PO Box 1749 ?Margaret River WA. 6285"             | "PO Box 1749 ?Margaret River WA. 6285"
+        "Is this an address?"                              | "Is this an address?"
+        "خیابان\u200Cها"                                   | "خیابان\u200Cها"
+        "A\u200DB"                                         | "A\u200DB"
         "PO Box 1749\u200BMargaret River WA. 6285"         | "PO Box 1749 Margaret River WA. 6285"
+        "\uFEFF123 Main St"                                | "123 Main St"
         "Line 1\nLine 2\rLine 3\r\nLine 4"                 | "Line 1 Line 2 Line 3 Line 4"
         "Paragraph 1\u2029Paragraph 2"                     | "Paragraph 1 Paragraph 2"
         "  Multiple   spaces   and \t tabs  "              | "Multiple spaces and tabs"

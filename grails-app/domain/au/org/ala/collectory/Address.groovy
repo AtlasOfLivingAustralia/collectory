@@ -26,7 +26,7 @@ class Address {
         if (!s) {
             return null
         }
-        String cleaned = s.replaceAll(/[\r\n\f\u000B\u0085\u2028\u2029\uFFFD\u200B-\u200D\uFEFF\?]+/, ' ')
+        String cleaned = s.replaceAll(/[\r\n\f\u000B\u0085\u2028\u2029\u200B\uFEFF]+/, ' ')
                           .replaceAll(/[\s\u00A0]+/, ' ')
                           .trim()
         return cleaned.isEmpty() ? null : cleaned
