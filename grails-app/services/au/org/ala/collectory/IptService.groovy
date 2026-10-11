@@ -94,71 +94,120 @@ class IptService {
      */
     @org.springframework.transaction.annotation.Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRED)
     def merge(DataProvider provider, List updates, boolean create, boolean check, String username, boolean admin) {
-        def current = provider.resources.inject([:], { map, item -> map[item.websiteUrl] = item; map })
-        def merged = []
+        def currentResources = provider.resources.inject([:]) { map, resource ->
+            map[resource.websiteUrl] = resource
+            map
+        }
+        def mergedResources = []
+        updates.each { update ->
+            def existingResource = currentResources[update.resource.websiteUrl]
 
-        for (update in updates) {
-
-            DataResource old = current[update.resource.websiteUrl]
-
-            if (old)  {
-                if (!check || old.dataCurrency == null || update.resource.dataCurrency == null || update.resource.dataCurrency.after(old.dataCurrency)) {
-                    for (name in allFields()) {
-                        def val = update.resource.getProperty(name)
-                        if (val != null) {
-                            old.setProperty(name, val)
-                        }
-                    }
-                    old.userLastModified = username
-                    if (create) {
-                        DataResource.withTransaction {
-                            old.save(flush: true)
-                            if (old.hasErrors()) {
-                                old.errors.each {
-                                    log.debug it.toString()
-                                }
-                            }
-
-                            //sync contacts
-                            update.contacts.each { contact ->
-                                def existingContact = old.getContacts().find {
-                                    (it.contact.email && !it.contact.email.isEmpty() && it.contact.email == contact.email) ||
-                                            (it.contact.firstName == contact.firstName && it.contact.lastName == contact.lastName)
-                                }
-                                if (!existingContact) {
-                                    // Add new contact
-                                    boolean isPrimaryContact = update.primaryContacts.contains(contact)
-                                    old.addToContacts(contact, null, false, isPrimaryContact, collectoryAuthService.username())
-                                }
-                            }
-                        }
-
-                        activityLogService.log username, admin, Action.EDIT_SAVE, "Updated IPT data resource " + old.uid + " from scan"
-                    }
-
-                    merged << old
+            if (existingResource) {
+                // Always update EML metadata fields and contacts, regardless of dataCurrency.
+                // The dataCurrency check only determines whether this resource needs DwCA re-import
+                // (i.e. whether it appears in the returned list for the caller to act on).
+                //
+                // Snapshot dataCurrency BEFORE updateFields runs: dataCurrency is an RSS field, so
+                // updateFields overwrites existingResource.dataCurrency with the new value. Comparing
+                // after the update would compare the new value against itself and always be false.
+                Date previousDataCurrency = existingResource.dataCurrency
+                Date newDataCurrency = update.resource.dataCurrency
+                DataResource.withTransaction {
+                    updateFields(existingResource, update.resource, username)
+                    syncContacts(existingResource, update.contacts, update.primaryContacts, username, admin)
+                    activityLogService.log(username, admin, Action.EDIT_SAVE, "Updated IPT data resource ${existingResource.uid} from scan")
+                }
+                // Only include in the re-import list when data currency has increased (or check is disabled).
+                if (!check || previousDataCurrency == null || newDataCurrency == null || newDataCurrency.after(previousDataCurrency)) {
+                    mergedResources << existingResource
                 }
             } else {
                 if (create) {
-                    update.resource.uid = idGeneratorService.getNextDataResourceId()
-                    update.resource.userLastModified = username
-                    try {
-                        DataResource.withTransaction {
-                            update.resource.save(flush: true, failOnError: true)
-                            update.contacts.each { contact ->
-                                boolean isPrimaryContact = update.primaryContacts.contains(contact)
-                                update.resource.addToContacts(contact, null, false, isPrimaryContact, collectoryAuthService.username())
-                            }
-                        }
-                        activityLogService.log username, admin, Action.CREATE, "Created new IPT data resource for provider " + provider.uid  + " with uid " + update.resource.uid + " for dataset " + update.resource.websiteUrl
-                    } catch (Exception e){
-                        log.error("Unable to persist resource " + update.resource, e)
-                    }
+                    createNewResource(provider, update, username, admin)
                 }
-                merged << update.resource
+                mergedResources << update.resource
             }
         }
-        merged
+
+        mergedResources
+    }
+
+    private void updateFields(DataResource existingResource, DataResource newResource, String username) {
+        allFields().each { fieldName ->
+            def newValue = newResource.getProperty(fieldName)
+            // EML (and the RSS feed) is the source of truth: always apply, even when null/empty.
+            // Optional fields the source omits resolve to null/empty and are applied as-is,
+            // intentionally clearing any stale value previously held by the resource.
+            existingResource.setProperty(fieldName, newValue)
+        }
+
+        existingResource.userLastModified = username
+        existingResource.lastChecked = new Timestamp(System.currentTimeMillis())
+
+        existingResource.save(flush: true)
+
+        if (existingResource.hasErrors()) {
+            existingResource.errors.each { error ->
+                log.debug(error.toString())
+            }
+        }
+    }
+
+    private void syncContacts(DataResource resource, List<Contact> newContacts, List<Contact> primaryContacts, String username, boolean admin) {
+        def existingContactForEntries = resource.getContacts()
+
+        // Index current contacts by ID for quick lookup
+        def existingContactsById = existingContactForEntries.collectEntries {
+            [(it.contact.id): it]
+        }
+
+        // Index new contacts by ID (ensuring they are already persisted)
+        def newContactsById = newContacts.findAll { it.id != null }.collectEntries {
+            [(it.id): it]
+        }
+
+        // Identify contacts to remove (those that are in existingContacts but not in newContacts)
+        def obsoleteContactsFor = existingContactForEntries.findAll { contactFor ->
+            !newContactsById.containsKey(contactFor.contact.id)
+        }
+
+        // Remove obsolete contact associations first
+        obsoleteContactsFor.each { contactFor ->
+            def contact = contactFor.contact
+            contactFor.delete(flush: true)
+
+            activityLogService.log(username, admin, Action.DELETE, "Removed obsolete contact ${contact.buildName()} from resource ${resource.uid}")
+
+            // Ensure no other resources use this contact before deleting it
+            if (ContactFor.countByContact(contact) == 0) {
+                contact.delete(flush: true)
+                activityLogService.log(username, admin, Action.DELETE, "Deleted orphaned contact ${contact.buildName()}")
+            }
+        }
+
+        // Identify contacts to add (only if they already exist in DB and are not already associated)
+        newContacts.each { newContact ->
+            def existingAssociation = ContactFor.findByContactAndEntityUid(newContact, resource.uid)
+            if (!existingAssociation) {
+                resource.addToContacts(newContact, null, false, primaryContacts.contains(newContact), username)
+            } else {
+                log.info("Skipping contact ${newContact.buildName()} for resource ${resource.uid} - already associated.")
+            }
+        }
+
+        activityLogService.log(username, admin, Action.EDIT_SAVE, "Synced contacts for resource ${resource.uid}")
+    }
+
+    private void createNewResource(DataProvider provider, Map update, String username, boolean admin) {
+        update.resource.uid = idGeneratorService.getNextDataResourceId()
+        update.resource.userLastModified = username
+        update.resource.dataProvider = provider
+
+        DataResource.withTransaction {
+            update.resource.save(flush: true, failOnError: true)
+            syncContacts(update.resource, update.contacts, update.primaryContacts, username, admin)
+        }
+        activityLogService.log(username, admin, Action.CREATE, "Created new IPT data resource for provider ${provider.uid} with uid ${update.resource.uid} for dataset ${update.resource.websiteUrl}")
     }
 
     /**

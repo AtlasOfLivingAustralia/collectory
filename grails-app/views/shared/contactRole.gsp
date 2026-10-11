@@ -3,6 +3,7 @@
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
         <meta name="layout" content="${grailsApplication.config.skin.layout}" />
+        <asset:stylesheet src="application.css"/>
         <g:set var="entityName" value="${command.ENTITY_TYPE}"/>
         <g:set var="entityNameLower" value="${command.ENTITY_TYPE.toLowerCase()}"/>
         <title><g:message code="${entityNameLower}.base.label" args="${[entityNameLower]}" default="Edit ${entityNameLower} metadata" /></title>
@@ -13,11 +14,11 @@
         </div>
         <div id="baseForm" class="body">
             <g:if test="${message}">
-            <div class="message">${message}</div>
+            <div class="alert alert-info">${message}</div>
             </g:if>
-            <g:hasErrors bean="${command}">
-            <div class="errors">
-                <g:renderErrors bean="${command}" as="list" />
+            <g:hasErrors bean="${cf}">
+            <div class="alert alert-danger">
+                <g:renderErrors bean="${cf}" as="list" />
             </div>
             </g:hasErrors>
             <g:form method="post" name="baseForm" action="base">
