@@ -156,13 +156,13 @@ security:
         checkEnabled: true
         enabled: true
         auth:
-            serviceUrl: https://auth-test.ala.org.au/apikey/
+            serviceUrl: https://auth.test.ala.org.au/apikey/
         check:
-            serviceUrl: https://auth-test.ala.org.au/apikey/ws/check?apikey=
+            serviceUrl: https://auth.test.ala.org.au/apikey/ws/check?apikey=
         userdetails:
-            serviceUrl: https://auth-test.ala.org.au/userdetails/userDetails/
+            serviceUrl: https://auth.test.ala.org.au/userdetails/userDetails/
     cas:
-        casServerName: https://auth-test.ala.org.au
+        casServerName: https://auth.test.ala.org.au
         uriFilterPattern:
             - /admin/*
             - /collection/*
@@ -184,9 +184,9 @@ security:
             - /js.*
             - /static.*
         appServerName: http://localhost:8080
-        casServerUrlPrefix: https://auth-test.ala.org.au/cas
-        loginUrl: https://auth-test.ala.org.au/cas/login
-        logoutUrl: https://auth-test.ala.org.au/cas/logout
+        casServerUrlPrefix: https://auth.test.ala.org.au/cas
+        loginUrl: https://auth.test.ala.org.au/cas/login
+        logoutUrl: https://auth.test.ala.org.au/cas/logout
         bypass: false
         disableCAS: true
         ignoreCase: true
@@ -201,7 +201,7 @@ security:
         scope: 'openid profile email ala roles'
     jwt:
         enabled: true
-        discoveryUri: https://auth-test.ala.org.au/cas/oidc/.well-known
+        discoveryUri: https://auth.test.ala.org.au/cas/oidc/.well-known
         fallbackToLegacyBehaviour: true
         rolesFromAccessToken: true
         userIdClaim: username
@@ -221,10 +221,10 @@ repository:
     location:
         images: /data/collectory/data
 
-loggerURL: https://logger.test.ala.org.au/service
-alertsUrl: https://alerts-test.ala.org.au
+loggerUrl: https://service.test.ala.org.au/v1/service
+alertsUrl: https://alerts.test.ala.org.au
 alertResourceName: 'Alerts'
-speciesListToolUrl: https://lists-test.ala.org.au/speciesListItem/list/
+speciesListToolUrl: https://lists.test.ala.org.au/speciesListItem/list/
 disableAlertLinks: false
 disableLoggerLinks: false
 biocacheServicesUrl: https://biocache.test.ala.org.au/ws
