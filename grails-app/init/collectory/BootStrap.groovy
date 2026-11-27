@@ -32,6 +32,8 @@ class BootStrap {
             }
         }
         messageSource.setBasenames(*basenames as String[])
+        // The server accepts requests before BootStrap runs, and the locales they merged stay cached
+        messageSource.clearCache()
 
         // gbifDefaultEntityCountry is mandatory. Not validating this value as 'ZZZ'
         if (!grailsApplication.config.gbifDefaultEntityCountry) {
