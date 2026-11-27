@@ -26,6 +26,7 @@ import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.protocol.HttpContext
 
+import java.nio.charset.StandardCharsets
 import java.text.MessageFormat
 
 import java.util.concurrent.Executors
@@ -132,8 +133,7 @@ class GbifRegistryService {
             )
             httpPut.setHeader("Accept", "application/json")
             httpPut.setHeader("Content-Type", "application/json")
-            StringEntity stringEntity = new StringEntity((organisation as JSON).toString());
-            httpPut.setEntity(stringEntity);
+            httpPut.setEntity(jsonEntity(organisation))
             HttpResponse response = httpclient.execute(httpPut);
             if (isSuccess(response)) {
                 success = true
@@ -168,7 +168,7 @@ class GbifRegistryService {
 
             def http = newHttpInstance();
             HttpPost httpPost = new HttpPost(grailsApplication.config.gbifApiUrl + API_ORGANIZATION)
-            httpPost.setEntity(new StringEntity((organisation as JSON).toString()))
+            httpPost.setEntity(jsonEntity(organisation))
             httpPost.setHeader("Content-Type", "application/json")
             HttpResponse httpResponse = http.execute(httpPost)
             HttpEntity entity = httpResponse.getEntity()
@@ -313,7 +313,7 @@ class GbifRegistryService {
                                     MessageFormat.format(API_ORGANIZATION_CONTACT, dp.gbifRegistryKey)
                     )
                     httpPost.setHeader("Content-Type", "application/json")
-                    httpPost.setEntity(new StringEntity((gbifContact as JSON).toString()))
+                    httpPost.setEntity(jsonEntity(gbifContact))
                     HttpResponse httpResponse = http.execute(httpPost)
                     if (isSuccess(httpResponse)){
                         log.info("Added contact")
@@ -383,7 +383,7 @@ class GbifRegistryService {
                     def http = newHttpInstance();
                     HttpPost httpPost = new HttpPost(grailsApplication.config.gbifApiUrl + MessageFormat.format(API_DATASET, organisationRegistryKey))
                     httpPost.setHeader("Content-Type", "application/json")
-                    httpPost.setEntity(new StringEntity((dataset as JSON).toString()))
+                    httpPost.setEntity(jsonEntity(dataset))
                     HttpResponse httpResponse = http.execute(httpPost)
                     HttpEntity entity = httpResponse.getEntity()
 
@@ -457,7 +457,7 @@ class GbifRegistryService {
                         def datasetKey = dataResource.gbifRegistryKey
                         HttpPut httpPut = new HttpPut(grailsApplication.config.gbifApiUrl + MessageFormat.format(API_DATASET_DETAIL, datasetKey))
                         httpPut.setHeader("Content-Type", "application/json")
-                        httpPut.setEntity(new StringEntity((dataset as JSON).toString()))
+                        httpPut.setEntity(jsonEntity(dataset))
                         HttpResponse httpResponse = http.execute(httpPut)
                         if (isSuccess(httpResponse)) {
                             log.info("Successfully updated dataset in GBIF: ${datasetKey}")
@@ -562,7 +562,7 @@ class GbifRegistryService {
                             try {
                                 HttpClient http = newHttpInstance();
                                 httpPost.setHeader("Content-Type", "application/json")
-                                httpPost.setEntity(new StringEntity((endpoint as JSON).toString()))
+                                httpPost.setEntity(jsonEntity(endpoint))
 
                                 log.info("Creating endpoint for Dataset[${resource.gbifRegistryKey}] with URL[${endpoint.url}]")
                                 HttpResponse httpResponse = http.execute(httpPost)
@@ -1134,6 +1134,14 @@ class GbifRegistryService {
 //        log.info("Breakdown: " + breakdown)
 
         breakdown
+    }
+
+    /**
+     * The JSON body of a request to the GBIF API. StringEntity(String) encodes as ISO-8859-1, which turns
+     * characters such as ’ and – into ?, so the encoding is given explicitly.
+     */
+    private static StringEntity jsonEntity(Object body) {
+        new StringEntity((body as JSON).toString(), StandardCharsets.UTF_8)
     }
 
     /**
