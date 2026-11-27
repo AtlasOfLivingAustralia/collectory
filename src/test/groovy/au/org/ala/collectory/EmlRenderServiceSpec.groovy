@@ -4,7 +4,6 @@ import grails.testing.services.ServiceUnitTest
 import grails.testing.gorm.DomainUnitTest
 import groovy.util.XmlSlurper
 import org.xml.sax.SAXException
-import spock.lang.PendingFeature
 import spock.lang.Specification
 import spock.lang.Unroll
 
@@ -257,9 +256,8 @@ class EmlRenderServiceSpec extends Specification implements ServiceUnitTest<EmlR
         'an empty <citation>'  | 'cvc-pattern-valid'      | { String xml -> xml.replaceFirst('<citation>Smith et al. 2024</citation>', '<citation></citation>') }
     }
 
-    @PendingFeature(reason = '#339 getTaxonomicCoverage always writes <generalTaxonomicCoverage>, empty without a range, and <taxonomicCoverage> needs a <taxonomicClassification>; the editor saves coverage (updateTaxonomyHints) and range (updateTaxonomicRange) separately')
     @Unroll
-    void "#303 taxonomy hints with #description give a valid EML"() {
+    void "#339 taxonomy hints with #description give a valid EML"() {
         given:
         useDefaultEmlConfig()
 
@@ -273,5 +271,23 @@ class EmlRenderServiceSpec extends Specification implements ServiceUnitTest<EmlR
         description           | hints
         'no taxonomic range'  | '{"coverage":[{"kingdom":"plantae"}]}'
         'only a range'        | '{"range":["Plantae"]}'
+        'a range and coverage'| '{"range":["Plantae"],"coverage":[{"kingdom":"plantae"}]}'
+        'nothing in them'     | '{"range":[],"coverage":[]}'
+        'an empty kingdom'    | '{"coverage":[{"kingdom":""}]}'
+    }
+
+    void "#339 without coverage entries the taxonomic range names are the taxonomic classifications"() {
+        when:
+        def xml = service.getTaxonomicCoverage('{"range":["Plantae","Fungi"]}').toString()
+
+        then:
+        xml.contains('<generalTaxonomicCoverage>Plantae; Fungi</generalTaxonomicCoverage>')
+        xml.contains('<taxonomicClassification><taxonRankValue>Plantae</taxonRankValue></taxonomicClassification>')
+        xml.contains('<taxonomicClassification><taxonRankValue>Fungi</taxonRankValue></taxonomicClassification>')
+    }
+
+    void "#339 taxonomy hints with neither a range nor coverage give no taxonomic coverage"() {
+        expect:
+        service.getTaxonomicCoverage('{"range":[],"coverage":[]}').toString() == ''
     }
 }
