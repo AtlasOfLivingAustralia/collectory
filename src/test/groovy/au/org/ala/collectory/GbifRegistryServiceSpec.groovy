@@ -16,7 +16,6 @@ import org.apache.http.entity.StringEntity
 import org.apache.http.message.BasicHttpResponse
 import org.apache.http.util.EntityUtils
 import org.grails.web.converters.configuration.ConvertersConfigurationInitializer
-import spock.lang.PendingFeature
 import spock.lang.Specification
 import spock.lang.Unroll
 
@@ -157,7 +156,6 @@ class GbifRegistryServiceSpec extends Specification implements ServiceUnitTest<G
         body('dataset/ds-orphan').publishingOrganizationKey == 'org-orphans'
     }
 
-    @PendingFeature(reason = '#240 the JSON is sent with new StringEntity(String), which encodes it as ISO-8859-1, so ’ and – reach GBIF as ?')
     def "#240 an apostrophe in the description of an institution reaches GBIF"() {
         given:
         registry['organization/org-240'] = [key: 'org-240', title: 'Old', endorsingNodeKey: 'node-1']
@@ -169,5 +167,20 @@ class GbifRegistryServiceSpec extends Specification implements ServiceUnitTest<G
 
         then:
         body('organization/org-240').description == 'The museum’s collection'
+    }
+
+    def "#240 non-ASCII characters in the title and description of a dataset reach GBIF"() {
+        given:
+        registry['dataset/ds-240'] = [key: 'ds-240', title: 'Old title']
+        def dr = new DataResource(uid: 'dr240', name: 'Flora – Región de Murcia', pubDescription: 'Herbarium’s specimens',
+                licenseType: 'CC-BY', gbifRegistryKey: 'ds-240')
+
+        when:
+        service.syncDataResource(dr, 'org-1')
+
+        then:
+        def dataset = body('dataset/ds-240')
+        dataset.title == 'Flora – Región de Murcia'
+        dataset.description == 'Herbarium’s specimens'
     }
 }
