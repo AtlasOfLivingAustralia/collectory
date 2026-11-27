@@ -154,8 +154,8 @@ class CollectoryAuthService{
                     entities.put it.entityUid, [uid: pg.uid, name: pg.name]
                     if (it.dateLastModified > latestMod) { latestMod = it.dateLastModified }
                 }
-                // add children
-                pg.children().each { child ->
+                // add children (pg is null when the link points to an entity that no longer exists)
+                pg?.children().each { child ->
                     // children() now seems to return some internal class resources
                     // so make sure they are PGs
                     if (child instanceof ProviderGroup) {

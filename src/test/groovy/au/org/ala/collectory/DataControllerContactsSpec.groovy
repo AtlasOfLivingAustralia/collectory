@@ -151,7 +151,6 @@ class DataControllerContactsSpec extends Specification implements ControllerUnit
         response.text.contains('"José","Ñúñez","Manager"')
     }
 
-    @PendingFeature(reason = '#337 DELETE /ws/{entity}/{uid} only deletes the entity; the admin UI delete (ProviderGroupController.delete) removes the ContactFor links first')
     def "deleting an entity through the web service removes its contact links, like the admin UI does"() {
         given:
         link(contact(lastName: 'Admin', email: 'a@example.org'), dr1, [administrator: true])

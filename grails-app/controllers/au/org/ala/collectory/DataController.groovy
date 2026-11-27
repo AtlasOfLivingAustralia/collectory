@@ -942,7 +942,11 @@ class DataController {
                     providerGroupService._get(params.uid)
             if (pg) {
                 def name = pg.name
-                pg.delete(flush: true)
+                Contact.withTransaction {
+                    // remove contact links (does not remove the contact), as the admin UI delete does
+                    ContactFor.findAllByEntityUid(pg.uid).each { it.delete(flush: true) }
+                    pg.delete(flush: true)
+                }
                 def message = ['message': "deleted ${name}"]
                 render message as JSON
             } else {
