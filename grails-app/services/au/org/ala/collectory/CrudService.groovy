@@ -436,7 +436,8 @@ class CrudService {
 
         dataResourceStringProperties.each {
             if (obj.has(it)) {
-                dr."${it}" = obj."${it}".toString()
+                // ?. keeps a JSON null (made Java null by adjustEmptyProperties) as null: null.toString() is "null"
+                dr."${it}" = obj."${it}"?.toString()
             }
         }
 
@@ -835,7 +836,8 @@ class CrudService {
         // inject properties (this method does type conversions automatically)
         baseStringProperties.each {
             if (obj.has(it)) {
-                pg."${it}" = obj."${it}".toString()
+                // ?. keeps a JSON null (made Java null by adjustEmptyProperties) as null: null.toString() is "null"
+                pg."${it}" = obj."${it}"?.toString()
             }
         }
         pg.properties[baseNumberProperties] = obj

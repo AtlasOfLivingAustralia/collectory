@@ -5,7 +5,6 @@ import groovy.json.JsonOutput
 import org.grails.web.converters.configuration.ConvertersConfigurationInitializer
 import grails.testing.gorm.DataTest
 import grails.testing.services.ServiceUnitTest
-import spock.lang.PendingFeature
 import spock.lang.Specification
 import spock.lang.Unroll
 
@@ -102,17 +101,16 @@ class CrudServiceSpec extends Specification implements ServiceUnitTest<CrudServi
         value << ['now', '2024-05-01T10:20:30']
     }
 
-    @PendingFeature(reason = '#338 adjustEmptyProperties is documented to turn JSON null into Java null, but the value is then stored with toString(), so the text "null" is saved and shown')
     @Unroll
-    def "a JSON null for #field never stores the text 'null'"() {
+    def "#338 a JSON null for #field clears it instead of storing the text 'null'"() {
         given:
         def dr = service.insertDataResource(JSON.parse(JsonOutput.toJson([name: 'n', (field): 'some text'])))
 
         when:
         service.updateDataResource(dr, JSON.parse('{"' + field + '": null}'))
 
-        then: 'whether null clears the field or leaves it unchanged is not specified; the text "null" is never right'
-        dr."$field" != 'null'
+        then: 'adjustEmptyProperties documents that a JSON null becomes a Java null'
+        dr."$field" == null
 
         where:
         field << ['pubDescription', 'email', 'citation', 'rights']
