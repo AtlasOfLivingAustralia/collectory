@@ -624,7 +624,8 @@ class EmlRenderService {
                     }
                 }
 
-                if ((pg.geographicDescription && pg.westBoundingCoordinate) || (pg.beginDate && pg.endDate) || pg.taxonomyHints) {
+                def taxonomicCoverageXml = pg.taxonomyHints ? getTaxonomicCoverage(pg.taxonomyHints).toString() : ''
+                if ((pg.geographicDescription && pg.westBoundingCoordinate) || (pg.beginDate && pg.endDate) || taxonomicCoverageXml) {
                     coverage {
                         def west = pg.westBoundingCoordinate?.trim()
                         def east = pg.eastBoundingCoordinate?.trim()
@@ -654,8 +655,8 @@ class EmlRenderService {
                             }
                         }
 
-                        if (pg.taxonomyHints) {
-                            mkp.yieldUnescaped getTaxonomicCoverage(pg.taxonomyHints)
+                        if (taxonomicCoverageXml) {
+                            mkp.yieldUnescaped taxonomicCoverageXml
                         }
                     }
                 }
@@ -840,22 +841,40 @@ class EmlRenderService {
         } catch (JsonException ignored) {
             json = new JsonSlurper().parseText(hints)
         }
-        def range = json?.range ?: []
-        def coverage = json?.coverage ?: []
+        def range = (json?.range ?: []).collect { it?.toString()?.replaceAll('"','')?.trim() }.findAll()
+        def classifications = []
+        (json?.coverage ?: []).each { entry ->
+            entry.each { rank, value ->
+                if (value?.toString()?.trim()) {
+                    classifications << [rank: rank, value: value]
+                }
+            }
+        }
+        // The editor saves the range and the coverage separately, so either can be missing. The GBIF EML profile
+        // needs a non-empty <generalTaxonomicCoverage> if present and at least one <taxonomicClassification>:
+        // without coverage entries, the range names are the classifications (with no rank).
+        if (!classifications) {
+            classifications = range.collect { [value: it] }
+        }
+        if (!classifications) {
+            return ''
+        }
         def builder = new StreamingMarkupBuilder()
 
         return builder.bind {
             taxonomicCoverage {
-                generalTaxonomicCoverage {
-                    // yield the joined string properly
-                    mkp.yield range.collect { it.replaceAll('"','').trim() }.join("; ")
+                if (range) {
+                    generalTaxonomicCoverage {
+                        // yield the joined string properly
+                        mkp.yield range.join("; ")
+                    }
                 }
-                coverage.each { entry ->
-                    entry.each { rank, value ->
-                        taxonomicClassification {
-                            taxonRankName(rank)
-                            taxonRankValue(value)
+                classifications.each { classification ->
+                    taxonomicClassification {
+                        if (classification.rank) {
+                            taxonRankName(classification.rank)
                         }
+                        taxonRankValue(classification.value)
                     }
                 }
             }
